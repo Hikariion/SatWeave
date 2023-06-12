@@ -18,3 +18,13 @@ RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
    stable" && \
    apt-get update && \
    apt-get install -y docker-ce docker-ce-cli containerd.io
+
+# 用于启动 Docker daemon 的启动脚本
+RUN echo '#!/bin/sh\n\
+/usr/bin/dockerd &' > /usr/local/bin/start-docker
+
+# 设置启动脚本的权限
+RUN chmod +x /usr/local/bin/start-docker
+
+# 启动 Docker daemon
+CMD ["start-docker"]
