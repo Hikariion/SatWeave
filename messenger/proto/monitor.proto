@@ -1,0 +1,76 @@
+syntax = "proto3";
+package messenger;
+
+import "common.proto";
+import "infos.proto";
+import "timestamp.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "ecos/edge-node/watcher";
+
+service Monitor {
+  rpc Report(NodeStatusReport) returns (Result) {}
+  rpc Get(google.protobuf.Empty) returns (NodeStatusReport) {}
+  // GetClusterReport returns the entire cluster status report.
+  // This only works if the node is the leader of the cluster.
+  rpc GetClusterReport(google.protobuf.Empty) returns (ClusterReport) {}
+}
+
+message NodeStatusReport {
+  uint64 node_id = 1;
+  string node_uuid = 2;
+  Timestamp timestamp = 3;
+  NodeState state = 4;
+  NodeStatus status = 5;
+  enum Role {
+    UNKNOWN = 0;
+    LEADER = 1;
+    FOLLOWER = 2;
+    LEARNER = 3;
+  }
+  Role role = 6;
+  repeated PipelineReport pipelines = 7;
+}
+
+message NodeStatus {
+  uint64 disk_available = 1;
+  uint64 disk_total = 2;
+  uint64 network_speed_send = 3;
+  uint64 network_speed_recv = 4;
+  double cpu_percent = 5;
+  uint64 memory_usage = 6;
+  uint64 memory_total = 7;
+  uint64 block_count = 8;
+  uint64 meta_count = 9;
+  uint64 goroutine_count = 10;
+  uint64 meta_pipeline_count = 11;
+}
+
+message PipelineReport {
+  uint64 pg_id = 1;
+  repeated uint64 node_ids = 2;
+  uint64 leader_id = 3;
+  enum State {
+    UNKNOWN = 0;
+    OK = 1;
+    DOWN_GRADE = 2;
+    CHANGING = 3;
+    ERROR = 4;
+  }
+  State state = 4;
+}
+
+message ClusterReport {
+  enum ClusterState{
+    UNKNOWN = 0;
+    HEALTH_OK = 1;
+    HEALTH_WARN = 2;
+    HEALTH_ERR = 3;
+  }
+  ClusterState state = 1;
+  ClusterInfo cluster_info = 2;
+  repeated NodeStatusReport nodes = 3;
+  repeated PipelineReport pipelines = 4;
+}
+
+message StateRequest {}

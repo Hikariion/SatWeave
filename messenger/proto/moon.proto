@@ -1,0 +1,58 @@
+syntax = "proto3";
+package messenger;
+
+import "raftpb/raft.proto";
+import "common.proto";
+import "infos.proto";
+
+option go_package = "satweave/shared/moon";
+
+service Moon {
+  rpc SendRaftMessage (raftpb.Message) returns (raftpb.Message) {}
+  // ProposeInfo 用于向集群中提交一个 Info 共识，该 Info 将会在集群所有节点上同步
+  // 目前可以提交的 Info: NodeInfo, BucketInfo
+  rpc ProposeInfo(ProposeInfoRequest) returns (ProposeInfoReply) {};
+  // GetInfo 从对应 InfoStorage 中取得 Info
+  rpc GetInfo(GetInfoRequest) returns (GetInfoReply) {};
+  // ListInfo 从对应 InfoStorage 中取得指定前缀的 Info 列表
+  rpc ListInfo(ListInfoRequest) returns (ListInfoReply) {};
+}
+
+message ProposeInfoRequest {
+  Head head = 1;
+  enum Operate {
+    ADD = 0;
+    UPDATE = 1;
+    DELETE = 2;
+  }
+  Operate operate = 2;
+  uint64 operate_id = 3;
+  string id = 4;
+  BaseInfo base_info = 5;
+}
+
+message ProposeInfoReply {
+  Result result = 1;
+  NodeInfo leaderInfo = 2; // if this node is not leader, it will return leader info
+}
+
+message GetInfoRequest {
+  Head head = 1;
+  InfoType info_type = 2;
+  string info_id = 3;
+}
+
+message GetInfoReply {
+  Result result = 1;
+  BaseInfo base_info = 2;
+}
+
+message ListInfoRequest {
+  InfoType info_type = 2;
+  string prefix = 3;
+}
+
+message ListInfoReply {
+  Result result = 1;
+  repeated BaseInfo base_infos = 2;
+}
