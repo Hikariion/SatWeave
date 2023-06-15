@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package messenger;
+
+import "timestamp.proto";
+
+option go_package = "satweave/sat-node/object";
+
+message Block {
+  repeated bytes data = 1;
+}
+
+message MetaData {
+  map<string, string> attrs = 1;
+}
+
+message ObjectMeta {
+  string obj_id = 1;
+  enum Status {
+    STATUS_UNKNOWN = 0;
+    STATUS_OK = 1;
+    STATUS_BROKEN = 2;
+    STATUS_UPDATING = 3;
+    STATUS_DELETED = 4;
+  }
+  Status status = 2;
+
+  enum Position {
+    POSITION_UNKNOWN = 0;
+    POSITION_EDGE = 1;
+    POSITION_CLOUD = 2;
+    POSITION_EDGE_CLOUD = 3;
+  }
+  Position position = 3;
+
+  uint64  obj_size = 4;
+  Timestamp update_time = 5;
+  string obj_hash = 6;
+  uint64 pg_id = 7;
+  repeated BlockInfo blocks = 8;
+  uint64 term = 9;
+  MetaData meta_data = 10;
+}
+
+message BlockInfo {
+  string block_id = 1;
+  int32 part_id = 2;
+  uint64 block_size = 3;
+  string block_hash = 4;
+  uint64 pg_id = 5;
+}

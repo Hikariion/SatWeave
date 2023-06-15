@@ -1,1 +1,30 @@
 package watcher
+
+import (
+	"satweave/sat-node/infos"
+	"time"
+)
+
+type Config struct {
+	SunAddr                string
+	SelfNodeInfo           infos.NodeInfo
+	ClusterInfo            infos.ClusterInfo
+	NodeInfoCommitInterval time.Duration
+	PrometheusAddr         string
+	ClusterName            string
+	CloudAddr              string
+	CloudPort              uint64
+}
+
+var DefaultConfig Config
+
+func init() {
+	DefaultConfig = Config{
+		SunAddr:                "",
+		ClusterInfo:            infos.ClusterInfo{},
+		SelfNodeInfo:           *infos.NewSelfInfo(1, "127.0.0.1", 0),
+		NodeInfoCommitInterval: time.Second * 2,
+		PrometheusAddr:         "http://gateway.prometheus.sums.top", // TODO：暂时用不上
+		ClusterName:            "ecos_dev",
+	}
+}
