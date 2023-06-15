@@ -6,7 +6,7 @@ import "infos.proto";
 import "timestamp.proto";
 import "google/protobuf/empty.proto";
 
-option go_package = "ecos/edge-node/watcher";
+option go_package = "satweave/sat-node/watcher";
 
 service Monitor {
   rpc Report(NodeStatusReport) returns (Result) {}

@@ -2,7 +2,7 @@ syntax = "proto3";
 package messenger;
 import "timestamp.proto";
 
-option go_package = "ecos/messenger/common";
+option go_package = "satweave/messenger/common";
 
 message Result {
   enum Status {

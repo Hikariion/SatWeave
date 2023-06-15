@@ -1,7 +1,7 @@
 syntax = "proto3";
 package messenger;
 import "timestamp.proto";
-option go_package = "ecos/edge-node/infos";
+option go_package = "satweave/sat-node/infos";
 
 
 enum InfoType {
