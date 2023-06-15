@@ -5,7 +5,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"path"
 	"satweave/messenger"
+	common2 "satweave/messenger/common"
 	"satweave/sat-node/infos"
+	moon2 "satweave/shared/moon"
 	"satweave/utils/common"
 	"satweave/utils/logger"
 	"satweave/utils/timestamp"
@@ -56,75 +58,75 @@ func testMoon(t *testing.T) {
 		leader = waitMoonsOK(moons)
 		t.Logf("leader: %v", leader)
 	})
-	//// 发送一个待同步的 info
-	//t.Run("propose info", func(t *testing.T) {
-	//	for i := 0; i < 100; i++ {
-	//		moon := moons[leader-1]
-	//		request := &moon2.ProposeInfoRequest{
-	//			Head: &common2.Head{
-	//				Timestamp: timestamp.Now(),
-	//				Term:      0,
-	//			},
-	//			Operate: moon2.ProposeInfoRequest_ADD,
-	//			Id:      strconv.Itoa(i),
-	//			BaseInfo: &infos.BaseInfo{
-	//				Info: &infos.BaseInfo_ClusterInfo{ClusterInfo: &infos.ClusterInfo{
-	//					Term: uint64(i),
-	//					LeaderInfo: &infos.NodeInfo{
-	//						RaftId:   6,
-	//						Uuid:     "66",
-	//						IpAddr:   "",
-	//						RpcPort:  0,
-	//						Capacity: 0,
-	//					},
-	//					NodesInfo:       nil,
-	//					UpdateTimestamp: nil,
-	//				}},
-	//			},
-	//		}
-	//		_, err := moon.ProposeInfo(context.Background(), request)
-	//		assert.NoError(t, err)
-	//	}
-	//})
+	// 发送一个待同步的 info
+	t.Run("propose info", func(t *testing.T) {
+		for i := 0; i < 100; i++ {
+			moon := moons[leader-1]
+			request := &moon2.ProposeInfoRequest{
+				Head: &common2.Head{
+					Timestamp: timestamp.Now(),
+					Term:      0,
+				},
+				Operate: moon2.ProposeInfoRequest_ADD,
+				Id:      strconv.Itoa(i),
+				BaseInfo: &infos.BaseInfo{
+					Info: &infos.BaseInfo_ClusterInfo{ClusterInfo: &infos.ClusterInfo{
+						Term: uint64(i),
+						LeaderInfo: &infos.NodeInfo{
+							RaftId:   6,
+							Uuid:     "66",
+							IpAddr:   "",
+							RpcPort:  0,
+							Capacity: 0,
+						},
+						NodesInfo:       nil,
+						UpdateTimestamp: nil,
+					}},
+				},
+			}
+			_, err := moon.ProposeInfo(context.Background(), request)
+			assert.NoError(t, err)
+		}
+	})
 
-	//t.Run("propose bucket info", func(t *testing.T) {
-	//	for i := 0; i < 200; i++ {
-	//		moon := moons[leader-1]
-	//		request := &moon2.ProposeInfoRequest{
-	//			Operate: moon2.ProposeInfoRequest_ADD,
-	//			Id:      "/root/bucket" + strconv.Itoa(i),
-	//			BaseInfo: &infos.BaseInfo{
-	//				Info: &infos.BaseInfo_BucketInfo{
-	//					BucketInfo: &infos.BucketInfo{
-	//						VolumeId:   "/root/",
-	//						BucketName: "bucket" + strconv.Itoa(i),
-	//						UserId:     "root",
-	//						GroupId:    "root",
-	//						Mode:       0,
-	//						Config:     nil,
-	//					},
-	//				},
-	//			},
-	//		}
-	//		_, err := moon.ProposeInfo(context.Background(), request)
-	//		assert.NoError(t, err)
-	//	}
-	//})
-	//
-	//t.Run("get info", func(t *testing.T) {
-	//	moon := moons[leader-1]
-	//	request := &moon2.GetInfoRequest{
-	//		Head: &common2.Head{
-	//			Timestamp: timestamp.Now(),
-	//			Term:      0,
-	//		},
-	//		InfoType: infos.InfoType_CLUSTER_INFO,
-	//		InfoId:   "0",
-	//	}
-	//	response, err := moon.GetInfo(ctx, request)
-	//	assert.NoError(t, err)
-	//	assert.Equal(t, uint64(6), response.BaseInfo.GetClusterInfo().LeaderInfo.RaftId)
-	//})
+	t.Run("propose bucket info", func(t *testing.T) {
+		for i := 0; i < 200; i++ {
+			moon := moons[leader-1]
+			request := &moon2.ProposeInfoRequest{
+				Operate: moon2.ProposeInfoRequest_ADD,
+				Id:      "/root/bucket" + strconv.Itoa(i),
+				BaseInfo: &infos.BaseInfo{
+					Info: &infos.BaseInfo_BucketInfo{
+						BucketInfo: &infos.BucketInfo{
+							VolumeId:   "/root/",
+							BucketName: "bucket" + strconv.Itoa(i),
+							UserId:     "root",
+							GroupId:    "root",
+							Mode:       0,
+							Config:     nil,
+						},
+					},
+				},
+			}
+			_, err := moon.ProposeInfo(context.Background(), request)
+			assert.NoError(t, err)
+		}
+	})
+
+	t.Run("get info", func(t *testing.T) {
+		moon := moons[leader-1]
+		request := &moon2.GetInfoRequest{
+			Head: &common2.Head{
+				Timestamp: timestamp.Now(),
+				Term:      0,
+			},
+			InfoType: infos.InfoType_CLUSTER_INFO,
+			InfoId:   "0",
+		}
+		response, err := moon.GetInfo(ctx, request)
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(6), response.BaseInfo.GetClusterInfo().LeaderInfo.RaftId)
+	})
 
 }
 
