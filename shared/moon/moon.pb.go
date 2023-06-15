@@ -4,14 +4,14 @@
 package moon
 
 import (
-	infos "ecos/edge-node/infos"
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	_ "raftpb"
+	_ "raftpb" // 删了？
 	common "satweave/messenger/common"
+	infos "satweave/sat-node/infos"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
