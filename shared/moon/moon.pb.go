@@ -9,7 +9,6 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	_ "raftpb" // 删了？
 	common "satweave/messenger/common"
 	infos "satweave/sat-node/infos"
 )
