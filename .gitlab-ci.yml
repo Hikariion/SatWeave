@@ -89,4 +89,4 @@ satweave-docker-build:
 #    - mv ./conf ./Dockerfile
 #    - cd Dockerfile
 #    - ls ./build/bin
-    - - echo "build satweave-client docker image"
+    - echo "build satweave-client docker image"
