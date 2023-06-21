@@ -2,7 +2,7 @@ image: harbor.act.buaa.edu.cn/satweave/rocksdb-go:6.28.2-alpine
 stages:          # List of stages for jobs, and their order of execution
   - build
   - test
-#  - docker-build
+  - docker-build
 #  - deploy
 #  - benchmark
 
@@ -68,3 +68,25 @@ unit-test-job:   # This job runs in the test stage.
 #    paths:
 #      - .mod_cache/
 #      - .go_cache/
+
+satweave-docker-build:
+  stage: docker-build
+  needs: [build-job]
+  #  needs: [build-job, unit-test-job]
+  image: docker:19.03.0
+  #  services:
+  #    - docker:19.03.0-dind
+  variables:
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_HOST: tcp://localhost:2375
+  before_script:
+    - docker info
+    - docker login -u qiutb -p qtb@ACT.123 harbor.act.buaa.edu.cn
+    - export BUILD_NUMBER=${COMMIT_SHA:0:5}
+  script:
+    - mv ./build ./Dockerfile
+    - mv ./conf ./Dockerfile
+    - cd Dockerfile
+    - ls ./build/bin
+    - - echo "build satweave-client docker image"
