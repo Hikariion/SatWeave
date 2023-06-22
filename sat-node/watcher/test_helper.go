@@ -98,7 +98,7 @@ func GenTestWatcherCluster(ctx context.Context, basePath string, num int) ([]*Wa
 
 	// init rainbow
 	logger.Infof("Start init rainbow ...")
-	_ = rainbow.NewRainbow(ctx, sunRpc, &config.DefaultCloudConfig)
+	//_ = rainbow.NewRainbow(ctx, sunRpc, &config.DefaultCloudConfig)
 
 	go func() {
 		err := sunRpc.Run()
