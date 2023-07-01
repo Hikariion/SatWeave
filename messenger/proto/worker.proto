@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package messenger;
+
+option go_package = "satweave/sat-node/worker";
+
+service Moon {
+  // 客户端提交一个
+  rpc SubmitJob () returns () {}
+
+}
+
+// 定义一个离线任务
+message Job {
+  // 客户端的IP, 用于返回结果
+  string client_ip = 1;
+  // task_id 由客户端生成，是一个UUID
+  string task_id = 2;
+  // 任务的类型, 目前只有 yolov5
+  string task_type = 3;
+}
+
