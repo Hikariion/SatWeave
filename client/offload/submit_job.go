@@ -2,19 +2,19 @@ package offload
 
 import (
 	"context"
-	"google.golang.org/grpc"
 	"io"
 	"os"
 	"path"
+	"satweave/messenger"
 	"satweave/sat-node/worker"
 	"satweave/shared/service"
 	"satweave/utils/logger"
 )
 
 // 客户端上传一个任务附件给卫星
-func uploadFile(satIp, satRpcPort, fileDir, filename string) {
+func uploadFile(satIpAddr string, satRpcPort uint64, fileDir, filename string) {
 	// 卫星的rpc地址， 卫星ip + 端口
-	conn, err := grpc.Dial(satIp+":"+satRpcPort, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := messenger.GetRpcConn(satIpAddr, satRpcPort)
 	if err != nil {
 		logger.Fatalf("did not connect: %v", err)
 	}
@@ -53,4 +53,31 @@ func uploadFile(satIp, satRpcPort, fileDir, filename string) {
 	}
 
 	logger.Infof("Response: %v", res)
+}
+
+// 客户端提交一个Job给卫星
+func submitJob(ctx context.Context, satIpAddr string, satRpcPort uint64, job *service.Job) error {
+	// 卫星的rpc地址， 卫星ip + 端口
+	conn, err := messenger.GetRpcConn(satIpAddr, satRpcPort)
+	if err != nil {
+		logger.Fatalf("did not connect: %v", err)
+		return err
+	}
+	defer conn.Close()
+	c := worker.NewWorkerClient(conn)
+
+	reply, err := c.SubmitJob(ctx, &worker.SubmitJobRequest{
+		Job: job,
+	})
+	if err != nil {
+		logger.Errorf("submit job to satellite ip %v, error: %v", satIpAddr, err)
+		return err
+	}
+
+	if reply.Success {
+		logger.Infof("submit job to satellite ip %v, success", satIpAddr)
+	} else {
+		logger.Errorf("submit job to satellite ip %v, failed", satIpAddr)
+	}
+	return err
 }

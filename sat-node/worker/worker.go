@@ -2,13 +2,12 @@ package worker
 
 import (
 	"context"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"io"
 	"os"
 	"satweave/messenger"
 	"satweave/shared/service"
 	"satweave/utils/logger"
+	"sync"
 )
 
 // 该模块用于执行任务
@@ -16,13 +15,15 @@ import (
 type Worker struct {
 	UnimplementedWorkerServer
 
+	// TODO(qiutb): 要不要加上worker的id？
 	ctx    context.Context
 	cancel context.CancelFunc
 
 	// 任务队列, 用于接收任务
-	JobQueue chan service.Job
+	JobQueue chan *service.Job
 	// 配置
 	config *Config
+	mutex  sync.Mutex
 }
 
 // UploadAttachment 接收客户端上传的任务附件
@@ -60,22 +61,40 @@ func (w *Worker) UploadAttachment(stream Worker_UploadAttachmentServer) error {
 	}
 }
 
-// SubmitJob 处理客户端提交任务
-func (w *Worker) SubmitJob(ctx context.Context, request *SubJobRequest) (*SubmitJobReply, error) {
-	// 接收任务，将附件存储到本地
-	// 将任务添加到任务队列
-	return nil, status.Errorf(codes.Unimplemented, "method SubmitJob not implemented")
+// SubmitJob 客户端通过这个方法提交任务
+func (w *Worker) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*SubmitJobReply, error) {
+	job := request.Job
+	//job.Status = service.JobStatus_ASSIGNED
+	w.JobQueue <- job
+	return &SubmitJobReply{
+		Success: true,
+	}, nil
 }
 
 // 执行任务
-func (w *Worker) executeJob(job service.Job) {
+func (w *Worker) executeJob(job *service.Job) {
 	// 从任务队列里取任务
 	// 执行任务
 	// 将任务结果返回给客户端
 }
 
-func Run(w *Worker) {
+func (w *Worker) Run() {
+	// 监控其他节点的状态，做迁移决策
+	// go XXXXXXX
+	for {
+		select {
+		case <-w.ctx.Done():
+			w.cleanup()
+			return
+		// 从任务队列里取任务
+		case job := <-w.JobQueue:
+			w.executeJob(job)
+		}
+	}
+}
 
+func (w *Worker) cleanup() {
+	logger.Infof("Worker cleanup")
 }
 
 func NewWorker(ctx context.Context, rpcServer *messenger.RpcServer, config *Config) *Worker {
@@ -84,7 +103,7 @@ func NewWorker(ctx context.Context, rpcServer *messenger.RpcServer, config *Conf
 	w := &Worker{
 		ctx:      ctx,
 		cancel:   cancel,
-		JobQueue: make(chan service.Job, 100),
+		JobQueue: make(chan *service.Job, 100),
 		config:   config,
 	}
 

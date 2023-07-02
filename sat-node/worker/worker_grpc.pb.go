@@ -7,7 +7,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	job "satweave/shared/service"
+	service "satweave/shared/service"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -20,7 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WorkerClient interface {
 	// 客户端提交一个任务
-	SubmitJob(ctx context.Context, in *SubJobRequest, opts ...grpc.CallOption) (*SubmitJobReply, error)
+	SubmitJob(ctx context.Context, in *SubmitJobRequest, opts ...grpc.CallOption) (*SubmitJobReply, error)
 	// 客户端上传任务附件
 	UploadAttachment(ctx context.Context, opts ...grpc.CallOption) (Worker_UploadAttachmentClient, error)
 }
@@ -33,7 +33,7 @@ func NewWorkerClient(cc grpc.ClientConnInterface) WorkerClient {
 	return &workerClient{cc}
 }
 
-func (c *workerClient) SubmitJob(ctx context.Context, in *SubJobRequest, opts ...grpc.CallOption) (*SubmitJobReply, error) {
+func (c *workerClient) SubmitJob(ctx context.Context, in *SubmitJobRequest, opts ...grpc.CallOption) (*SubmitJobReply, error) {
 	out := new(SubmitJobReply)
 	err := c.cc.Invoke(ctx, "/messenger.Worker/SubmitJob", in, out, opts...)
 	if err != nil {
@@ -52,8 +52,8 @@ func (c *workerClient) UploadAttachment(ctx context.Context, opts ...grpc.CallOp
 }
 
 type Worker_UploadAttachmentClient interface {
-	Send(*job.Chunk) error
-	CloseAndRecv() (*job.UploadAttachmentReply, error)
+	Send(*service.Chunk) error
+	CloseAndRecv() (*service.UploadAttachmentReply, error)
 	grpc.ClientStream
 }
 
@@ -61,15 +61,15 @@ type workerUploadAttachmentClient struct {
 	grpc.ClientStream
 }
 
-func (x *workerUploadAttachmentClient) Send(m *job.Chunk) error {
+func (x *workerUploadAttachmentClient) Send(m *service.Chunk) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *workerUploadAttachmentClient) CloseAndRecv() (*job.UploadAttachmentReply, error) {
+func (x *workerUploadAttachmentClient) CloseAndRecv() (*service.UploadAttachmentReply, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(job.UploadAttachmentReply)
+	m := new(service.UploadAttachmentReply)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (x *workerUploadAttachmentClient) CloseAndRecv() (*job.UploadAttachmentRepl
 // for forward compatibility
 type WorkerServer interface {
 	// 客户端提交一个任务
-	SubmitJob(context.Context, *SubJobRequest) (*SubmitJobReply, error)
+	SubmitJob(context.Context, *SubmitJobRequest) (*SubmitJobReply, error)
 	// 客户端上传任务附件
 	UploadAttachment(Worker_UploadAttachmentServer) error
 	mustEmbedUnimplementedWorkerServer()
@@ -91,7 +91,7 @@ type WorkerServer interface {
 type UnimplementedWorkerServer struct {
 }
 
-func (UnimplementedWorkerServer) SubmitJob(context.Context, *SubJobRequest) (*SubmitJobReply, error) {
+func (UnimplementedWorkerServer) SubmitJob(context.Context, *SubmitJobRequest) (*SubmitJobReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SubmitJob not implemented")
 }
 func (UnimplementedWorkerServer) UploadAttachment(Worker_UploadAttachmentServer) error {
@@ -111,7 +111,7 @@ func RegisterWorkerServer(s grpc.ServiceRegistrar, srv WorkerServer) {
 }
 
 func _Worker_SubmitJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SubJobRequest)
+	in := new(SubmitJobRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func _Worker_SubmitJob_Handler(srv interface{}, ctx context.Context, dec func(in
 		FullMethod: "/messenger.Worker/SubmitJob",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkerServer).SubmitJob(ctx, req.(*SubJobRequest))
+		return srv.(WorkerServer).SubmitJob(ctx, req.(*SubmitJobRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -133,8 +133,8 @@ func _Worker_UploadAttachment_Handler(srv interface{}, stream grpc.ServerStream)
 }
 
 type Worker_UploadAttachmentServer interface {
-	SendAndClose(*job.UploadAttachmentReply) error
-	Recv() (*job.Chunk, error)
+	SendAndClose(*service.UploadAttachmentReply) error
+	Recv() (*service.Chunk, error)
 	grpc.ServerStream
 }
 
@@ -142,12 +142,12 @@ type workerUploadAttachmentServer struct {
 	grpc.ServerStream
 }
 
-func (x *workerUploadAttachmentServer) SendAndClose(m *job.UploadAttachmentReply) error {
+func (x *workerUploadAttachmentServer) SendAndClose(m *service.UploadAttachmentReply) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *workerUploadAttachmentServer) Recv() (*job.Chunk, error) {
-	m := new(job.Chunk)
+func (x *workerUploadAttachmentServer) Recv() (*service.Chunk, error) {
+	m := new(service.Chunk)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}

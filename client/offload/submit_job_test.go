@@ -8,6 +8,7 @@ import (
 	"os"
 	"satweave/messenger"
 	"satweave/sat-node/worker"
+	"satweave/shared/service"
 	"satweave/utils/common"
 	"satweave/utils/logger"
 	"strconv"
@@ -34,15 +35,13 @@ func testUploadFile(t *testing.T) {
 	if err != nil {
 		t.Errorf("InitPath err: %v", err)
 	}
-	worker.NewWorker(ctx, rpcServer, workerConfig)
+	w := worker.NewWorker(ctx, rpcServer, workerConfig)
 	go rpcServer.Run()
 
 	// client 向 worker 上传文件
 
-	// 把 port 转为字符串
-	portStr := strconv.Itoa(int(port))
-
-	uploadFile("127.0.0.1", portStr, "./satweave-data/source/", "bus.jpg")
+	uploadFile("127.0.0.1", port, "./satweave-data/source/", "bus.jpg")
+	uploadFile("127.0.0.1", port, "./satweave-data/source/", "zidane.jpg")
 
 	time.Sleep(3 * time.Second)
 
@@ -50,10 +49,52 @@ func testUploadFile(t *testing.T) {
 	md5SumUpload, err := calcFileHash("./satweave-data/attachment/bus.jpg")
 	assert.Equal(t, md5SumOri, md5SumUpload)
 
+	md5SumOri, err = calcFileHash("./satweave-data/source/zidane.jpg")
+	md5SumUpload, err = calcFileHash("./satweave-data/attachment/zidane.jpg")
+	assert.Equal(t, md5SumOri, md5SumUpload)
+
+	// 测试提交任务
+
+	job1 := &service.Job{
+		ClientIp: "192.168.105.134",
+		// 时间戳作为 JobId
+		JobId: strconv.FormatInt(time.Now().Unix(), 10),
+		// 任务附件的文件名
+		Attachment:     "bus.jpg",
+		AttachmentSize: 100,
+		Priority:       1,
+	}
+
+	job2 := &service.Job{
+		ClientIp: "192.168.105.135",
+		// 时间戳作为 JobId
+		JobId: strconv.FormatInt(time.Now().Unix(), 10),
+		// 任务附件的文件名
+		Attachment:     "zidane.jpg",
+		AttachmentSize: 100,
+		Priority:       1,
+	}
+
+	err = submitJob(ctx, "127.0.0.1", port, job1)
+	assert.NoError(t, err)
+	err = submitJob(ctx, "127.0.0.1", port, job2)
+
+	readJob1 := <-w.JobQueue
+	readJob2 := <-w.JobQueue
+
+	assert.Equal(t, job1, readJob1)
+	assert.Equal(t, job2, readJob2)
+
 	rpcServer.Stop()
 
 	// 删除文件
 	err = os.Remove("./satweave-data/attachment/bus.jpg")
+	err = os.Remove("./satweave-data/attachment/zidane.jpg")
+}
+
+// 测试提交任务的功能
+func testSubmitJob(t *testing.T) {
+
 }
 
 // 计算文件的哈希值

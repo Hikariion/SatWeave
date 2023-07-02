@@ -7,19 +7,15 @@ option go_package = "satweave/sat-node/worker";
 
 service Worker {
   // 客户端提交一个任务
-  rpc SubmitJob (SubJobRequest) returns (SubmitJobReply) {}
+  rpc SubmitJob (SubmitJobRequest) returns (SubmitJobReply) {}
   // 客户端上传任务附件
   rpc UploadAttachment (stream Chunk) returns (UploadAttachmentReply) {}
 }
 
 
-message SubJobRequest {
-  // 客户端的IP, 用于返回结果
-  string client_ip = 1;
-  // task_id 由客户端生成，是一个UUID
-  string task_id = 2;
+message SubmitJobRequest {
   // Job
-  Job job = 3;
+  Job job = 1;
 }
 
 // 仅是否成果 Submit 任务，任务结果是异步返回的
