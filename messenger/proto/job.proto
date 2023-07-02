@@ -1,0 +1,24 @@
+syntax = "proto3";
+package messenger;
+option go_package = "satweave/shared/job";
+// 定义一个离线任务
+message Job {
+  // 任务的优先级
+  int32 priority = 1;
+  // 任务的类型, 目前只有 yolov5
+  string task_type = 2;
+  // 任务的附件，这是一个文件
+  string attachment = 3;
+  // 附件大小，单位是字节
+  int32 attachment_size = 4;
+  // TODO(qiu): 任务的参数
+}
+
+message Chunk {
+  string filename = 1;
+  bytes data = 2;
+}
+
+message UploadAttachmentReply {
+  bool success = 1;
+}

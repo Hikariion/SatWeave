@@ -1,0 +1,5 @@
+syntax = "proto3";
+package messenger;
+
+option go_package = "satweave/client/job";
+
