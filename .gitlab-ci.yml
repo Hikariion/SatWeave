@@ -1,4 +1,4 @@
-image: harbor.act.buaa.edu.cn/satweave/rocksdb-go:6.28.2-alpine
+image: harbor.act.buaa.edu.cn/satweave/rocksdb-go19:6.28.2-alpine
 stages:          # List of stages for jobs, and their order of execution
   - build
   - test

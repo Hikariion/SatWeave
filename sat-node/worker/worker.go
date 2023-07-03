@@ -8,6 +8,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"io"
 	"os"
+	"path"
 	"satweave/messenger"
 	"satweave/shared/service"
 	"satweave/utils/logger"
@@ -20,7 +21,7 @@ import (
 type Worker struct {
 	UnimplementedWorkerServer
 
-	// TODO(qiutb): 要不要加上worker的id？
+	// TODO(qiutb): 要不要加上worker的id ？
 	ctx    context.Context
 	cancel context.CancelFunc
 
@@ -51,7 +52,7 @@ func (w *Worker) UploadAttachment(stream Worker_UploadAttachmentServer) error {
 		if filename == "" {
 			filename = chunk.GetFilename()
 			// 创建附件的存储路径
-			file, err = os.Create(w.config.AttachmentStoragePath + filename)
+			file, err = os.Create(path.Join(w.config.AttachmentStoragePath, filename))
 			if err != nil {
 				return err
 			}
@@ -96,8 +97,8 @@ func (w *Worker) ExecuteJob(ctx context.Context, job *service.Job) error {
 
 	hostConfig := &container.HostConfig{
 		Binds: []string{
-			"/Users/bytedance/code/personal/SatWeave/client/offload/satweave-data/attachment:/usr/src/app/data/images",
-			"/Users/bytedance/code/personal/SatWeave/client/offload/satweave-data/output:/usr/src/app/runs/detect/labels",
+			w.config.AttachmentStoragePath + ":/usr/src/app/data/attachment",
+			w.config.OutputPath + ":/usr/src/app/runs/detect/labels",
 		},
 		PortBindings: nat.PortMap{},
 	}

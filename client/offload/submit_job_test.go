@@ -28,8 +28,8 @@ func testUploadFile(t *testing.T) {
 	ctx := context.Background()
 	port, rpcServer := messenger.NewRandomPortRpcServer()
 	workerConfig := &worker.Config{
-		AttachmentStoragePath: "satweave-data/attachment/",
-		OutputPath:            "satweave-data/output/",
+		AttachmentStoragePath: "/Users/zhangjh/code/SatWeave/client/offload/satweave-data/attachment/",
+		OutputPath:            "/Users/zhangjh/code/SatWeave/client/offload/satweave-data/output/",
 	}
 	// 创建StoragePath
 	err := common.InitPath(workerConfig.AttachmentStoragePath)
