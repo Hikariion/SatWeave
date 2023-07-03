@@ -52,7 +52,7 @@ func (c *workerClient) UploadAttachment(ctx context.Context, opts ...grpc.CallOp
 }
 
 type Worker_UploadAttachmentClient interface {
-	Send(*service.Chunk) error
+	Send(*Chunk) error
 	CloseAndRecv() (*service.UploadAttachmentReply, error)
 	grpc.ClientStream
 }
@@ -61,7 +61,7 @@ type workerUploadAttachmentClient struct {
 	grpc.ClientStream
 }
 
-func (x *workerUploadAttachmentClient) Send(m *service.Chunk) error {
+func (x *workerUploadAttachmentClient) Send(m *Chunk) error {
 	return x.ClientStream.SendMsg(m)
 }
 
@@ -134,7 +134,7 @@ func _Worker_UploadAttachment_Handler(srv interface{}, stream grpc.ServerStream)
 
 type Worker_UploadAttachmentServer interface {
 	SendAndClose(*service.UploadAttachmentReply) error
-	Recv() (*service.Chunk, error)
+	Recv() (*Chunk, error)
 	grpc.ServerStream
 }
 
@@ -146,8 +146,8 @@ func (x *workerUploadAttachmentServer) SendAndClose(m *service.UploadAttachmentR
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *workerUploadAttachmentServer) Recv() (*service.Chunk, error) {
-	m := new(service.Chunk)
+func (x *workerUploadAttachmentServer) Recv() (*Chunk, error) {
+	m := new(Chunk)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}

@@ -33,7 +33,7 @@ build-job:       # This job runs in the build stage, which runs first.
 #    - go build -o build/bin/satweave
 #    - go build -o build/bin/satweave-client satweave/cli
 #    - go build -o build/bin/satweave-cloud satweave/cloud
-    - go build -o build/bin/satweave-edge-node satweave/sat-node
+    - go build -o build/bin/satweave-sat-node satweave/sat-node
     - echo "Compile complete."
   artifacts:
     paths:

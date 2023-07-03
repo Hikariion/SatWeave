@@ -9,6 +9,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	_ "raftpb"
 	common "satweave/messenger/common"
 	infos "satweave/sat-node/infos"
 )

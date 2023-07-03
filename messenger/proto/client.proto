@@ -1,14 +1,14 @@
 syntax = "proto3";
 package messenger;
 
-option go_package = "satweave/client/offload";
+option go_package = "satweave/shared/client";
 
 service Client {
   // 接收卫星返回的文件
-  rpc ReceiveFile (stream Chunk) returns (ReceiveFileReply) {}
+  rpc ReceiveFile (stream ChunkBlock) returns (ReceiveFileReply) {}
 }
 
-message Chunk {
+message ChunkBlock {
   string filename = 1;
   bytes data = 2;
 }

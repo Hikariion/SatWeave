@@ -10,7 +10,9 @@ import (
 	"os"
 	"path"
 	"satweave/messenger"
+	satclient "satweave/shared/client"
 	"satweave/shared/service"
+	"satweave/shared/worker"
 	"satweave/utils/logger"
 	"strings"
 	"sync"
@@ -19,7 +21,7 @@ import (
 // 该模块用于执行任务
 
 type Worker struct {
-	UnimplementedWorkerServer
+	worker.UnimplementedWorkerServer
 
 	// TODO(qiutb): 要不要加上worker的id ？
 	ctx    context.Context
@@ -33,7 +35,7 @@ type Worker struct {
 }
 
 // UploadAttachment 接收客户端上传的任务附件
-func (w *Worker) UploadAttachment(stream Worker_UploadAttachmentServer) error {
+func (w *Worker) UploadAttachment(stream worker.Worker_UploadAttachmentServer) error {
 	var filename string
 	var file *os.File
 
@@ -68,11 +70,11 @@ func (w *Worker) UploadAttachment(stream Worker_UploadAttachmentServer) error {
 }
 
 // SubmitJob 客户端通过这个方法提交任务
-func (w *Worker) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*SubmitJobReply, error) {
+func (w *Worker) SubmitJob(ctx context.Context, request *worker.SubmitJobRequest) (*worker.SubmitJobReply, error) {
 	job := request.Job
 	//job.Status = service.JobStatus_ASSIGNED
 	w.JobQueue <- job
-	return &SubmitJobReply{
+	return &worker.SubmitJobReply{
 		Success: true,
 	}, nil
 }
@@ -135,6 +137,12 @@ func (w *Worker) ExecuteJob(ctx context.Context, job *service.Job) error {
 	}
 
 	// 将任务结果返回给客户端
+	logger.Infof("job %v", job)
+	err = w.sendFileToClient(ctx, job.ClientIp, job.ClientPort, w.config.OutputPath, job.ResultName)
+	if err != nil {
+		logger.Errorf("failed to send file to client %v", err)
+		return err
+	}
 	return nil
 }
 
@@ -168,11 +176,66 @@ func NewWorker(ctx context.Context, rpcServer *messenger.RpcServer, config *Conf
 		config:   config,
 	}
 
-	RegisterWorkerServer(rpcServer.Server, w)
+	worker.RegisterWorkerServer(rpcServer.Server, w)
 
 	return w
 }
 
 func (w *Worker) Stop() {
 	w.cancel()
+}
+
+// 卫星向客户端发送文件
+func (w *Worker) sendFileToClient(ctx context.Context, clientIpAddr string, clientRpcPort uint64, fileDir, filename string) error {
+	// 客户端的rpc地址， 卫星ip + 端口
+	conn, err := messenger.GetRpcConn(clientIpAddr, clientRpcPort)
+	if err != nil {
+		logger.Errorf("did not connect: %v", err)
+		return err
+	}
+	defer conn.Close()
+	c := satclient.NewClientClient(conn)
+
+	logger.Infof("与客户端建立连接成功，开始发送文件")
+
+	file, err := os.Open(path.Join(fileDir, filename))
+	if err != nil {
+		logger.Errorf("Error while opening file: %v", err)
+		return err
+	}
+	defer file.Close()
+
+	logger.Infof("开始发送文件: %v", filename)
+
+	stream, err := c.ReceiveFile(ctx)
+	if err != nil {
+		logger.Errorf("Error while opening stream: %v", err)
+		return err
+	}
+
+	buffer := make([]byte, 1024)
+	for {
+		n, err := file.Read(buffer)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			logger.Errorf("Error while reading chunk: %v", err)
+			return err
+		}
+		stream.Send(&satclient.ChunkBlock{
+			Filename: filename,
+			Data:     buffer[:n],
+		})
+	}
+
+	res, err := stream.CloseAndRecv()
+	if err != nil {
+		logger.Errorf("Error while receiving response: %v", err)
+		return err
+	}
+
+	logger.Infof("Response: %v", res)
+
+	return nil
 }

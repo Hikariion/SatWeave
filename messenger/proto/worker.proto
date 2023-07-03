@@ -3,7 +3,7 @@ syntax = "proto3";
 package messenger;
 import "job.proto";
 
-option go_package = "satweave/sat-node/worker";
+option go_package = "satweave/shared/worker";
 
 service Worker {
   // 客户端提交一个任务
@@ -12,6 +12,10 @@ service Worker {
   rpc UploadAttachment (stream Chunk) returns (UploadAttachmentReply) {}
 }
 
+message ChunkBlock {
+  string filename = 1;
+  bytes data = 2;
+}
 
 message SubmitJobRequest {
   // Job

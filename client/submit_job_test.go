@@ -1,4 +1,4 @@
-package offload
+package client
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"io"
 	"os"
+	"satweave/client/config"
 	"satweave/messenger"
 	"satweave/sat-node/worker"
 	"satweave/shared/service"
@@ -26,10 +27,10 @@ func TestClient(t *testing.T) {
 func testUploadFile(t *testing.T) {
 	// 创建worker的rpc
 	ctx := context.Background()
-	port, rpcServer := messenger.NewRandomPortRpcServer()
+	satPort, satRpcServer := messenger.NewRandomPortRpcServer()
 	workerConfig := &worker.Config{
-		AttachmentStoragePath: "/Users/zhangjh/code/SatWeave/client/offload/satweave-data/attachment/",
-		OutputPath:            "/Users/zhangjh/code/SatWeave/client/offload/satweave-data/output/",
+		AttachmentStoragePath: "/Users/zhangjh/code/SatWeave/client/satweave-data/attachment/",
+		OutputPath:            "/Users/zhangjh/code/SatWeave/client/satweave-data/output/",
 	}
 	// 创建StoragePath
 	err := common.InitPath(workerConfig.AttachmentStoragePath)
@@ -40,13 +41,28 @@ func testUploadFile(t *testing.T) {
 	if err != nil {
 		t.Errorf("InitPath err: %v", err)
 	}
-	w := worker.NewWorker(ctx, rpcServer, workerConfig)
-	go rpcServer.Run()
+	w := worker.NewWorker(ctx, satRpcServer, workerConfig)
+	go satRpcServer.Run()
 
 	// client 向 worker 上传文件
+	clientPort, clientRpcServer := messenger.NewRandomPortRpcServer()
+	clientConfig := &config.ClientConfig{
+		ClientIp:                     "127.0.0.1",
+		RpcPort:                      clientPort,
+		FileFromSatelliteStoragePath: "/Users/zhangjh/code/SatWeave/client/satweave-data/back-files/",
+	}
+	err = common.InitPath(clientConfig.FileFromSatelliteStoragePath)
+	if err != nil {
+		t.Errorf("InitPath err: %v", err)
+	}
 
-	uploadFile("127.0.0.1", port, "./satweave-data/source/", "bus.jpg")
-	uploadFile("127.0.0.1", port, "./satweave-data/source/", "zidane.jpg")
+	client := NewClient(ctx, clientConfig, clientRpcServer)
+	go clientRpcServer.Run()
+
+	err = client.UploadFile("127.0.0.1", satPort, "./satweave-data/source/", "bus.jpg")
+	assert.NoError(t, err)
+	err = client.UploadFile("127.0.0.1", satPort, "./satweave-data/source/", "zidane.jpg")
+	assert.NoError(t, err)
 
 	md5SumOri, err := calcFileHash("./satweave-data/source/bus.jpg")
 	md5SumUpload, err := calcFileHash("./satweave-data/attachment/bus.jpg")
@@ -59,28 +75,32 @@ func testUploadFile(t *testing.T) {
 	// 测试提交任务
 
 	job1 := &service.Job{
-		ClientIp: "192.168.105.134",
+		ClientIp:   client.config.ClientIp,
+		ClientPort: client.config.RpcPort,
 		// 时间戳作为 JobId
 		JobId:     strconv.FormatInt(time.Now().Unix(), 10),
 		ImageName: "harbor.act.buaa.edu.cn/satweave/satyolov5",
 		// 任务附件的文件名
 		Attachment: "bus.jpg",
+		ResultName: "bus.txt",
 		Command:    "python3 detect.py --source ./data/images/bus.jpg --save-txt --nosave",
 	}
 
 	job2 := &service.Job{
-		ClientIp: "192.168.105.135",
+		ClientIp:   client.config.ClientIp,
+		ClientPort: client.config.RpcPort,
 		// 时间戳作为 JobId
 		JobId: strconv.FormatInt(time.Now().Unix(), 10),
 		// 任务附件的文件名
 		Attachment: "zidane.jpg",
+		ResultName: "bus.txt",
 		ImageName:  "harbor.act.buaa.edu.cn/satweave/satyolov5",
 		Command:    "python3 detect.py --source ./data/images/zidane.jpg --save-txt --nosave",
 	}
 
-	err = submitJob(ctx, "127.0.0.1", port, job1)
+	err = client.submitJob(ctx, "127.0.0.1", satPort, job1)
 	assert.NoError(t, err)
-	err = submitJob(ctx, "127.0.0.1", port, job2)
+	err = client.submitJob(ctx, "127.0.0.1", satPort, job2)
 
 	readJob1 := <-w.JobQueue
 	readJob2 := <-w.JobQueue
@@ -94,7 +114,10 @@ func testUploadFile(t *testing.T) {
 	err = w.ExecuteJob(ctx, job2)
 	assert.NoError(t, err)
 
-	rpcServer.Stop()
+	time.Sleep(5 * time.Second)
+
+	clientRpcServer.Stop()
+	satRpcServer.Stop()
 
 	// 删除文件
 	//err = os.Remove("./satweave-data/attachment/bus.jpg")
