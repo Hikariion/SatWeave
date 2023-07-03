@@ -28,10 +28,15 @@ func testUploadFile(t *testing.T) {
 	ctx := context.Background()
 	port, rpcServer := messenger.NewRandomPortRpcServer()
 	workerConfig := &worker.Config{
-		AttachmentStoragePath: "./satweave-data/attachment/",
+		AttachmentStoragePath: "satweave-data/attachment/",
+		OutputPath:            "satweave-data/output/",
 	}
 	// 创建StoragePath
 	err := common.InitPath(workerConfig.AttachmentStoragePath)
+	if err != nil {
+		t.Errorf("InitPath err: %v", err)
+	}
+	err = common.InitPath(workerConfig.OutputPath)
 	if err != nil {
 		t.Errorf("InitPath err: %v", err)
 	}
@@ -58,11 +63,11 @@ func testUploadFile(t *testing.T) {
 	job1 := &service.Job{
 		ClientIp: "192.168.105.134",
 		// 时间戳作为 JobId
-		JobId: strconv.FormatInt(time.Now().Unix(), 10),
+		JobId:     strconv.FormatInt(time.Now().Unix(), 10),
+		ImageName: "harbor.act.buaa.edu.cn/satweave/satyolov5",
 		// 任务附件的文件名
-		Attachment:     "bus.jpg",
-		AttachmentSize: 100,
-		Priority:       1,
+		Attachment: "bus.jpg",
+		Command:    "python3 detect.py --source ./data/images/bus.jpg --save-txt --nosave",
 	}
 
 	job2 := &service.Job{
@@ -70,9 +75,9 @@ func testUploadFile(t *testing.T) {
 		// 时间戳作为 JobId
 		JobId: strconv.FormatInt(time.Now().Unix(), 10),
 		// 任务附件的文件名
-		Attachment:     "zidane.jpg",
-		AttachmentSize: 100,
-		Priority:       1,
+		Attachment: "zidane.jpg",
+		ImageName:  "harbor.act.buaa.edu.cn/satweave/satyolov5",
+		Command:    "python3 detect.py --source ./data/images/zidane.jpg --save-txt --nosave",
 	}
 
 	err = submitJob(ctx, "127.0.0.1", port, job1)
@@ -94,8 +99,8 @@ func testUploadFile(t *testing.T) {
 	rpcServer.Stop()
 
 	// 删除文件
-	err = os.Remove("./satweave-data/attachment/bus.jpg")
-	err = os.Remove("./satweave-data/attachment/zidane.jpg")
+	//err = os.Remove("./satweave-data/attachment/bus.jpg")
+	//err = os.Remove("./satweave-data/attachment/zidane.jpg")
 }
 
 // 测试提交任务的功能

@@ -96,21 +96,41 @@ func (w *Worker) ExecuteJob(ctx context.Context, job *service.Job) error {
 
 	hostConfig := &container.HostConfig{
 		Binds: []string{
-			"~/satweave/images:/usr/src/app/data/images",
-			"~/satweave/output:/usr/src/app/runs/detect/labels",
+			"/Users/bytedance/code/personal/SatWeave/client/offload/satweave-data/attachment:/usr/src/app/data/images",
+			"/Users/bytedance/code/personal/SatWeave/client/offload/satweave-data/output:/usr/src/app/runs/detect/labels",
 		},
 		PortBindings: nat.PortMap{},
 	}
 
+	// 创建容器
 	resp, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, "")
 	if err != nil {
 		logger.Errorf("failed to create container", err)
 		return err
 	}
 
+	// 启动容器
 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		logger.Errorf("Failed to start container", err)
 		return err
+	}
+
+	// Wait for container to finish
+	waitCh, _ := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+	//if errC != nil {
+	//	logger.Errorf("Error waiting for container: %s", errC)
+	//}
+
+	// This will block until the container exits
+	res := <-waitCh
+
+	if res.Error != nil {
+		logger.Errorf("Error from exited container: %s", res.Error.Message)
+	}
+
+	// 删除容器，但是不删除相关联的卷
+	if err := cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{RemoveVolumes: false}); err != nil {
+		logger.Errorf("failed to remove container %v", err)
 	}
 
 	// 将任务结果返回给客户端
