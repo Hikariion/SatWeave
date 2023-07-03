@@ -48,8 +48,6 @@ func testUploadFile(t *testing.T) {
 	uploadFile("127.0.0.1", port, "./satweave-data/source/", "bus.jpg")
 	uploadFile("127.0.0.1", port, "./satweave-data/source/", "zidane.jpg")
 
-	time.Sleep(3 * time.Second)
-
 	md5SumOri, err := calcFileHash("./satweave-data/source/bus.jpg")
 	md5SumUpload, err := calcFileHash("./satweave-data/attachment/bus.jpg")
 	assert.Equal(t, md5SumOri, md5SumUpload)
