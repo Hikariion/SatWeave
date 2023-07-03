@@ -2,11 +2,16 @@ package worker
 
 import (
 	"context"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
 	"io"
 	"os"
 	"satweave/messenger"
 	"satweave/shared/service"
 	"satweave/utils/logger"
+	"strings"
 	"sync"
 )
 
@@ -71,11 +76,45 @@ func (w *Worker) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*Sub
 	}, nil
 }
 
-// 执行任务
-func (w *Worker) executeJob(job *service.Job) {
-	// 从任务队列里取任务
+// ExecuteJob 执行任务
+func (w *Worker) ExecuteJob(ctx context.Context, job *service.Job) error {
 	// 执行任务
+	logger.Infof("begin to execute job: %v", job)
+
+	imageName := job.ImageName // 任务类型（镜像名）
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		logger.Errorf("Failed to create docker client", err)
+		return err
+	}
+	containerConfig := &container.Config{
+		Image: imageName,
+		Cmd:   strings.Split(job.Command, " "),
+		// 伪终端
+		Tty: true,
+	}
+
+	hostConfig := &container.HostConfig{
+		Binds: []string{
+			"~/satweave/images:/usr/src/app/data/images",
+			"~/satweave/output:/usr/src/app/runs/detect/labels",
+		},
+		PortBindings: nat.PortMap{},
+	}
+
+	resp, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, "")
+	if err != nil {
+		logger.Errorf("failed to create container", err)
+		return err
+	}
+
+	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+		logger.Errorf("Failed to start container", err)
+		return err
+	}
+
 	// 将任务结果返回给客户端
+	return nil
 }
 
 func (w *Worker) Run() {
@@ -88,7 +127,8 @@ func (w *Worker) Run() {
 			return
 		// 从任务队列里取任务
 		case job := <-w.JobQueue:
-			w.executeJob(job)
+			// TODO(qiu): 如果返回错误，要告诉客户端任务执行失败
+			go w.ExecuteJob(w.ctx, job)
 		}
 	}
 }
@@ -110,5 +150,8 @@ func NewWorker(ctx context.Context, rpcServer *messenger.RpcServer, config *Conf
 	RegisterWorkerServer(rpcServer.Server, w)
 
 	return w
+}
 
+func (w *Worker) Stop() {
+	w.cancel()
 }

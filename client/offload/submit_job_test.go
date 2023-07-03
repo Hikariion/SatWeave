@@ -85,6 +85,12 @@ func testUploadFile(t *testing.T) {
 	assert.Equal(t, job1, readJob1)
 	assert.Equal(t, job2, readJob2)
 
+	//w.Run()
+	err = w.ExecuteJob(ctx, job1)
+	assert.NoError(t, err)
+	err = w.ExecuteJob(ctx, job2)
+	assert.NoError(t, err)
+
 	rpcServer.Stop()
 
 	// 删除文件
