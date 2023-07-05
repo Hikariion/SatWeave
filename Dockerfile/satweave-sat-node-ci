@@ -5,6 +5,6 @@ WORKDIR /satweave
 COPY  build/bin/satweave-sat-node .
 COPY  conf/sat_node.json.sample ./edge_node.json
 
-ENTRYPOINT ["./satweawve-sat-node"]
+# ENTRYPOINT ["./satweawve-sat-node"]
 EXPOSE 3267
 EXPOSE 3268
