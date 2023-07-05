@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/mitchellh/copystructure"
 	"io/ioutil"
+	"os"
 	"path"
 	"reflect"
 	"satweave/utils/common"
@@ -166,4 +167,20 @@ func WriteToPath(conf interface{}, confPath string) error {
 	b, _ := json.Marshal(conf)
 	err = ioutil.WriteFile(confPath, b, 0644)
 	return err
+}
+
+func TransferJsonToConfig(conf interface{}, confPath string) error {
+	jsonFile, err := os.Open(confPath)
+	if err != nil {
+		return err
+	}
+	defer jsonFile.Close()
+
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	err = json.Unmarshal(byteValue, conf)
+	if err != nil {
+		return err
+	}
+	return nil
 }

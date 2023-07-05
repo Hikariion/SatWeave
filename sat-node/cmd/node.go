@@ -27,20 +27,22 @@ func init() {
 
 func nodeRun(cmd *cobra.Command, _ []string) {
 	// read config
-	// TODO(qiu): 这个 config 是哪来的？
 	confPath := cmd.Flag("config").Value.String()
 	conf := config.DefaultConfig
-	// TODO(qiu): 仔细看看这是怎么用的
-	configUtil.Register(&conf, confPath)
-	configUtil.ReadAll()
+
+	err := configUtil.TransferJsonToConfig(&conf, confPath)
+	if err != nil {
+		logger.Errorf("fail to load config, err: %v", err)
+	}
 
 	// TODO(qiu): 这是什么
-	// read history config
-	_ = configUtil.GetConf(&conf)
-	err := config.InitConfig(&conf)
-	if err != nil {
-		logger.Errorf("init config fail: %v", err)
-	}
+	//// read history config
+	//_ = configUtil.GetConf(&conf)
+	//err := config.InitConfig(&conf)
+	//if err != nil {
+	//	logger.Errorf("init config fail: %v", err)
+	//}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -50,12 +52,14 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 	// Gen Worker
 	wk := worker.NewWorker(ctx, rpc, &conf.WorkConfig)
 
-	// Run
+	// Run rpc
 	go func() {
 		err := rpc.Run()
 		if err != nil {
 			logger.Errorf("RPC server run error: %v", err)
 		}
 	}()
+
+	// Run worker
 	go wk.Run()
 }

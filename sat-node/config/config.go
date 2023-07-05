@@ -14,25 +14,21 @@ const rpcPort = 3267
 const httpPort = 3268
 
 type Config struct {
-	config.Config
-	IpAddr      string
-	HttpPort    uint64
-	RpcPort     uint64
-	StoragePath string
-	WorkConfig  worker.Config
+	IpAddr      string        `json:"IpAddr"`
+	RpcPort     uint64        `json:"RpcPort"`
+	HttpPort    uint64        `json:"HttpPort"`
+	StoragePath string        `json:"StoragePath"`
+	WorkConfig  worker.Config `json:"WorkConfig"`
 }
 
 var DefaultConfig Config
 
 func init() {
+	// 初始化 ip
+	// TODO(qiu): 这里可能会有坑，会得到docker内部的地址，但是需要的是宿主机的ip
 	_, ipAddr := getSelfIpAddr()
 	DefaultConfig = Config{
-		IpAddr:      ipAddr,
-		Config:      config.Config{},
-		RpcPort:     rpcPort,
-		HttpPort:    httpPort,
-		StoragePath: "./satweave-data",
-		WorkConfig:  worker.DefaultConfig,
+		IpAddr: ipAddr,
 	}
 }
 
