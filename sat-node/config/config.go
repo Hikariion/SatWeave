@@ -14,18 +14,19 @@ const rpcPort = 3267
 const httpPort = 3268
 
 type Config struct {
-	IpAddr      string        `json:"IpAddr"`
-	RpcPort     uint64        `json:"RpcPort"`
-	HttpPort    uint64        `json:"HttpPort"`
-	StoragePath string        `json:"StoragePath"`
-	WorkConfig  worker.Config `json:"WorkConfig"`
+	IpAddr       string        `json:"IpAddr"`
+	RpcPort      uint64        `json:"RpcPort"`
+	HttpPort     uint64        `json:"HttpPort"`
+	StoragePath  string        `json:"StoragePath"`
+	WorkerConfig worker.Config `json:"WorkerConfig"`
 }
 
 var DefaultConfig Config
 
 func init() {
 	// 初始化 ip
-	// TODO(qiu): 这里可能会有坑，会得到docker内部的地址，但是需要的是宿主机的ip
+	// TODO(qiu): 这里可能会有坑，会得到docker内部的地址，但是需要的是宿主机的ip 可以用主机模式
+	//docker run --network=host <image_name>
 	_, ipAddr := getSelfIpAddr()
 	DefaultConfig = Config{
 		IpAddr: ipAddr,

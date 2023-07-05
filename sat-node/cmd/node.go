@@ -38,6 +38,8 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 		logger.Errorf("fail to load config, err: %v", err)
 	}
 
+	logger.Infof("config: %v", conf)
+
 	// TODO(qiu): 这是什么
 	//// read history config
 	//_ = configUtil.GetConf(&conf)
@@ -54,7 +56,7 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 
 	// Gen Worker
 	logger.Infof("begin to gen worker")
-	wk := worker.NewWorker(ctx, rpc, &conf.WorkConfig)
+	wk := worker.NewWorker(ctx, rpc, &conf.WorkerConfig)
 
 	// Run rpc
 	logger.Infof("begin to run rpc")

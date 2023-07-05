@@ -13,6 +13,7 @@ import (
 	satclient "satweave/shared/client"
 	"satweave/shared/service"
 	"satweave/shared/worker"
+	"satweave/utils/common"
 	"satweave/utils/logger"
 	"strings"
 	"sync"
@@ -38,7 +39,7 @@ type Worker struct {
 func (w *Worker) UploadAttachment(stream worker.Worker_UploadAttachmentServer) error {
 	var filename string
 	var file *os.File
-
+	logger.Infof("begin to receive attachment")
 	for {
 		chunk, err := stream.Recv()
 		if err == io.EOF {
@@ -54,6 +55,7 @@ func (w *Worker) UploadAttachment(stream worker.Worker_UploadAttachmentServer) e
 		if filename == "" {
 			filename = chunk.GetFilename()
 			// 创建附件的存储路径
+			logger.Infof("attachment path: %v", path.Join(w.config.AttachmentStoragePath, filename))
 			file, err = os.Create(path.Join(w.config.AttachmentStoragePath, filename))
 			if err != nil {
 				return err
@@ -177,6 +179,10 @@ func NewWorker(ctx context.Context, rpcServer *messenger.RpcServer, config *Conf
 	}
 
 	worker.RegisterWorkerServer(rpcServer.Server, w)
+
+	// 初始化路径
+	_ = common.InitPath(config.AttachmentStoragePath)
+	_ = common.InitPath(config.OutputPath)
 
 	return w
 }

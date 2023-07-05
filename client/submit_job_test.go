@@ -21,6 +21,9 @@ func TestClient(t *testing.T) {
 	t.Run("upload file", func(t *testing.T) {
 		testUploadFile(t)
 	})
+	t.Run("test Real Docker", func(t *testing.T) {
+		testRealDocker(t)
+	})
 }
 
 // 测试客户端上传文件功能
@@ -47,7 +50,7 @@ func testUploadFile(t *testing.T) {
 	// client 向 worker 上传文件
 	clientPort, clientRpcServer := messenger.NewRandomPortRpcServer()
 	clientConfig := &config.ClientConfig{
-		ClientIp:                     "127.0.0.1",
+		ClientIp:                     "192.168.1.205",
 		RpcPort:                      clientPort,
 		FileFromSatelliteStoragePath: "/Users/zhangjh/code/SatWeave/client/satweave-data/back-files/",
 	}
@@ -59,9 +62,9 @@ func testUploadFile(t *testing.T) {
 	client := NewClient(ctx, clientConfig, clientRpcServer)
 	go clientRpcServer.Run()
 
-	err = client.UploadFile("127.0.0.1", satPort, "./satweave-data/source/", "bus.jpg")
+	err = client.UploadFile("192.168.1.205", satPort, "./satweave-data/source/", "bus.jpg")
 	assert.NoError(t, err)
-	err = client.UploadFile("127.0.0.1", satPort, "./satweave-data/source/", "zidane.jpg")
+	err = client.UploadFile("192.168.1.205", satPort, "./satweave-data/source/", "zidane.jpg")
 	assert.NoError(t, err)
 
 	md5SumOri, err := calcFileHash("./satweave-data/source/bus.jpg")
@@ -98,9 +101,9 @@ func testUploadFile(t *testing.T) {
 		Command:    "python3 detect.py --source ./data/images/zidane.jpg --save-txt --nosave",
 	}
 
-	err = client.submitJob(ctx, "127.0.0.1", satPort, job1)
+	err = client.submitJob(ctx, "192.168.1.205", satPort, job1)
 	assert.NoError(t, err)
-	err = client.submitJob(ctx, "127.0.0.1", satPort, job2)
+	err = client.submitJob(ctx, "192.168.1.205", satPort, job2)
 
 	readJob1 := <-w.JobQueue
 	readJob2 := <-w.JobQueue
@@ -145,4 +148,47 @@ func calcFileHash(filePath string) (string, error) {
 	hashInBytes := hash.Sum(nil)
 	hashString := string(hashInBytes)
 	return hashString, nil
+}
+
+func testRealDocker(t *testing.T) {
+	ctx := context.Background()
+	// client 向 worker 上传文件
+	clientPort, clientRpcServer := messenger.NewRandomPortRpcServer()
+	clientConfig := &config.ClientConfig{
+		ClientIp:                     "192.168.1.205",
+		RpcPort:                      clientPort,
+		FileFromSatelliteStoragePath: "/Users/zhangjh/code/SatWeave/client/satweave-data/back-files/",
+	}
+	err := common.InitPath(clientConfig.FileFromSatelliteStoragePath)
+	err = common.InitPath(clientConfig.FileFromSatelliteStoragePath)
+	if err != nil {
+		t.Errorf("InitPath err: %v", err)
+	}
+	client := NewClient(ctx, clientConfig, clientRpcServer)
+	go clientRpcServer.Run()
+
+	err = client.UploadFile("192.168.1.205", 3267, "./satweave-data/source/", "bus.jpg")
+	assert.NoError(t, err)
+	err = client.UploadFile("192.168.1.205", 3267, "./satweave-data/source/", "bus.jpg")
+	assert.NoError(t, err)
+
+	// 提交作业
+	job1 := &service.Job{
+		ClientIp:   client.config.ClientIp,
+		ClientPort: client.config.RpcPort,
+		// 时间戳作为 JobId
+		JobId:     strconv.FormatInt(time.Now().Unix(), 10),
+		ImageName: "harbor.act.buaa.edu.cn/satweave/satyolov5",
+		// 任务附件的文件名
+		Attachment: "bus.jpg",
+		ResultName: "bus.txt",
+		Command:    "python3 detect.py --source ./data/images/bus.jpg --save-txt --nosave",
+	}
+
+	err = client.submitJob(ctx, "192.168.1.205", 3267, job1)
+
+	time.Sleep(30 * time.Second)
+
+	time.Sleep(3 * time.Second)
+	clientRpcServer.Stop()
 }
