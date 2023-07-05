@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"os"
+	"satweave/utils/logger"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -26,6 +27,7 @@ func Execute() {
 	rootCmd.AddCommand(nodeCmd)
 	nodeCmd.AddCommand(nodeRunCmd)
 
+	logger.Infof("start to shoot sat node")
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)

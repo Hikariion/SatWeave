@@ -1,4 +1,4 @@
-package sat_node
+package main
 
 import "satweave/sat-node/cmd"
 

@@ -2,12 +2,15 @@ package cmd
 
 import (
 	"context"
+	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
+	"net/http"
 	"satweave/messenger"
 	"satweave/sat-node/config"
 	"satweave/sat-node/worker"
 	configUtil "satweave/utils/config"
 	"satweave/utils/logger"
+	"strconv"
 )
 
 var nodeCmd = &cobra.Command{
@@ -50,9 +53,11 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 	rpc := messenger.NewRpcServer(conf.RpcPort)
 
 	// Gen Worker
+	logger.Infof("begin to gen worker")
 	wk := worker.NewWorker(ctx, rpc, &conf.WorkConfig)
 
 	// Run rpc
+	logger.Infof("begin to run rpc")
 	go func() {
 		err := rpc.Run()
 		if err != nil {
@@ -61,5 +66,22 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 	}()
 
 	// Run worker
+	logger.Infof("begin to run worker")
 	go wk.Run()
+
+	router := gin.Default()
+	port := strconv.FormatUint(conf.HttpPort, 10)
+
+	// 返回一个健康状态
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "Healthy",
+		})
+	})
+
+	_ = router.Run(":" + port)
+}
+
+func health() {
+
 }

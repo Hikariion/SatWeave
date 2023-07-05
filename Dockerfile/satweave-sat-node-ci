@@ -3,8 +3,8 @@
 FROM harbor.act.buaa.edu.cn/satweave/satweave-base:v0.1
 WORKDIR /satweave
 COPY  build/bin/satweave-sat-node .
-COPY  conf/sat_node.json.sample ./edge_node.json
+COPY  conf/sat_node.json.sample ./sat_node.json
 
-# ENTRYPOINT ["./satweawve-sat-node"]
+# ENTRYPOINT ["./satweawve-sat-node",  "node", "run"]
 EXPOSE 3267
 EXPOSE 3268
