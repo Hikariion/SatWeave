@@ -1,9 +1,9 @@
 {
   "RpcPort": 3267,
   "HttpPort": 3268,
-  "StoragePath": "/Users/zhangjh/data/satweave/",
+  "StoragePath": "/data/satweave/",
   "WorkerConfig": {
-    "AttachmentStoragePath": "/Users/zhangjh/data/satweave/worker/attachment/",
-    "OutputPath": "/Users/zhangjh/data/satweave/worker/output/"
+    "AttachmentStoragePath": "/data/satweave/worker/attachment/",
+    "OutputPath": "/data/satweave/worker/output/"
   }
 }
