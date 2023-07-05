@@ -57,8 +57,8 @@ satweave-docker-build:
     - docker login -u qiutb -p qtb@ACT.123 harbor.act.buaa.edu.cn
     - export BUILD_NUMBER=${COMMIT_SHA:0:5}
   script:
-#    - mv ./build ./Dockerfile
-#    - mv ./conf ./Dockerfile
-#    - cd Dockerfile
-#    - ls ./build/bin
+    - mv ./build ./Dockerfile
+    - mv ./conf ./Dockerfile
+    - cd Dockerfile
+    - ls ./build/bin
     - echo "build satweave-client docker image"
