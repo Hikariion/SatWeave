@@ -1,5 +1,7 @@
 package sat_node
 
-func main() {
+import "satweave/sat-node/cmd"
 
+func main() {
+	cmd.Execute()
 }
