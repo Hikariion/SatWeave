@@ -1,0 +1,17 @@
+FROM harbor.sums.top/ecos/rocksdb-go:6.28.2-alpine-strip  as builder
+
+WORKDIR /satweave
+
+COPY go.mod ./
+
+RUN GOPROXY=https://goproxy.io,direct go mod download
+
+COPY . ./
+RUN GOPROXY=https://goproxy.io,direct go mod tidy
+
+# Build
+RUN GOOS=linux GO111MODULE=on go build -o build/bin/ecos-edge-node ecos/edge-node
+
+# Use distroless as minimal base image to package the manager binary
+# Refer to https://github.com/GoogleContainerTools/distroless for more details
+
