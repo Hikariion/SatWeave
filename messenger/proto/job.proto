@@ -1,0 +1,41 @@
+syntax = "proto3";
+package messenger;
+option go_package = "satweave/shared/service";
+// 定义一个离线任务
+message Job {
+  // 发送任务的client ip
+  string client_ip = 1;
+  // clint Rpc 的端口
+  uint64 client_port = 2;
+  // 任务的id, 以每个客户端编号，然后加上时间戳
+  string job_id = 3;
+  // 任务的优先级
+  int32 priority = 4;
+  // 任务的类型, 目前只有 yolov5
+  string image_name = 5;
+  // 任务的附件，这是一个文件
+  string attachment = 6;
+  // 附件大小，单位是字节
+  int32 attachment_size = 7;
+  // 任务状态，枚举类型
+  JobStatus status = 8;
+  // TODO(qiu): 任务的参数
+  // 执行命令的参数
+  string command = 9;
+  // 返回的产物名称
+  string result_name = 10;
+}
+
+// Job 的状态
+enum JobStatus {
+  // 任务待处理
+  PENDING = 0;
+  // 任务已经完成
+  FINISHED = 1;
+  // 任务已经转交给其他卫星
+  ASSIGNED = 2;
+}
+
+message UploadAttachmentReply {
+  bool success = 1;
+}

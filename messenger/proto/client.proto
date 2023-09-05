@@ -1,0 +1,18 @@
+syntax = "proto3";
+package messenger;
+
+option go_package = "satweave/shared/client";
+
+service Client {
+  // 接收卫星返回的文件
+  rpc ReceiveFile (stream ChunkBlock) returns (ReceiveFileReply) {}
+}
+
+message ChunkBlock {
+  string filename = 1;
+  bytes data = 2;
+}
+
+message ReceiveFileReply {
+  bool success = 1;
+}

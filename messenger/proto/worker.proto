@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package messenger;
+import "job.proto";
+
+option go_package = "satweave/shared/worker";
+
+service Worker {
+  // 客户端提交一个任务
+  rpc SubmitJob (SubmitJobRequest) returns (SubmitJobReply) {}
+  // 客户端上传任务附件
+  rpc UploadAttachment (stream Chunk) returns (UploadAttachmentReply) {}
+}
+
+message ChunkBlock {
+  string filename = 1;
+  bytes data = 2;
+}
+
+message SubmitJobRequest {
+  // Job
+  Job job = 1;
+}
+
+// 仅是否成果 Submit 任务，任务结果是异步返回的
+message SubmitJobReply {
+  bool success = 1;
+}
+
+
+
