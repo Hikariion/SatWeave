@@ -22,6 +22,7 @@ require (
 require (
 	github.com/SUMStudio/grocksdb v1.6.47
 	github.com/gin-gonic/gin v1.9.1
+	github.com/google/go-cmp v0.5.9
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/shirou/gopsutil/v3 v3.23.8
