@@ -1,0 +1,21 @@
+syntax = "proto3";
+package messenger;
+
+import "infos.proto";
+import "common.proto";
+
+option go_package = "satweave/cloud/sun";
+
+service Sun {
+  rpc MoonRegister(NodeInfo) returns (RegisterResult) {}
+  rpc GetLeaderInfo(NodeInfo) returns (NodeInfo) {}
+  rpc ReportClusterInfo(ClusterInfo) returns (Result) {}
+}
+
+
+message RegisterResult {
+  Result result = 1;
+  uint64 raft_id = 2;
+  bool has_leader = 3;
+  ClusterInfo cluster_info = 4;
+}
