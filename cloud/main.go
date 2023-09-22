@@ -1,4 +1,4 @@
-package cloud
+package main
 
 import (
 	"context"
