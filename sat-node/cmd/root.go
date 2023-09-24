@@ -27,7 +27,7 @@ func Execute() {
 	rootCmd.AddCommand(nodeCmd)
 	nodeCmd.AddCommand(nodeRunCmd)
 
-	logger.Infof("start to shoot sat node")
+	logger.Infof("start to shoot sat node...")
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)

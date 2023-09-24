@@ -5,6 +5,8 @@ import (
 	"net"
 	"os"
 	"path"
+	"satweave/sat-node/moon"
+	"satweave/sat-node/watcher"
 	"satweave/sat-node/worker"
 	"satweave/utils/common"
 	"satweave/utils/config"
@@ -14,11 +16,13 @@ const rpcPort = 3267
 const httpPort = 3268
 
 type Config struct {
-	IpAddr       string        `json:"IpAddr"`
-	RpcPort      uint64        `json:"RpcPort"`
-	HttpPort     uint64        `json:"HttpPort"`
-	StoragePath  string        `json:"StoragePath"`
-	WorkerConfig worker.Config `json:"WorkerConfig"`
+	IpAddr        string         `json:"IpAddr"`
+	RpcPort       uint64         `json:"RpcPort"`
+	HttpPort      uint64         `json:"HttpPort"`
+	StoragePath   string         `json:"StoragePath"`
+	WorkerConfig  worker.Config  `json:"WorkerConfig"`
+	MoonConfig    moon.Config    `json:"MoonConfig"`
+	WatcherConfig watcher.Config `json:"WatcherConfig"`
 }
 
 var DefaultConfig Config
@@ -29,8 +33,16 @@ func init() {
 	//docker run --network=host <image_name>
 	_, ipAddr := getSelfIpAddr()
 	DefaultConfig = Config{
-		IpAddr: ipAddr,
+		IpAddr:        ipAddr,
+		HttpPort:      httpPort,
+		RpcPort:       rpcPort,
+		StoragePath:   "./sat-data",
+		MoonConfig:    moon.DefaultConfig,
+		WatcherConfig: watcher.DefaultConfig,
+		WorkerConfig:  worker.DefaultConfig,
 	}
+	DefaultConfig.WatcherConfig.SelfNodeInfo.RpcPort = rpcPort
+	DefaultConfig.WatcherConfig.SelfNodeInfo.IpAddr = ipAddr
 }
 
 // InitConfig check config and init data dir and set some empty config value
