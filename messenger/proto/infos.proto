@@ -13,6 +13,7 @@ enum InfoType {
   GROUP_INFO = 5;
   VOLUME_INFO = 6;
   ACCESS_INFO = 7;
+  TASK_INFO = 8;
 }
 
 // BaseInfo collect all type of info
@@ -23,6 +24,7 @@ message BaseInfo {
     UserInfo user_info = 3;
     GroupInfo group_info = 4;
     AccessInfo access_info = 5;
+    TaskInfo task_info = 6;
   }
 }
 
@@ -61,20 +63,22 @@ message ClusterInfo{
 }
 
 message TaskInfo{
+  // 任务 id
+  string task_id = 1;
   // 客户端的ip
-  string user_ip = 1;
+  string user_ip = 2;
   // 客户端的rpc端口
-  string user_port = 2;
+  string user_port = 3;
   // 任务的文件路径，可以为空
-  string file_path = 3;
+  string file_path = 4;
   // 需要运行的任务镜像名
-  string image_name = 4;
+  string image_name = 5;
   // 任务当前的状态
-  TaskState state = 5;
+  TaskState state = 6;
   // 任务类型
-  TaskType type = 6;
+  TaskType type = 7;
   // 实际被调度到的节点信息
-  NodeInfo worker_info = 7;
+  NodeInfo worker_info = 8;
 }
 
 message InfoStorageState {
