@@ -216,10 +216,6 @@ func (w *Watcher) genNewMapXClusterInfo() *infos.ClusterInfo {
 		LeaderInfo:      leaderInfo.BaseInfo().GetNodeInfo(),
 		NodesInfo:       clusterNodes,
 		UpdateTimestamp: nil,
-		MetaPgNum:       10,
-		MetaPgSize:      3,
-		BlockPgNum:      100,
-		BlockPgSize:     3,
 		LastTerm:        w.GetCurrentTerm(),
 	}
 }
@@ -260,10 +256,6 @@ func (w *Watcher) genNewClusterInfo() *infos.ClusterInfo {
 		LeaderInfo:      leaderInfo.BaseInfo().GetNodeInfo(),
 		NodesInfo:       clusterNodes,
 		UpdateTimestamp: nil,
-		MetaPgNum:       10,
-		MetaPgSize:      3,
-		BlockPgNum:      100,
-		BlockPgSize:     3,
 		LastTerm:        w.GetCurrentTerm(),
 	}
 }
@@ -360,17 +352,18 @@ func (w *Watcher) processMonitor() {
 	}
 }
 
+// TODO(qiu)L initCluster 需要修改
 func (w *Watcher) initCluster() {
-	rootDefaultBucket := infos.GenBucketInfo("root", "default", "root")
-	_, err := w.moon.GetInfoDirect(infos.InfoType_BUCKET_INFO, rootDefaultBucket.GetID())
-	if err == nil { // root default bucket exist
-		return
-	}
+	//rootDefaultBucket := infos.GenBucketInfo("root", "default", "root")
+	//_, err := w.moon.GetInfoDirect(infos.InfoType_BUCKET_INFO, rootDefaultBucket.GetID())
+	//if err == nil { // root default bucket exist
+	//	return
+	//}
 	logger.Infof("init root default bucket")
-	_, err = w.moon.ProposeInfo(w.ctx, &moon2.ProposeInfoRequest{
-		Operate:  moon2.ProposeInfoRequest_ADD,
-		Id:       rootDefaultBucket.GetID(),
-		BaseInfo: rootDefaultBucket.BaseInfo(),
+	_, err := w.moon.ProposeInfo(w.ctx, &moon2.ProposeInfoRequest{
+		Operate: moon2.ProposeInfoRequest_ADD,
+		//Id:       rootDefaultBucket.GetID(),
+		//BaseInfo: rootDefaultBucket.BaseInfo(),
 	})
 	if err != nil {
 		logger.Errorf("init cluster fail: %v", err)
