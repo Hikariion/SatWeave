@@ -28,6 +28,7 @@ var nodeCmd = &cobra.Command{
 var nodeRunCmd = &cobra.Command{
 	Use:   "run",
 	Short: "start run satellite node",
+	Run:   nodeRun,
 }
 
 func init() {
@@ -55,7 +56,6 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 	if err := json.Unmarshal(data, &conf); err != nil {
 		logger.Errorf("unmarshal config file fail: %v", err)
 	}
-	// TODO(qiu): read history config
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -84,7 +84,11 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 		}
 	}()
 
+	logger.Infof("Start to boot sat component ...")
+
 	go w.Run()
+
+	logger.Infof("sat node init success")
 
 	// 监听系统信号
 	c := make(chan os.Signal, 1)

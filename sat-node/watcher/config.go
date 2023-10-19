@@ -10,7 +10,6 @@ type Config struct {
 	SelfNodeInfo           infos.NodeInfo
 	ClusterInfo            infos.ClusterInfo
 	NodeInfoCommitInterval time.Duration
-	PrometheusAddr         string
 	ClusterName            string
 	CloudAddr              string
 	CloudPort              uint64
