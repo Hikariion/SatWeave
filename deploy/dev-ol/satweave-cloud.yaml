@@ -1,0 +1,96 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: satweave
+  labels:
+    version: v1
+    app: satweave-cloud-dev
+  name: satweave-cloud-dev-v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      version: v1
+      app: satweave-cloud-dev
+  template:
+    metadata:
+      labels:
+        version: v1
+        app: satweave-cloud-dev
+      annotations:
+        logging.kubesphere.io/logsidecar-config: '{}'
+        cni.projectcalico.org/ipv4pools: '["default-ipv4-ippool"]'
+    spec:
+      containers:
+        - name: satweave-cloud-pod
+          imagePullPolicy: Always
+          image: 'harbor.act.buaa.edu.cn/satweave/satweave-cloud:SNAPSHOT-latest'
+          resources:
+            limits:
+              cpu: '2'
+              memory: 1000Mi
+          volumeMounts:
+            - name: host-time
+              mountPath: /etc/localtime
+              readOnly: false
+            - readOnly: false
+              mountPath: /data/satweave
+              name: satweave-cloud-data
+          ports:
+            - name: http-cloud
+              protocol: TCP
+              containerPort: 3268
+            - name: grpc-cloud
+              protocol: TCP
+              containerPort: 3267
+      serviceAccount: default
+      initContainers: []
+      volumes:
+        - hostPath:
+            path: /etc/localtime
+            type: ''
+          name: host-time
+      imagePullSecrets:
+        - name: harbor-act
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  serviceName: satweave-cloud-dev
+  volumeClaimTemplates:
+    - spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 100Gi
+      metadata:
+        name: satweave-cloud-data
+        namespace: satweave
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: satweave
+  labels:
+    version: v1
+    app: satweave-cloud-dev
+  annotations:
+    kubesphere.io/serviceType: statefulservice
+  name: satweave-cloud-dev
+spec:
+  sessionAffinity: None
+  selector:
+    app: satweave-cloud-dev
+  ports:
+    - name: http-cloud
+      protocol: TCP
+      port: 3268
+      targetPort: 3268
+    - name: grpc-cloud
+      protocol: TCP
+      port: 3267
+      targetPort: 3267
+  clusterIP: None
+

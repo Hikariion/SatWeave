@@ -1,0 +1,107 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: satweave
+  labels:
+    version: v1
+    app: satweave-sat-dev
+  name: satweave-sat-dev-v1
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      version: v1
+      app: satweave-sat-dev
+  template:
+    metadata:
+      labels:
+        version: v1
+        app: satweave-sat-dev
+      annotations:
+        logging.kubesphere.io/logsidecar-config: '{}'
+        cni.projectcalico.org/ipv4pools: '["default-ipv4-ippool"]'
+    spec:
+      containers:
+        - name: satweave-sat-node
+          imagePullPolicy: Always
+          image: 'harbor.act.buaa.edu.cn/satweave/satweave-sat-node:SNAPSHOT-latest'
+          command:
+            - /satweave/satweave-sat-node
+          args:
+            - node
+            - run
+          resources:
+            limits:
+              cpu: '2'
+              memory: 1024Mi
+          ports:
+            - name: http-edge
+              protocol: TCP
+              containerPort: 3268
+            - name: grpc-edge
+              protocol: TCP
+              containerPort: 3267
+            - name: http-proxy
+              protocol: TCP
+              containerPort: 8080
+          volumeMounts:
+            - name: host-time
+              mountPath: /etc/localtime
+              readOnly: false
+            - readOnly: false
+              mountPath: /data/satweave
+              name: satweave-sat-storage
+      serviceAccount: default
+      initContainers: []
+      volumes:
+        - hostPath:
+            path: /etc/localtime
+            type: ''
+          name: host-time
+      imagePullSecrets:
+        - name: harbor-act
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  serviceName: satweave-sat-dev
+  volumeClaimTemplates:
+    - spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 20Gi
+      metadata:
+        name: satweave-sat-storage
+        namespace: satweave
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: satweave
+  labels:
+    version: v1
+    app: satweave-sat-dev
+  annotations:
+    kubesphere.io/serviceType: statefulservice
+  name: satweave-sat-dev
+spec:
+  sessionAffinity: None
+  selector:
+    app: satweave-sat-dev
+  ports:
+    - name: http-edge
+      protocol: TCP
+      port: 3268
+      targetPort: 3268
+    - name: grpc-edge
+      protocol: TCP
+      port: 3267
+      targetPort: 3267
+    - name: http-proxy
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  clusterIP: None
