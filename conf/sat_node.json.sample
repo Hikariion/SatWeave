@@ -12,5 +12,5 @@
       "ClusterInfo": {},
       "RaftStoragePath": "/data/satweave/moon/raft/",
       "RocksdbStoragePath": "/data/satweave/moon/rocksdb/"
-    },
+    }
 }
