@@ -103,7 +103,14 @@ satweave-docker-build:
 
 deploy-job:
   stage: deploy
-  needs: []
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+      allow_failure: true
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != 'merge_request_event'
+      when: manual
+      allow_failure: true
+  needs: [satweave-docker-build]
   image:
     name: bitnami/kubectl:1.26
     entrypoint: [""]
@@ -111,4 +118,11 @@ deploy-job:
     - cp $KUBE_CONFIG /.kube/config
   script:
     - echo "Deploying application..."
-    - kubectl get namespace
+    - kubectl version
+    - cd deploy/dev-ol
+    - kubectl delete -f satweave-cloud.yaml || true
+    - kubectl apply -f satweave-cloud.yaml
+    - sleep 30
+    - kubectl delete -f satweave-edge.yaml || true
+    - kubectl apply -f satweave-edge.yaml
+    - echo "Application successfully deployed."
