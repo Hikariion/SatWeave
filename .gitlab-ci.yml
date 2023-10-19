@@ -8,6 +8,7 @@ variables:
   DOCKERHUB_NAMESPACE: satweave
   BRANCH_NAME: $CI_COMMIT_REF_NAME
   COMMIT_SHA: $CI_COMMIT_SHA
+  GIT_SSL_NO_VERIFY: "true"
 
 before_script:
   - export GOPATH=$GOPATH:/usr/local/${CI_PROJECT_NAME}
