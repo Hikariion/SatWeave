@@ -103,5 +103,12 @@ satweave-docker-build:
 
 deploy-job:
   stage: deploy
+  needs: []
+  image:
+    name: bitnami/kubectl:1.26
+    entrypoint: [""]
+  before_script:
+    - cp $KUBE_CONFIG /.kube/config
   script:
-    echo "Deploying application..."
+    - echo "Deploying application..."
+    - kubectl get namespace
