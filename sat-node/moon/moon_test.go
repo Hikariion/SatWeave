@@ -3,6 +3,7 @@ package moon
 import (
 	"context"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"path"
 	"satweave/messenger"
 	common2 "satweave/messenger/common"
@@ -23,7 +24,7 @@ func TestMoon(t *testing.T) {
 }
 
 func testMoon(t *testing.T) {
-	bashPath := "./ecos-data/db/moon"
+	bashPath := "./sat-data/db/moon"
 	nodeNum := 9
 	ctx := context.Background()
 	var moons []InfoController
@@ -50,6 +51,7 @@ func testMoon(t *testing.T) {
 			moons[i].Stop()
 			rpcServers[i].Stop()
 		}
+		_ = os.RemoveAll(bashPath)
 	})
 
 	var leader int
@@ -58,6 +60,7 @@ func testMoon(t *testing.T) {
 		leader = waitMoonsOK(moons)
 		t.Logf("leader: %v", leader)
 	})
+
 	// 发送一个待同步的 info
 	t.Run("propose info", func(t *testing.T) {
 		for i := 0; i < 100; i++ {
@@ -89,21 +92,18 @@ func testMoon(t *testing.T) {
 		}
 	})
 
-	t.Run("propose bucket info", func(t *testing.T) {
+	t.Run("propose task info", func(t *testing.T) {
 		for i := 0; i < 200; i++ {
 			moon := moons[leader-1]
 			request := &moon2.ProposeInfoRequest{
 				Operate: moon2.ProposeInfoRequest_ADD,
-				Id:      "/root/bucket" + strconv.Itoa(i),
+				Id:      "task" + strconv.Itoa(i),
 				BaseInfo: &infos.BaseInfo{
-					Info: &infos.BaseInfo_BucketInfo{
-						BucketInfo: &infos.BucketInfo{
-							VolumeId:   "/root/",
-							BucketName: "bucket" + strconv.Itoa(i),
-							UserId:     "root",
-							GroupId:    "root",
-							Mode:       0,
-							Config:     nil,
+					Info: &infos.BaseInfo_TaskInfo{
+						TaskInfo: &infos.TaskInfo{
+							TaskId:    "task" + strconv.Itoa(i),
+							UserIp:    "192.168.1.1",
+							ImageName: "yolov5",
 						},
 					},
 				},

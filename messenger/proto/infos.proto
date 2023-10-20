@@ -13,6 +13,7 @@ enum InfoType {
   GROUP_INFO = 5;
   VOLUME_INFO = 6;
   ACCESS_INFO = 7;
+  TASK_INFO = 8;
 }
 
 // BaseInfo collect all type of info
@@ -20,15 +21,14 @@ message BaseInfo {
   oneof info{
     NodeInfo node_info = 1;
     ClusterInfo cluster_info = 2;
-    BucketInfo bucket_info = 3;
-    UserInfo user_info = 4;
-    GroupInfo group_info = 5;
-    VolumeInfo volume_info = 6;
-    AccessInfo access_info = 7;
+    UserInfo user_info = 3;
+    GroupInfo group_info = 4;
+    AccessInfo access_info = 5;
+    TaskInfo task_info = 6;
   }
 }
 
-// UserInfo is the info of ECOS user
+// UserInfo is the info of SatWeave user
 message UserInfo {
   string user_id = 1;
   string user_name = 2;
@@ -52,43 +52,6 @@ message AccessInfo {
   string access_key = 1;
   string access_secret = 2;
   string user_id = 3;
-  string bucket_id = 4;
-}
-
-// VolumeInfo is the info of ECOS volume.
-// It contains the volume owner, quota, and used size.
-message VolumeInfo {
-  string volume_id = 1;
-  string user_id = 2;
-  uint64 quota_size = 3;
-  uint64 used_size = 4;
-}
-
-// Bucket 标识和权限
-message BucketInfo {
-  string volume_id = 1;
-  string bucket_name = 2;
-  string user_id = 3;
-  string group_id = 4;
-  int32 mode = 5;
-  BucketConfig config = 6;
-}
-
-// Bucket 读写策略
-message BucketConfig {
-  int32 key_slot_num = 1;
-  uint64 block_size = 2;
-  bool block_hash_enable = 3;
-  bool object_hash_enable = 4;
-  bool history_version_enable = 5;
-  enum HashType {
-    OFF = 0;
-    SHA256 = 1;
-    MURMUR3_128 = 2;
-    MURMUR3_32 = 3;
-  }
-  HashType block_hash_type = 6;
-  HashType object_hash_type = 7;
 }
 
 message ClusterInfo{
@@ -96,11 +59,26 @@ message ClusterInfo{
   NodeInfo leader_info = 2;
   repeated NodeInfo nodes_info = 3;
   Timestamp update_timestamp = 4;
-  int32 meta_pg_num = 5;
-  int32 meta_pg_size = 6;
-  int32 block_pg_num = 7;
-  int32 block_pg_size = 8;
   uint64 last_term = 9;
+}
+
+message TaskInfo{
+  // 任务 id
+  string task_id = 1;
+  // 客户端的ip
+  string user_ip = 2;
+  // 客户端的rpc端口
+  string user_port = 3;
+  // 任务的文件路径，可以为空
+  string file_path = 4;
+  // 需要运行的任务镜像名
+  string image_name = 5;
+  // 任务当前的状态
+  TaskState state = 6;
+  // 任务类型
+  TaskType type = 7;
+  // 实际被调度到的节点信息
+  NodeInfo worker_info = 8;
 }
 
 message InfoStorageState {
@@ -110,8 +88,15 @@ message InfoStorageState {
   Timestamp UpdateTimeStamp = 4;
 }
 
-message History{
-  map<uint64, ClusterInfo> historyMap = 1;
+enum TaskState{
+  Scheduled = 0;
+  Running = 1;
+  Finished = 2;
+}
+
+enum TaskType{
+  Online = 0;
+  Offline = 1;
 }
 
 enum NodeState{

@@ -40,11 +40,10 @@ func testWatcher(t *testing.T) {
 	WaitAllTestWatcherOK(watchers[:firstRunNum])
 
 	moon := watchers[0].moon
-	bucket := infos.GenBucketInfo("test", "default", "test")
 	_, err := moon.ProposeInfo(ctx, &moon2.ProposeInfoRequest{
 		Operate:  moon2.ProposeInfoRequest_ADD,
-		Id:       bucket.GetID(),
-		BaseInfo: bucket.BaseInfo(),
+		Id:       "test_task",
+		BaseInfo: &infos.BaseInfo{},
 	})
 	if err != nil {
 		t.Errorf("propose bucket error: %v", err)
