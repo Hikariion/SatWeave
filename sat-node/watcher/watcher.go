@@ -205,7 +205,7 @@ func (w *Watcher) genNewMapXClusterInfo() *infos.ClusterInfo {
 		return clusterNodes[i].RaftId < clusterNodes[j].RaftId
 	})
 	leaderID := w.moon.GetLeaderID()
-	// TODO (zhang): need a way to gen infoStorage key
+	// TODO : need a way to gen infoStorage key
 	leaderInfo, err := nodeInfoStorage.Get(strconv.FormatUint(leaderID, 10))
 	if err != nil {
 		logger.Errorf("get leaderInfo from nodeInfoStorage fail: %v", err)
@@ -245,7 +245,7 @@ func (w *Watcher) genNewClusterInfo() *infos.ClusterInfo {
 		return clusterNodes[i].RaftId < clusterNodes[j].RaftId
 	})
 	leaderID := w.moon.GetLeaderID()
-	// TODO (zhang): need a way to gen infoStorage key
+	// TODO : need a way to gen infoStorage key
 	leaderInfo, err := nodeInfoStorage.Get(strconv.FormatUint(leaderID, 10))
 	if err != nil {
 		logger.Errorf("get leaderInfo from nodeInfoStorage fail: %v", err)
