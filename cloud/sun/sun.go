@@ -74,6 +74,7 @@ func (s *Sun) GetLeaderInfo(_ context.Context, nodeInfo *infos.NodeInfo) (*infos
 func (s *Sun) ReportClusterInfo(_ context.Context, clusterInfo *infos.ClusterInfo) (*common.Result, error) {
 	s.mu.Lock()
 	s.clusterInfo = clusterInfo
+	s.leaderInfo = s.clusterInfo.LeaderInfo
 	s.mu.Unlock()
 	result := common.Result{
 		Status: common.Result_OK,

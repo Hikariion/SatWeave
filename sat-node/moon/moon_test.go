@@ -47,6 +47,7 @@ func testMoon(t *testing.T) {
 	time.Sleep(3 * time.Second) // 保证所有 moon 节点都执行了 run 方法
 
 	t.Cleanup(func() {
+		nodeNum = len(moons)
 		for i := 0; i < nodeNum; i++ {
 			moons[i].Stop()
 			rpcServers[i].Stop()
@@ -126,6 +127,17 @@ func testMoon(t *testing.T) {
 		response, err := moon.GetInfo(ctx, request)
 		assert.NoError(t, err)
 		assert.Equal(t, uint64(6), response.BaseInfo.GetClusterInfo().LeaderInfo.RaftId)
+	})
+
+	t.Run("test leader fail", func(t *testing.T) {
+		// 测试 Leader fail
+		moons[leader-1].Stop()
+		rpcServers[leader-1].Stop()
+		time.Sleep(3 * time.Second)
+		moons = append(moons[:leader-1], moons[leader:]...)
+		rpcServers = append(rpcServers[:leader-1], rpcServers[leader:]...)
+		leader = waitMoonsOK(moons)
+		t.Logf("new leader: %v", leader)
 	})
 
 }

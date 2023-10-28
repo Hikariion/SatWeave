@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
 	"satweave/messenger"
 	"satweave/sat-node/config"
 	"satweave/sat-node/infos"
@@ -59,6 +60,11 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	// 清空 basePath 下的文件
+	if err := os.RemoveAll(path.Join(conf.StoragePath, "*")); err != nil {
+		logger.Errorf("remove storage path fail: %v", err)
+	}
 
 	// Print config
 	logger.Infof("sat node config: %v", conf)
