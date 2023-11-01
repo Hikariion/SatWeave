@@ -23,7 +23,7 @@ message Task {
   repeated string input_tasks = 3;
   repeated File resources = 4;
   File task_file = 5;
-  string locale = 6;
+  string locate = 6;
 }
 
 message File {
