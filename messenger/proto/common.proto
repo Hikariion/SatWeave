@@ -18,3 +18,14 @@ message Head {
   Timestamp timestamp = 1;
   uint64 term = 2;
 }
+
+message NilRequest {}
+
+message NilResponse {
+  Status status = 1;
+}
+
+message Status {
+  int32 err_code = 1;
+  string message = 2;
+}
