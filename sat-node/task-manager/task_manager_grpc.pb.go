@@ -25,6 +25,7 @@ const _ = grpc.SupportPackageIsVersion7
 type TaskManagerServiceClient interface {
 	// Deploy a task to the task manager.
 	DeployTask(ctx context.Context, in *DeployTaskRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
+	StartTask(ctx context.Context, in *StartTaskRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 }
 
 type taskManagerServiceClient struct {
@@ -44,12 +45,22 @@ func (c *taskManagerServiceClient) DeployTask(ctx context.Context, in *DeployTas
 	return out, nil
 }
 
+func (c *taskManagerServiceClient) StartTask(ctx context.Context, in *StartTaskRequest, opts ...grpc.CallOption) (*common.NilResponse, error) {
+	out := new(common.NilResponse)
+	err := c.cc.Invoke(ctx, "/messenger.TaskManagerService/StartTask", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TaskManagerServiceServer is the server API for TaskManagerService service.
 // All implementations must embed UnimplementedTaskManagerServiceServer
 // for forward compatibility
 type TaskManagerServiceServer interface {
 	// Deploy a task to the task manager.
 	DeployTask(context.Context, *DeployTaskRequest) (*common.NilResponse, error)
+	StartTask(context.Context, *StartTaskRequest) (*common.NilResponse, error)
 	mustEmbedUnimplementedTaskManagerServiceServer()
 }
 
@@ -59,6 +70,9 @@ type UnimplementedTaskManagerServiceServer struct {
 
 func (UnimplementedTaskManagerServiceServer) DeployTask(context.Context, *DeployTaskRequest) (*common.NilResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeployTask not implemented")
+}
+func (UnimplementedTaskManagerServiceServer) StartTask(context.Context, *StartTaskRequest) (*common.NilResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartTask not implemented")
 }
 func (UnimplementedTaskManagerServiceServer) mustEmbedUnimplementedTaskManagerServiceServer() {}
 
@@ -91,6 +105,24 @@ func _TaskManagerService_DeployTask_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TaskManagerService_StartTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartTaskRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskManagerServiceServer).StartTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/messenger.TaskManagerService/StartTask",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskManagerServiceServer).StartTask(ctx, req.(*StartTaskRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TaskManagerService_ServiceDesc is the grpc.ServiceDesc for TaskManagerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -101,6 +133,10 @@ var TaskManagerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeployTask",
 			Handler:    _TaskManagerService_DeployTask_Handler,
+		},
+		{
+			MethodName: "StartTask",
+			Handler:    _TaskManagerService_StartTask_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
