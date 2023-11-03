@@ -3,11 +3,20 @@ package task_manager
 import (
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
+	"satweave/sat-node/watcher"
 	"satweave/utils/logger"
 )
 
 type TaskManager struct {
 	UnimplementedTaskManagerServiceServer
+	config  *Config
+	watcher *watcher.Watcher
+	workers []*Worker
+}
+
+func (t *TaskManager) initWorkers() error {
+
+	return nil
 }
 
 type TaskYaml struct {

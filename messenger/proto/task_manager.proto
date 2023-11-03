@@ -8,6 +8,16 @@ service TaskManagerService {
   // Deploy a task to the task manager.
   rpc DeployTask(DeployTaskRequest) returns (NilResponse) {}
   rpc StartTask(StartTaskRequest) returns (NilResponse) {}
+  rpc ProcessOperator(OperatorRequest) returns (NilResponse) {}
+}
+
+message OperatorRequest {
+  // 对应的算子
+  string cls_name = 1;
+  // 流式计算的数据
+  string data = 2;
+  // 计算图的 id
+  int64 graph_id = 3;
 }
 
 message ExecuteTask {
