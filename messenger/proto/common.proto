@@ -88,3 +88,12 @@ message File {
 message RequiredSlotDescription {
 
 }
+
+message StreamData {
+  repeated KeyValueData kv = 1;
+
+  message KeyValueData {
+    string key = 1;
+    string value = 2;
+  }
+}

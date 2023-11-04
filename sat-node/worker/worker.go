@@ -1,4 +1,4 @@
-package task_manager
+package worker
 
 import (
 	"satweave/sat-node/task"

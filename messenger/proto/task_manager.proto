@@ -11,6 +11,15 @@ service TaskManagerService {
   rpc ProcessOperator(OperatorRequest) returns (NilResponse) {}
   rpc AskAvailableWorkers(NilRequest) returns (AvailableWorkersResponse) {}
   rpc RequestSlot(RequiredSlotRequest) returns (RequiredSlotResponse) {}
+  rpc PushStreamData(PushStreamDataRequest) returns (NilResponse) {}
+}
+
+message PushStreamDataRequest {
+  uint64 timestamp = 1;
+  StreamData data = 2;
+  string from = 3;
+  string data_id = 4;
+  uint64 worker_id = 5;
 }
 
 message RequiredSlotRequest {

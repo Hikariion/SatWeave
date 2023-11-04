@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"satweave/messenger/common"
 	"satweave/sat-node/watcher"
+	"satweave/sat-node/worker"
 	"satweave/utils/logger"
 	"sync"
 )
@@ -14,15 +15,15 @@ type TaskManager struct {
 	UnimplementedTaskManagerServiceServer
 	config  *Config
 	watcher *watcher.Watcher
-	workers []*Worker
+	workers []*worker.Worker
 
 	mutex sync.Mutex
 }
 
 func (t *TaskManager) initWorkers() error {
-	t.workers = make([]*Worker, t.config.SlotNum)
+	t.workers = make([]*worker.Worker, t.config.SlotNum)
 	for i := 0; i < t.config.SlotNum; i++ {
-		t.workers[i] = NewWorker()
+		t.workers[i] = worker.NewWorker()
 	}
 	return nil
 }
