@@ -44,14 +44,28 @@ message TaskManagerDescription {
 
 message ExecuteTask {
   string cls_name = 1;
-  repeated string input_endpoints = 2;
-  repeated string output_endpoints = 3;
+  repeated InputEndpoints input_endpoints = 2;
+  repeated OutputEndpoints output_endpoints = 3;
   repeated File resources = 4;
   File task_file = 5;
   string subtask_name = 6;
   int64 partition_idx = 7;
   // 所处节点，用 raft_id 表示
   uint64 locate = 8;
+  // IP
+  string host = 9;
+  // 使用的worker
+  uint64 worker_id = 10;
+}
+
+message InputEndpoints {
+  string host = 1;
+  uint64 worker_id = 2;
+}
+
+message OutputEndpoints {
+  string host = 1;
+  uint64 worker_id = 2;
 }
 
 // logical Task
@@ -69,4 +83,8 @@ message Task {
 message File {
   string name = 1;
   string content = 2;
+}
+
+message RequiredSlotDescription {
+
 }

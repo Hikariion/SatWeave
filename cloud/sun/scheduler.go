@@ -18,8 +18,8 @@ type Scheduler interface {
 	FullFillLogicTask(tasks []*common.Task) ([]*common.Task, error)
 	// TransformLogicalMapToExecuteMap 将逻辑任务图转化为物理任务图
 	TransformLogicalMapToExecuteMap(logicalMap map[uint64][]*common.Task) (map[uint64][]*common.ExecuteTask, error)
-	// AskForAvailableWorkers 询问可用端口
-	AskForAvailableWorkers(logicalMap map[uint64][]common.Task) (map[uint64][]int, error)
+	// AskForAvailableWorkers 分配可用的 worker TODO 注意，每个并发数都要占用一个 worker
+	AskForAvailableWorkers(logicalMap map[uint64]*[]common.Task) (map[uint64][]int, error)
 }
 
 // UserDefinedScheduler 用户自定义调度器
@@ -50,15 +50,23 @@ func (u *UserDefinedScheduler) Schedule(clusterId int, tasks []*common.Task) (ma
 	return logicalMap, executeMap, nil
 }
 
-func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, logicalMap map[uint64][]*common.Task) (map[string][]*common.ExecuteTask, error) {
+func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, logicalMap map[uint64][]*common.Task) (map[uint64][]*common.ExecuteTask, error) {
 	// TODO(qiu): get free slot on each node
-	ava
-	executeMap := make(map[string][]*common.ExecuteTask)      // taskmanager_name -> execute_tasks
+	availWorkersMap, err := u.AskForAvailableWorkers(logicalMap)
+	if err != nil {
+		logger.Errorf("UserDefinedScheduler.AskForAvailablePorts() failed: %v", err)
+		return nil, err
+	}
+	executeMap := make(map[uint64][]*common.ExecuteTask)      // taskmanager_name -> execute_tasks
 	nameToExecuteTask := make(map[string]*common.ExecuteTask) // subtask_name -> execute_task
-	for taskManagerName, logicalTasks := range logicalMap {
-		executeMap[taskManagerName] = make([]*common.ExecuteTask, 0)
+	for taskManagerID, logicalTasks := range logicalMap {
+		taskManagerHost := u.RegisteredTaskManagerTable.getHost(taskManagerID)
+		executeMap[taskManagerID] = make([]*common.ExecuteTask, 0)
+		usedWorkerIdx := 0
 		for _, logicalTask := range logicalTasks {
 			for i := 0; i < int(logicalTask.Currency); i++ {
+				workerID := availWorkersMap[taskManagerID][usedWorkerIdx]
+				usedWorkerIdx++
 				subTaskName := u.getSubTaskName(logicalTask.ClsName, i, int(logicalTask.Currency))
 				executeTask := &common.ExecuteTask{
 					ClsName:      logicalTask.ClsName,
@@ -66,8 +74,10 @@ func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, lo
 					TaskFile:     logicalTask.TaskFile,
 					SubtaskName:  subTaskName,
 					PartitionIdx: int64(i),
+					Host:         taskManagerHost,
+					WorkerId:     workerID,
 				}
-				executeMap[taskManagerName] = append(executeMap[taskManagerName], executeTask)
+				executeMap[taskManagerID] = append(executeMap[taskManagerID], executeTask)
 				nameToExecuteTask[subTaskName] = executeTask
 			}
 		}
@@ -75,10 +85,10 @@ func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, lo
 
 	for _, logicalTasks := range logicalMap {
 		for _, logicalTask := range logicalTasks {
-			// TODO(qiu)：只支持单个input_task
-			//clsName := logicalTask.ClsName
-			if len(logicalTask.InputTasks) <= 1 {
-				logger.Fatalf("Assertion failed: len(logical_task.input_tasks) == 1")
+			clsName := logicalTask.ClsName
+			if len(logicalTask.InputTasks) > 1 {
+				// TODO(qiu)：只支持单个input_task
+				logger.Fatalf("Assertion failed: len(logical_task.input_tasks) <= 1")
 			}
 			for _, inputTaskName := range logicalTask.InputTasks {
 				// 找前驱节点，获取并发数
@@ -90,8 +100,7 @@ func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, lo
 					}
 				}
 				if predecessor == nil {
-					//logger.Fatalf("Failed: the predecessor task(name=%v) of task(name=%v) is not found")
-					continue
+					logger.Fatalf("Failed: the predecessor task(name=%v) of task(name=%v) is not found", inputTaskName, clsName)
 				}
 				// 设置 input_endpoints & output_endpoints
 				for i := 0; i < int(predecessor.Currency); i++ {
@@ -101,8 +110,10 @@ func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, lo
 						currentSubTaskName := u.getSubTaskName(logicalTask.ClsName, j, int(logicalTask.Currency))
 						currentExecuteTask := nameToExecuteTask[currentSubTaskName]
 						// TODO(qiu): 这里只映射了节点名，Ip 和 端口 需要从 clusterInfo 中获取
-						currentExecuteTask.InputEndpoints = append(currentExecuteTask.InputEndpoints, preExecuteTask.Locate)
-						preExecuteTask.OutputEndpoints = append(preExecuteTask.OutputEndpoints, currentExecuteTask.Locate)
+						currentExecuteTask.InputEndpoints = append(currentExecuteTask.InputEndpoints,
+							&common.InputEndpoints{Host: preExecuteTask.Host, WorkerId: preExecuteTask.WorkerId})
+						preExecuteTask.OutputEndpoints = append(preExecuteTask.OutputEndpoints,
+							&common.OutputEndpoints{Host: currentExecuteTask.Host, WorkerId: currentExecuteTask.WorkerId})
 					}
 				}
 
@@ -112,13 +123,10 @@ func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, lo
 	return executeMap, nil
 }
 
-func AskForAvailableWorkers(logicalMap map[string][]common.Task) {
-
-}
-
-func (u *UserDefinedScheduler) AskForAvailablePorts(logicalMap map[uint64][]common.Task) (map[uint64][]int, error) {
-	available_workers_map := make(map[uint64][]int)
-	for taskManagerId, tasks := range logicalMap {
+func (u *UserDefinedScheduler) AskForAvailableWorkers(logicalMap map[uint64][]*common.Task) (map[uint64][]uint64, error) {
+	availableWorkersMap := make(map[uint64][]uint64)
+	// TODO： 按需分配 worker
+	for taskManagerId, _ := range logicalMap {
 		host := u.RegisteredTaskManagerTable.getHost(taskManagerId)
 		port := u.RegisteredTaskManagerTable.getPort(taskManagerId)
 		conn, err := messenger.GetRpcConn(host, port)
@@ -127,15 +135,14 @@ func (u *UserDefinedScheduler) AskForAvailablePorts(logicalMap map[uint64][]comm
 			return nil, err
 		}
 		client := task_manager.NewTaskManagerServiceClient(conn)
-		available_workers, err := client.AskAvailableWorkers(context.Background(), &common.NilRequest{})
+		resp, err := client.AskAvailableWorkers(context.Background(), &common.NilRequest{})
 		if err != nil {
 			logger.Errorf("UserDefinedScheduler.AskForAvailablePorts() failed: %v", err)
 			return nil, err
 		}
-		available_workers_map[taskManagerId] = available_workers.Workers
-
+		availableWorkersMap[taskManagerId] = resp.Workers
 	}
-	return nil, nil
+	return availableWorkersMap, nil
 }
 
 func (u *UserDefinedScheduler) getSubTaskName(clsName string, idx, currency int) string {

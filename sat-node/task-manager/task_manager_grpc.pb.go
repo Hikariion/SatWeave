@@ -28,6 +28,7 @@ type TaskManagerServiceClient interface {
 	StartTask(ctx context.Context, in *StartTaskRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 	ProcessOperator(ctx context.Context, in *OperatorRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 	AskAvailableWorkers(ctx context.Context, in *common.NilRequest, opts ...grpc.CallOption) (*AvailableWorkersResponse, error)
+	RequestSlot(ctx context.Context, in *RequiredSlotRequest, opts ...grpc.CallOption) (*RequiredSlotResponse, error)
 }
 
 type taskManagerServiceClient struct {
@@ -74,6 +75,15 @@ func (c *taskManagerServiceClient) AskAvailableWorkers(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *taskManagerServiceClient) RequestSlot(ctx context.Context, in *RequiredSlotRequest, opts ...grpc.CallOption) (*RequiredSlotResponse, error) {
+	out := new(RequiredSlotResponse)
+	err := c.cc.Invoke(ctx, "/messenger.TaskManagerService/RequestSlot", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TaskManagerServiceServer is the server API for TaskManagerService service.
 // All implementations must embed UnimplementedTaskManagerServiceServer
 // for forward compatibility
@@ -83,6 +93,7 @@ type TaskManagerServiceServer interface {
 	StartTask(context.Context, *StartTaskRequest) (*common.NilResponse, error)
 	ProcessOperator(context.Context, *OperatorRequest) (*common.NilResponse, error)
 	AskAvailableWorkers(context.Context, *common.NilRequest) (*AvailableWorkersResponse, error)
+	RequestSlot(context.Context, *RequiredSlotRequest) (*RequiredSlotResponse, error)
 	mustEmbedUnimplementedTaskManagerServiceServer()
 }
 
@@ -101,6 +112,9 @@ func (UnimplementedTaskManagerServiceServer) ProcessOperator(context.Context, *O
 }
 func (UnimplementedTaskManagerServiceServer) AskAvailableWorkers(context.Context, *common.NilRequest) (*AvailableWorkersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AskAvailableWorkers not implemented")
+}
+func (UnimplementedTaskManagerServiceServer) RequestSlot(context.Context, *RequiredSlotRequest) (*RequiredSlotResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestSlot not implemented")
 }
 func (UnimplementedTaskManagerServiceServer) mustEmbedUnimplementedTaskManagerServiceServer() {}
 
@@ -187,6 +201,24 @@ func _TaskManagerService_AskAvailableWorkers_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TaskManagerService_RequestSlot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequiredSlotRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskManagerServiceServer).RequestSlot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/messenger.TaskManagerService/RequestSlot",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskManagerServiceServer).RequestSlot(ctx, req.(*RequiredSlotRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TaskManagerService_ServiceDesc is the grpc.ServiceDesc for TaskManagerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -209,6 +241,10 @@ var TaskManagerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AskAvailableWorkers",
 			Handler:    _TaskManagerService_AskAvailableWorkers_Handler,
+		},
+		{
+			MethodName: "RequestSlot",
+			Handler:    _TaskManagerService_RequestSlot_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

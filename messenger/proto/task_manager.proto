@@ -10,6 +10,16 @@ service TaskManagerService {
   rpc StartTask(StartTaskRequest) returns (NilResponse) {}
   rpc ProcessOperator(OperatorRequest) returns (NilResponse) {}
   rpc AskAvailableWorkers(NilRequest) returns (AvailableWorkersResponse) {}
+  rpc RequestSlot(RequiredSlotRequest) returns (RequiredSlotResponse) {}
+}
+
+message RequiredSlotRequest {
+  repeated RequiredSlotDescription slot_descs = 1;
+}
+
+message RequiredSlotResponse {
+  Status status = 1;
+  repeated int64 available_ports = 2;
 }
 
 message AvailableWorkersResponse {
