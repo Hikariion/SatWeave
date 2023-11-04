@@ -1,4 +1,4 @@
-package watcher
+package job_manager
 
 import (
 	"github.com/stretchr/testify/assert"

@@ -27,6 +27,7 @@ type TaskManagerServiceClient interface {
 	DeployTask(ctx context.Context, in *DeployTaskRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 	StartTask(ctx context.Context, in *StartTaskRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 	ProcessOperator(ctx context.Context, in *OperatorRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
+	AskAvailableWorkers(ctx context.Context, in *common.NilRequest, opts ...grpc.CallOption) (*AvailableWorkersResponse, error)
 }
 
 type taskManagerServiceClient struct {
@@ -64,6 +65,15 @@ func (c *taskManagerServiceClient) ProcessOperator(ctx context.Context, in *Oper
 	return out, nil
 }
 
+func (c *taskManagerServiceClient) AskAvailableWorkers(ctx context.Context, in *common.NilRequest, opts ...grpc.CallOption) (*AvailableWorkersResponse, error) {
+	out := new(AvailableWorkersResponse)
+	err := c.cc.Invoke(ctx, "/messenger.TaskManagerService/AskAvailableWorkers", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TaskManagerServiceServer is the server API for TaskManagerService service.
 // All implementations must embed UnimplementedTaskManagerServiceServer
 // for forward compatibility
@@ -72,6 +82,7 @@ type TaskManagerServiceServer interface {
 	DeployTask(context.Context, *DeployTaskRequest) (*common.NilResponse, error)
 	StartTask(context.Context, *StartTaskRequest) (*common.NilResponse, error)
 	ProcessOperator(context.Context, *OperatorRequest) (*common.NilResponse, error)
+	AskAvailableWorkers(context.Context, *common.NilRequest) (*AvailableWorkersResponse, error)
 	mustEmbedUnimplementedTaskManagerServiceServer()
 }
 
@@ -87,6 +98,9 @@ func (UnimplementedTaskManagerServiceServer) StartTask(context.Context, *StartTa
 }
 func (UnimplementedTaskManagerServiceServer) ProcessOperator(context.Context, *OperatorRequest) (*common.NilResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ProcessOperator not implemented")
+}
+func (UnimplementedTaskManagerServiceServer) AskAvailableWorkers(context.Context, *common.NilRequest) (*AvailableWorkersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AskAvailableWorkers not implemented")
 }
 func (UnimplementedTaskManagerServiceServer) mustEmbedUnimplementedTaskManagerServiceServer() {}
 
@@ -155,6 +169,24 @@ func _TaskManagerService_ProcessOperator_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TaskManagerService_AskAvailableWorkers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(common.NilRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskManagerServiceServer).AskAvailableWorkers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/messenger.TaskManagerService/AskAvailableWorkers",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskManagerServiceServer).AskAvailableWorkers(ctx, req.(*common.NilRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TaskManagerService_ServiceDesc is the grpc.ServiceDesc for TaskManagerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -173,6 +205,10 @@ var TaskManagerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ProcessOperator",
 			Handler:    _TaskManagerService_ProcessOperator_Handler,
+		},
+		{
+			MethodName: "AskAvailableWorkers",
+			Handler:    _TaskManagerService_AskAvailableWorkers_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

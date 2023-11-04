@@ -4,7 +4,7 @@ package messenger;
 import "task_manager.proto";
 import "common.proto";
 
-option go_package = "satweave/sat-node/watcher";
+option go_package = "satweave/sat-node/job-manager";
 
 message SubmitJobRequest {
   repeated Task tasks = 1;

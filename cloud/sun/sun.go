@@ -2,6 +2,8 @@ package sun
 
 import (
 	"context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"satweave/messenger"
 	"satweave/messenger/common"
 	"satweave/sat-node/infos"
@@ -14,11 +16,12 @@ import (
 type Sun struct {
 	rpc *messenger.RpcServer
 	Server
-	leaderInfo  *infos.NodeInfo
-	clusterInfo *infos.ClusterInfo
-	lastRaftID  uint64
-	mu          sync.Mutex
-	cachedInfo  map[string]*infos.NodeInfo //cache node info by uuid
+	leaderInfo                     *infos.NodeInfo
+	clusterInfo                    *infos.ClusterInfo
+	lastRaftID                     uint64
+	mu                             sync.Mutex
+	cachedInfo                     map[string]*infos.NodeInfo //cache node info by uuid
+	taskRegisteredTaskManagerTable *RegisteredTaskManagerTable
 }
 
 type Server struct {
@@ -82,6 +85,20 @@ func (s *Sun) ReportClusterInfo(_ context.Context, clusterInfo *infos.ClusterInf
 	return &result, nil
 }
 
+func (s *Sun) RegisterTaskManager(_ context.Context, request *RegisterTaskManagerRequest) (*common.NilResponse, error) {
+	err := s.taskRegisteredTaskManagerTable.register(request.TaskManagerDesc)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "register task manager failed: %v", err)
+	}
+	return &common.NilResponse{}, nil
+}
+
+func (s *Sun) GetRegisterTaskManagerTable(context.Context, *common.NilRequest) (*TaskManagerResult, error) {
+	return &TaskManagerResult{
+		TaskManagerTable: s.taskRegisteredTaskManagerTable.table,
+	}, nil
+}
+
 func NewSun(rpc *messenger.RpcServer) *Sun {
 	sun := Sun{
 		rpc:        rpc,
@@ -90,9 +107,10 @@ func NewSun(rpc *messenger.RpcServer) *Sun {
 			LeaderInfo: nil,
 			NodesInfo:  nil,
 		},
-		lastRaftID: 0,
-		mu:         sync.Mutex{},
-		cachedInfo: map[string]*infos.NodeInfo{},
+		lastRaftID:                     0,
+		mu:                             sync.Mutex{},
+		cachedInfo:                     map[string]*infos.NodeInfo{},
+		taskRegisteredTaskManagerTable: newRegisteredTaskManagerTable(),
 	}
 	RegisterSunServer(rpc, &sun)
 	return &sun

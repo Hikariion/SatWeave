@@ -27,6 +27,9 @@ type SunClient interface {
 	MoonRegister(ctx context.Context, in *infos.NodeInfo, opts ...grpc.CallOption) (*RegisterResult, error)
 	GetLeaderInfo(ctx context.Context, in *infos.NodeInfo, opts ...grpc.CallOption) (*infos.NodeInfo, error)
 	ReportClusterInfo(ctx context.Context, in *infos.ClusterInfo, opts ...grpc.CallOption) (*common.Result, error)
+	RegisterTaskManager(ctx context.Context, in *RegisterTaskManagerRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
+	GetRegisterTaskManagerTable(ctx context.Context, in *common.NilRequest, opts ...grpc.CallOption) (*TaskManagerResult, error)
+	SubmitJob(ctx context.Context, in *SubmitJobRequest, opts ...grpc.CallOption) (*SubmitJobResponse, error)
 }
 
 type sunClient struct {
@@ -64,6 +67,33 @@ func (c *sunClient) ReportClusterInfo(ctx context.Context, in *infos.ClusterInfo
 	return out, nil
 }
 
+func (c *sunClient) RegisterTaskManager(ctx context.Context, in *RegisterTaskManagerRequest, opts ...grpc.CallOption) (*common.NilResponse, error) {
+	out := new(common.NilResponse)
+	err := c.cc.Invoke(ctx, "/messenger.Sun/RegisterTaskManager", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sunClient) GetRegisterTaskManagerTable(ctx context.Context, in *common.NilRequest, opts ...grpc.CallOption) (*TaskManagerResult, error) {
+	out := new(TaskManagerResult)
+	err := c.cc.Invoke(ctx, "/messenger.Sun/GetRegisterTaskManagerTable", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sunClient) SubmitJob(ctx context.Context, in *SubmitJobRequest, opts ...grpc.CallOption) (*SubmitJobResponse, error) {
+	out := new(SubmitJobResponse)
+	err := c.cc.Invoke(ctx, "/messenger.Sun/SubmitJob", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SunServer is the server API for Sun service.
 // All implementations must embed UnimplementedSunServer
 // for forward compatibility
@@ -71,6 +101,9 @@ type SunServer interface {
 	MoonRegister(context.Context, *infos.NodeInfo) (*RegisterResult, error)
 	GetLeaderInfo(context.Context, *infos.NodeInfo) (*infos.NodeInfo, error)
 	ReportClusterInfo(context.Context, *infos.ClusterInfo) (*common.Result, error)
+	RegisterTaskManager(context.Context, *RegisterTaskManagerRequest) (*common.NilResponse, error)
+	GetRegisterTaskManagerTable(context.Context, *common.NilRequest) (*TaskManagerResult, error)
+	SubmitJob(context.Context, *SubmitJobRequest) (*SubmitJobResponse, error)
 	mustEmbedUnimplementedSunServer()
 }
 
@@ -86,6 +119,15 @@ func (UnimplementedSunServer) GetLeaderInfo(context.Context, *infos.NodeInfo) (*
 }
 func (UnimplementedSunServer) ReportClusterInfo(context.Context, *infos.ClusterInfo) (*common.Result, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReportClusterInfo not implemented")
+}
+func (UnimplementedSunServer) RegisterTaskManager(context.Context, *RegisterTaskManagerRequest) (*common.NilResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterTaskManager not implemented")
+}
+func (UnimplementedSunServer) GetRegisterTaskManagerTable(context.Context, *common.NilRequest) (*TaskManagerResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRegisterTaskManagerTable not implemented")
+}
+func (UnimplementedSunServer) SubmitJob(context.Context, *SubmitJobRequest) (*SubmitJobResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SubmitJob not implemented")
 }
 func (UnimplementedSunServer) mustEmbedUnimplementedSunServer() {}
 
@@ -154,6 +196,60 @@ func _Sun_ReportClusterInfo_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Sun_RegisterTaskManager_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterTaskManagerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SunServer).RegisterTaskManager(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/messenger.Sun/RegisterTaskManager",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SunServer).RegisterTaskManager(ctx, req.(*RegisterTaskManagerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sun_GetRegisterTaskManagerTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(common.NilRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SunServer).GetRegisterTaskManagerTable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/messenger.Sun/GetRegisterTaskManagerTable",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SunServer).GetRegisterTaskManagerTable(ctx, req.(*common.NilRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sun_SubmitJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SubmitJobRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SunServer).SubmitJob(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/messenger.Sun/SubmitJob",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SunServer).SubmitJob(ctx, req.(*SubmitJobRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Sun_ServiceDesc is the grpc.ServiceDesc for Sun service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -172,6 +268,18 @@ var Sun_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReportClusterInfo",
 			Handler:    _Sun_ReportClusterInfo_Handler,
+		},
+		{
+			MethodName: "RegisterTaskManager",
+			Handler:    _Sun_RegisterTaskManager_Handler,
+		},
+		{
+			MethodName: "GetRegisterTaskManagerTable",
+			Handler:    _Sun_GetRegisterTaskManagerTable_Handler,
+		},
+		{
+			MethodName: "SubmitJob",
+			Handler:    _Sun_SubmitJob_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

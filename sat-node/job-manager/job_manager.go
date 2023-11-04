@@ -1,15 +1,17 @@
-package watcher
+package job_manager
 
 import (
 	"context"
 	"satweave/messenger/common"
-	task_manager "satweave/sat-node/task-manager"
+	"satweave/sat-node/task-manager"
+	"satweave/sat-node/watcher"
 	"satweave/utils/logger"
 )
 
 type JobManager struct {
 	UnimplementedJobManagerServiceServer
 	scheduler UserDefinedScheduler
+	watcher   *watcher.Watcher
 }
 
 func (j *JobManager) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*common.NilResponse, error) {
@@ -24,7 +26,7 @@ func (j *JobManager) SubmitJob(ctx context.Context, request *SubmitJobRequest) (
 
 func (j *JobManager) innerSubmitJob(ctx context.Context, tasks []*task_manager.Task) error {
 	// schedule
-	executeMap, err := j.scheduler.Schedule(tasks)
+	executeMap, err := j.scheduler.Schedule(0, tasks)
 	if err != nil {
 		logger.Errorf("Error scheduling tasks: %s\n", err)
 		return err

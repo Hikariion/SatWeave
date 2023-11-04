@@ -29,3 +29,44 @@ message Status {
   int32 err_code = 1;
   string message = 2;
 }
+
+message MachineResource {
+  int32 slot_number = 1;
+}
+
+message TaskManagerDescription {
+  string endpoint = 1;
+  uint64 raft_id = 2;
+  MachineResource resource = 3;
+  string host = 4;
+  uint64 port = 5;
+}
+
+message ExecuteTask {
+  string cls_name = 1;
+  repeated string input_endpoints = 2;
+  repeated string output_endpoints = 3;
+  repeated File resources = 4;
+  File task_file = 5;
+  string subtask_name = 6;
+  int64 partition_idx = 7;
+  // 所处节点，用 raft_id 表示
+  uint64 locate = 8;
+}
+
+// logical Task
+message Task {
+  string cls_name = 1;
+  int64 currency = 2;
+  repeated string input_tasks = 3;
+  repeated File resources = 4;
+  File task_file = 5;
+  // 所处节点，用 raft_id 表示
+  uint64 locate = 6;
+  int64 slot_id = 7;
+}
+
+message File {
+  string name = 1;
+  string content = 2;
+}

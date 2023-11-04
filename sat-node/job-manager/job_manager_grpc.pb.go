@@ -4,7 +4,7 @@
 // - protoc             v3.12.4
 // source: job_manager.proto
 
-package watcher
+package job_manager
 
 import (
 	context "context"

@@ -10,12 +10,31 @@ service Sun {
   rpc MoonRegister(NodeInfo) returns (RegisterResult) {}
   rpc GetLeaderInfo(NodeInfo) returns (NodeInfo) {}
   rpc ReportClusterInfo(ClusterInfo) returns (Result) {}
+  rpc RegisterTaskManager(RegisterTaskManagerRequest) returns (NilResponse) {}
+  rpc GetRegisterTaskManagerTable(NilRequest) returns (TaskManagerResult) {}
+  rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse) {}
 }
 
+message SubmitJobResponse {
+  Status status = 1;
+  string job_id = 2;
+}
+
+message SubmitJobRequest {
+  Task tasks = 1;
+};
+
+message TaskManagerResult {
+  map<uint64, TaskManagerDescription> task_manager_table = 1;
+}
 
 message RegisterResult {
   Result result = 1;
   uint64 raft_id = 2;
   bool has_leader = 3;
   ClusterInfo cluster_info = 4;
+}
+
+message RegisterTaskManagerRequest {
+  TaskManagerDescription task_manager_desc = 1;
 }
