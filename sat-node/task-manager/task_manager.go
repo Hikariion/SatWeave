@@ -5,19 +5,18 @@ import (
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"satweave/messenger/common"
-	"satweave/sat-node/watcher"
 	"satweave/sat-node/worker"
 	"satweave/utils/logger"
 	"sync"
 )
 
 type TaskManager struct {
+	ctx context.Context
 	UnimplementedTaskManagerServiceServer
-	config  *Config
-	watcher *watcher.Watcher
-	workers []*worker.Worker
-
-	mutex sync.Mutex
+	config          *Config
+	workers         []*worker.Worker
+	mutex           sync.Mutex
+	selfDescription *common.TaskManagerDescription
 }
 
 func (t *TaskManager) initWorkers() error {
