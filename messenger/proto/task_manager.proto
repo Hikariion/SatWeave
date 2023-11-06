@@ -9,7 +9,6 @@ service TaskManagerService {
   rpc DeployTask(DeployTaskRequest) returns (NilResponse) {}
   rpc StartTask(StartTaskRequest) returns (NilResponse) {}
   rpc ProcessOperator(OperatorRequest) returns (NilResponse) {}
-  rpc AskAvailableWorkers(NilRequest) returns (AvailableWorkersResponse) {}
   rpc RequestSlot(RequiredSlotRequest) returns (RequiredSlotResponse) {}
   rpc PushStreamData(PushStreamDataRequest) returns (NilResponse) {}
 }
@@ -23,12 +22,13 @@ message PushStreamDataRequest {
 }
 
 message RequiredSlotRequest {
-  repeated RequiredSlotDescription slot_descs = 1;
+//  repeated RequiredSlotDescription slot_descs = 1;
+  uint64 request_slot_num = 1;
 }
 
 message RequiredSlotResponse {
   Status status = 1;
-  repeated int64 available_ports = 2;
+  repeated uint64 available_workers = 2;
 }
 
 message AvailableWorkersResponse {

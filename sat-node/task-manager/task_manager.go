@@ -33,48 +33,6 @@ func (t *TaskManager) initWorkers() error {
 	return nil
 }
 
-//func (t *TaskManager) ProcessOperator(ctx context.Context, request *OperatorRequest) (*common.NilResponse, error) {
-//
-//	return &common.NilResponse{}, nil
-//}
-
-//func (t *TaskManager) AskAvailableWorkers(context.Context, *common.NilRequest) (*AvailableWorkersResponse, error) {
-//	t.mutex.Lock()
-//	defer t.mutex.Unlock()
-//	unusedWorks := make([]int64, 0)
-//
-//	for i := 0; i < t.config.SlotNum; i++ {
-//		if t.workers[i].Available() {
-//			unusedWorks = append(unusedWorks, int64(i))
-//		}
-//	}
-//
-//	return &AvailableWorkersResponse{
-//		Workers: unusedWorks,
-//	}, nil
-//}
-//
-//type TaskYaml struct {
-//	Tasks     []*Task `yaml:"tasks"`
-//	TaskFiles string  `yaml:"task_files"`
-//}
-
-//func GetLogicalTaskFromYaml(yamlPath string) (*TaskYaml, error) {
-//	yamlFile, err := ioutil.ReadFile(yamlPath)
-//	if err != nil {
-//		logger.Errorf("Error reading YAML file: %s\n", err)
-//		return nil, err
-//	}
-//
-//	taskYaml := new(TaskYaml)
-//	err = yaml.Unmarshal(yamlFile, taskYaml)
-//	if err != nil {
-//		logger.Errorf("Error parsing YAML file: %s\n", err)
-//		return nil, err
-//	}
-//	return nil, nil
-//}
-
 func (t *TaskManager) newSelfDescription(raftId uint64, slotNum uint64, host string, port uint64) *common.TaskManagerDescription {
 	return &common.TaskManagerDescription{
 		RaftId:     raftId,
@@ -114,6 +72,35 @@ func (t *TaskManager) Run() {
 	}
 }
 
+func (t *TaskManager) GetFreeWorkerIdList() []uint64 {
+	var freeWorkerIdList []uint64
+	for i := 0; i < len(t.workers); i++ {
+		if t.workers[i].IsAvailable() == true {
+			freeWorkerIdList = append(freeWorkerIdList, uint64(i))
+		}
+	}
+	return freeWorkerIdList
+}
+
+func (t *TaskManager) RequestSlot(_ context.Context, request *task_manager.RequiredSlotRequest) (*task_manager.RequiredSlotResponse, error) {
+	freeWorkerIdList := t.GetFreeWorkerIdList()
+	if request.RequestSlotNum > uint64(len(freeWorkerIdList)) {
+		logger.Errorf("request slot num is larger than free worker num")
+		return &task_manager.RequiredSlotResponse{
+			AvailableWorkers: nil,
+			Status: &common.Status{
+				ErrCode: errno.CodeRequestSlotFail,
+			},
+		}, errno.RequestSlotFail
+	}
+
+	// 返回可用的workerId
+	assignedWorkerIdList := freeWorkerIdList[:request.RequestSlotNum]
+	return &task_manager.RequiredSlotResponse{
+		AvailableWorkers: assignedWorkerIdList,
+	}, nil
+}
+
 func (t *TaskManager) Stop() {
 	t.cancelFunc()
 }
@@ -131,7 +118,7 @@ func NewTaskManager(ctx context.Context, config *Config, raftID uint64, server *
 	taskManager.selfDescription = taskManager.newSelfDescription(raftID, slotNum, host, port)
 	taskManager.workers = make([]*worker.Worker, slotNum)
 	for i := 0; i < int(taskManager.selfDescription.SlotNumber); i++ {
-		taskManager.workers[i] = nil
+		taskManager.workers[i] = worker.NewWorker()
 	}
 
 	task_manager.RegisterTaskManagerServiceServer(server, taskManager)

@@ -128,7 +128,7 @@ func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, lo
 func (u *UserDefinedScheduler) AskForAvailableWorkers(logicalMap map[uint64][]*common.Task) (map[uint64][]uint64, error) {
 	availableWorkersMap := make(map[uint64][]uint64)
 	// TODO： 按需分配 worker
-	for taskManagerId, task := range logicalMap {
+	for taskManagerId, tasks := range logicalMap {
 		host := u.RegisteredTaskManagerTable.getHost(taskManagerId)
 		port := u.RegisteredTaskManagerTable.getPort(taskManagerId)
 		conn, err := messenger.GetRpcConn(host, port)
@@ -137,12 +137,17 @@ func (u *UserDefinedScheduler) AskForAvailableWorkers(logicalMap map[uint64][]*c
 			return nil, err
 		}
 		client := task_manager.NewTaskManagerServiceClient(conn)
-		resp, err := client.AskAvailableWorkers(context.Background(), &common.NilRequest{})
+		requiredSlotNum := 0
+		for _, task := range tasks {
+			requiredSlotNum += int(task.Currency)
+		}
+		resp, err := client.RequestSlot(context.Background(),
+			&task_manager.RequiredSlotRequest{RequestSlotNum: uint64(requiredSlotNum)})
 		if err != nil {
 			logger.Errorf("UserDefinedScheduler.AskForAvailablePorts() failed: %v", err)
 			return nil, err
 		}
-		availableWorkersMap[taskManagerId] = resp.Workers
+		availableWorkersMap[taskManagerId] = resp.AvailableWorkers
 	}
 	return availableWorkersMap, nil
 }

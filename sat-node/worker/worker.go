@@ -1,41 +1,47 @@
 package worker
 
 import (
-	"satweave/sat-node/task"
 	"sync"
+)
+
+type WorkerState uint64
+
+const (
+	workerIdle WorkerState = iota
+	workerBusy
 )
 
 type Worker struct {
 	// 存储算子的map
 	functionMap map[string]func(data string)
 	// 表示该worker是否可用，true 表示可用 false 表示不可用
-	state bool
+	state WorkerState
 	mu    sync.Mutex
 }
 
-func (w *Worker) Available() bool {
+func (w *Worker) IsAvailable() bool {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	return w.state
+	return w.state == workerIdle
 }
 
-func (w *Worker) Occupy() {
+// Set 用于 worker 被调用时的设置
+func (w *Worker) Set() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	w.state = false
+	w.state = workerBusy
 }
 
 func (w *Worker) Free() {
+	// TODO(qiu): 清空已有设置
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	w.state = true
+	w.state = workerIdle
 }
 
 func NewWorker() *Worker {
 	worker := &Worker{}
-	// 初始化 functionMap
-	worker.functionMap["sink"] = task.Sink
-	worker.functionMap["source"] = task.Source
-	worker.state = true
+	// TODO(qiu)：初始化 functionMap
+	worker.state = workerIdle
 	return worker
 }

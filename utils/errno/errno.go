@@ -14,6 +14,7 @@ const (
 	ClientError
 	GatewayError
 	CommonError
+	TaskManagerError
 
 	SystemError int32 = 77 * 1000
 )
@@ -166,6 +167,15 @@ var (
 	TransporterWriteFail = newErr(CodeTransporterWriteFail, "transporter write fail")
 	GaiaClosedErr        = newErr(CodeGaiaClosed, "gaia context done")
 	RemoteGaiaFail       = newErr(CodeRemoteGaiaFail, "remote gaia fail")
+)
+
+const (
+	/* TaskManager error */
+	CodeRequestSlotFail int32 = TaskManagerError + iota
+)
+
+var (
+	RequestSlotFail = newErr(CodeRequestSlotFail, "request slot fail")
 )
 
 type Errno struct {
