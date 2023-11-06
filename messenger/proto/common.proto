@@ -31,15 +31,14 @@ message Status {
 }
 
 message MachineResource {
-  int32 slot_number = 1;
+  int64 slot_number = 1;
 }
 
 message TaskManagerDescription {
-  string endpoint = 1;
-  uint64 raft_id = 2;
-  MachineResource resource = 3;
-  string host = 4;
-  uint64 port = 5;
+  uint64 raft_id = 1;
+  uint64 slot_number = 2;
+  string host = 3;
+  uint64 port = 4;
 }
 
 message ExecuteTask {

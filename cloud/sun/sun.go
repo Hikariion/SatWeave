@@ -22,6 +22,7 @@ type Sun struct {
 	mu                             sync.Mutex
 	cachedInfo                     map[string]*infos.NodeInfo //cache node info by uuid
 	taskRegisteredTaskManagerTable *RegisteredTaskManagerTable
+	Scheduler                      *UserDefinedScheduler
 }
 
 type Server struct {
@@ -85,8 +86,8 @@ func (s *Sun) ReportClusterInfo(_ context.Context, clusterInfo *infos.ClusterInf
 	return &result, nil
 }
 
-func (s *Sun) RegisterTaskManager(_ context.Context, request *RegisterTaskManagerRequest) (*common.NilResponse, error) {
-	err := s.taskRegisteredTaskManagerTable.register(request.TaskManagerDesc)
+func (s *Sun) RegisterTaskManager(_ context.Context, desc *common.TaskManagerDescription) (*common.NilResponse, error) {
+	err := s.taskRegisteredTaskManagerTable.register(desc)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "register task manager failed: %v", err)
 	}
@@ -97,6 +98,12 @@ func (s *Sun) GetRegisterTaskManagerTable(context.Context, *common.NilRequest) (
 	return &TaskManagerResult{
 		TaskManagerTable: s.taskRegisteredTaskManagerTable.table,
 	}, nil
+}
+
+func (s *Sun) PrintTaskManagerTable() {
+	logger.Infof("Sun printing task manager table...")
+	logger.Infof("%v", s.taskRegisteredTaskManagerTable.table)
+	logger.Infof("%v", s.Scheduler.RegisteredTaskManagerTable)
 }
 
 func NewSun(rpc *messenger.RpcServer) *Sun {
@@ -112,6 +119,7 @@ func NewSun(rpc *messenger.RpcServer) *Sun {
 		cachedInfo:                     map[string]*infos.NodeInfo{},
 		taskRegisteredTaskManagerTable: newRegisteredTaskManagerTable(),
 	}
+	sun.Scheduler = newUserDefinedScheduler(sun.taskRegisteredTaskManagerTable)
 	RegisterSunServer(rpc, &sun)
 	return &sun
 }

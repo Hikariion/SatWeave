@@ -2,7 +2,11 @@ package task_manager
 
 type Config struct {
 	// Slot 数量
-	SlotNum int
+	SlotNum     int
+	StoragePath string
+	SunAddr     string
+	CloudAddr   string
+	CloudPort   uint64
 }
 
 var DefaultConfig Config

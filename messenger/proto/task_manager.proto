@@ -2,7 +2,7 @@ syntax = "proto3";
 import "common.proto";
 package messenger;
 
-option go_package = "satweave/sat-node/task-manager";
+option go_package = "satweave/shared/task-manager";
 
 service TaskManagerService {
   // Deploy a task to the task manager.

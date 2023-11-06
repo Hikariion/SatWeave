@@ -10,7 +10,7 @@ service Sun {
   rpc MoonRegister(NodeInfo) returns (RegisterResult) {}
   rpc GetLeaderInfo(NodeInfo) returns (NodeInfo) {}
   rpc ReportClusterInfo(ClusterInfo) returns (Result) {}
-  rpc RegisterTaskManager(RegisterTaskManagerRequest) returns (NilResponse) {}
+  rpc RegisterTaskManager(TaskManagerDescription) returns (NilResponse) {}
   rpc GetRegisterTaskManagerTable(NilRequest) returns (TaskManagerResult) {}
   rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse) {}
 }

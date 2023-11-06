@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"satweave/messenger"
 	"satweave/messenger/common"
-	"satweave/sat-node/task-manager"
+	"satweave/shared/task-manager"
 	"satweave/utils/logger"
 )
 
@@ -35,6 +35,7 @@ func (u *UserDefinedScheduler) FullFillLogicTask(tasks []*common.Task) ([]*commo
 
 func (u *UserDefinedScheduler) Schedule(clusterId int, tasks []*common.Task) (map[uint64][]*common.Task, map[uint64][]*common.ExecuteTask, error) {
 	// TODO(qiu): 这里的 string 是节点的标识，之后需要根据 cluster info 里的信息进行修改
+	logger.Infof("Begin to scheduler ...")
 	logicalMap := make(map[uint64][]*common.Task) // string node  -> task
 	for _, task := range tasks {
 		locate := task.Locate
@@ -46,6 +47,7 @@ func (u *UserDefinedScheduler) Schedule(clusterId int, tasks []*common.Task) (ma
 	executeMap, err := u.TransformLogicalMapToExecuteMap(clusterId, logicalMap)
 	if err != nil {
 		logger.Errorf("UserDefinedScheduler.TransformLogicalMapToExecuteMap() failed: %v", err)
+		return nil, nil, err
 	}
 	return logicalMap, executeMap, nil
 }
@@ -126,7 +128,7 @@ func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, lo
 func (u *UserDefinedScheduler) AskForAvailableWorkers(logicalMap map[uint64][]*common.Task) (map[uint64][]uint64, error) {
 	availableWorkersMap := make(map[uint64][]uint64)
 	// TODO： 按需分配 worker
-	for taskManagerId, _ := range logicalMap {
+	for taskManagerId, task := range logicalMap {
 		host := u.RegisteredTaskManagerTable.getHost(taskManagerId)
 		port := u.RegisteredTaskManagerTable.getPort(taskManagerId)
 		conn, err := messenger.GetRpcConn(host, port)

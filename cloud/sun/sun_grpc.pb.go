@@ -27,7 +27,7 @@ type SunClient interface {
 	MoonRegister(ctx context.Context, in *infos.NodeInfo, opts ...grpc.CallOption) (*RegisterResult, error)
 	GetLeaderInfo(ctx context.Context, in *infos.NodeInfo, opts ...grpc.CallOption) (*infos.NodeInfo, error)
 	ReportClusterInfo(ctx context.Context, in *infos.ClusterInfo, opts ...grpc.CallOption) (*common.Result, error)
-	RegisterTaskManager(ctx context.Context, in *RegisterTaskManagerRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
+	RegisterTaskManager(ctx context.Context, in *common.TaskManagerDescription, opts ...grpc.CallOption) (*common.NilResponse, error)
 	GetRegisterTaskManagerTable(ctx context.Context, in *common.NilRequest, opts ...grpc.CallOption) (*TaskManagerResult, error)
 	SubmitJob(ctx context.Context, in *SubmitJobRequest, opts ...grpc.CallOption) (*SubmitJobResponse, error)
 }
@@ -67,7 +67,7 @@ func (c *sunClient) ReportClusterInfo(ctx context.Context, in *infos.ClusterInfo
 	return out, nil
 }
 
-func (c *sunClient) RegisterTaskManager(ctx context.Context, in *RegisterTaskManagerRequest, opts ...grpc.CallOption) (*common.NilResponse, error) {
+func (c *sunClient) RegisterTaskManager(ctx context.Context, in *common.TaskManagerDescription, opts ...grpc.CallOption) (*common.NilResponse, error) {
 	out := new(common.NilResponse)
 	err := c.cc.Invoke(ctx, "/messenger.Sun/RegisterTaskManager", in, out, opts...)
 	if err != nil {
@@ -101,7 +101,7 @@ type SunServer interface {
 	MoonRegister(context.Context, *infos.NodeInfo) (*RegisterResult, error)
 	GetLeaderInfo(context.Context, *infos.NodeInfo) (*infos.NodeInfo, error)
 	ReportClusterInfo(context.Context, *infos.ClusterInfo) (*common.Result, error)
-	RegisterTaskManager(context.Context, *RegisterTaskManagerRequest) (*common.NilResponse, error)
+	RegisterTaskManager(context.Context, *common.TaskManagerDescription) (*common.NilResponse, error)
 	GetRegisterTaskManagerTable(context.Context, *common.NilRequest) (*TaskManagerResult, error)
 	SubmitJob(context.Context, *SubmitJobRequest) (*SubmitJobResponse, error)
 	mustEmbedUnimplementedSunServer()
@@ -120,7 +120,7 @@ func (UnimplementedSunServer) GetLeaderInfo(context.Context, *infos.NodeInfo) (*
 func (UnimplementedSunServer) ReportClusterInfo(context.Context, *infos.ClusterInfo) (*common.Result, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReportClusterInfo not implemented")
 }
-func (UnimplementedSunServer) RegisterTaskManager(context.Context, *RegisterTaskManagerRequest) (*common.NilResponse, error) {
+func (UnimplementedSunServer) RegisterTaskManager(context.Context, *common.TaskManagerDescription) (*common.NilResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterTaskManager not implemented")
 }
 func (UnimplementedSunServer) GetRegisterTaskManagerTable(context.Context, *common.NilRequest) (*TaskManagerResult, error) {
@@ -197,7 +197,7 @@ func _Sun_ReportClusterInfo_Handler(srv interface{}, ctx context.Context, dec fu
 }
 
 func _Sun_RegisterTaskManager_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RegisterTaskManagerRequest)
+	in := new(common.TaskManagerDescription)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func _Sun_RegisterTaskManager_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: "/messenger.Sun/RegisterTaskManager",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SunServer).RegisterTaskManager(ctx, req.(*RegisterTaskManagerRequest))
+		return srv.(SunServer).RegisterTaskManager(ctx, req.(*common.TaskManagerDescription))
 	}
 	return interceptor(ctx, in, info, handler)
 }
