@@ -12,8 +12,10 @@ type InputReceiver struct {
 	   PartitionDispenser   -    subtask   ->   InputReceiver   ->   channel
 	   PartitionDispenser   /            (遇到 event 阻塞，类似 Gate)
 	*/
-	inputChannel chan interface{}
+	inputChannel chan *common.Record
 	partitions   []*InputPartitionReceiver
+	// TODO(qiu): barrier 需要 new 并且初始化，大小 = partition 数量
+	barrier *sync.WaitGroup
 }
 
 func (i *InputReceiver) RecvData(partitionIdx uint64, record *common.Record) {
@@ -21,25 +23,27 @@ func (i *InputReceiver) RecvData(partitionIdx uint64, record *common.Record) {
 }
 
 type InputPartitionReceiver struct {
-	queue chan *common.Record
+	queue   chan *common.Record
+	channel chan *common.Record
+	barrier *sync.WaitGroup
 }
 
 func (ipr *InputPartitionReceiver) RecvData(record *common.Record) {
 	ipr.queue <- record
 }
 
-func praseDataAndCarryToChannel(inputQueue chan *common.Record, outputChannel chan *common.Record, wg *sync.WaitGroup, allowOne chan struct{}) error {
+func praseDataAndCarryToChannel(inputQueue chan *common.Record, outputChannel chan *common.Record, barrier *sync.WaitGroup, allowOne chan struct{}) error {
 	var needBarrierDataType = common.DataType_CHECKPOINT
 	for {
 		data := <-inputQueue
 		if data.DataType == needBarrierDataType {
 			// TODO(qiu): 需要在某个地方初始化 wg
-			wg.Done()
+			barrier.Done()
 			logger.Infof("Receive Barrier wg --, begin to wait ... ")
-			wg.Wait()
+			barrier.Wait()
 			logger.Infof("Block finished, begin to make checkpoint")
 			// 重置 wg，每个协程都只执行一次
-			wg.Add(1)
+			barrier.Add(1)
 			// allowOne 用于只让一个协程往 output 发送数据
 			select {
 			case <-allowOne:
