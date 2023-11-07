@@ -1,21 +1,33 @@
 package worker
 
 import (
+	"satweave/messenger/common"
+	"satweave/utils/logger"
 	"sync"
 )
 
-type WorkerState uint64
+type workerState uint64
 
 const (
-	workerIdle WorkerState = iota
+	workerIdle workerState = iota
 	workerBusy
 )
 
 type Worker struct {
+	// 算子名
+	clsName         string
+	inputEndpoints  []*common.InputEndpoints
+	outputEndpoints []*common.OutputEndpoints
+	subTaskName     string
+	partitionIdx    uint64
+
+	inputReceiver   *InputReceiver
+	outputDispenser *OutputDispenser
+
 	// 存储算子的map
 	functionMap map[string]func(data string)
 	// 表示该worker是否可用，true 表示可用 false 表示不可用
-	state WorkerState
+	state workerState
 	mu    sync.Mutex
 }
 
@@ -37,6 +49,13 @@ func (w *Worker) Free() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.state = workerIdle
+}
+
+func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partitionIdx uint64) error {
+	preSubTask := fromSubTask
+	logger.Infof("Recv data(from=%s): %v", preSubTask, record)
+	//w.inputReceiver
+	return nil
 }
 
 func NewWorker() *Worker {

@@ -3,7 +3,9 @@ package task_manager
 import (
 	"context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 	"satweave/cloud/sun"
 	"satweave/messenger"
 	"satweave/messenger/common"
@@ -40,6 +42,11 @@ func (t *TaskManager) newSelfDescription(raftId uint64, slotNum uint64, host str
 		Host:       host,
 		Port:       port,
 	}
+}
+
+func (t *TaskManager) DeployTask(_ context.Context, request *common.ExecuteTask) (*common.NilResponse, error) {
+
+	return nil, status.Errorf(codes.Unimplemented, "method DeployTask not implemented")
 }
 
 func (t *TaskManager) registerToCloud() error {

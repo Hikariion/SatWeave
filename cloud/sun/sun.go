@@ -2,11 +2,13 @@ package sun
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"satweave/messenger"
 	"satweave/messenger/common"
 	"satweave/sat-node/infos"
+	task_manager "satweave/shared/task-manager"
 	"satweave/utils/logger"
 	"sync"
 	"sync/atomic"
@@ -23,6 +25,20 @@ type Sun struct {
 	cachedInfo                     map[string]*infos.NodeInfo //cache node info by uuid
 	taskRegisteredTaskManagerTable *RegisteredTaskManagerTable
 	Scheduler                      *UserDefinedScheduler
+
+	idGenerator *IdGenerator
+}
+
+type IdGenerator struct {
+}
+
+func NewIdGenerator() *IdGenerator {
+	return &IdGenerator{}
+}
+
+func (gen *IdGenerator) Next() string {
+	uid := uuid.New()
+	return uid.String()
 }
 
 type Server struct {
@@ -86,6 +102,61 @@ func (s *Sun) ReportClusterInfo(_ context.Context, clusterInfo *infos.ClusterInf
 	return &result, nil
 }
 
+func (s *Sun) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*SubmitJobResponse, error) {
+	jobId := s.idGenerator.Next()
+	err := s.innerSubmitJob(ctx, request.Tasks)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "submit job failed: %v", err)
+	}
+	return &SubmitJobResponse{
+		JobId: jobId,
+	}, nil
+}
+
+func (s *Sun) innerSubmitJob(ctx context.Context, tasks []*common.Task) error {
+	// scheduler
+	_, executeMap, err := s.Scheduler.Schedule(0, tasks)
+	if err != nil {
+		logger.Errorf("schedule failed: %v", err)
+		return err
+	}
+
+	// deploy
+	err = s.deployExecuteTasks(ctx, executeMap)
+	if err != nil {
+		logger.Errorf("deploy execute tasks failed: %v", err)
+		return err
+	}
+	logger.Infof("deploy execute tasks success")
+
+	// start
+
+	return nil
+}
+
+func (s *Sun) deployExecuteTasks(ctx context.Context, executeMap map[uint64][]*common.ExecuteTask) error {
+	for taskManagerId, executeTasks := range executeMap {
+		host := s.taskRegisteredTaskManagerTable.table[taskManagerId].Host
+		port := s.taskRegisteredTaskManagerTable.table[taskManagerId].Port
+		conn, err := messenger.GetRpcConn(host, port)
+		if err != nil {
+			logger.Errorf("get rpc conn failed: %v", err)
+			return err
+		}
+		client := task_manager.NewTaskManagerServiceClient(conn)
+		for _, executeTask := range executeTasks {
+			_, err := client.DeployTask(ctx, executeTask)
+			if err != nil {
+				logger.Errorf("deploy task on task manager id: %v, failed: %v", taskManagerId, err)
+				return err
+			}
+		}
+		logger.Infof("Deploy all execute task on task manager id: %v, success", taskManagerId)
+	}
+
+	return nil
+}
+
 func (s *Sun) RegisterTaskManager(_ context.Context, desc *common.TaskManagerDescription) (*common.NilResponse, error) {
 	err := s.taskRegisteredTaskManagerTable.register(desc)
 	if err != nil {
@@ -118,6 +189,7 @@ func NewSun(rpc *messenger.RpcServer) *Sun {
 		mu:                             sync.Mutex{},
 		cachedInfo:                     map[string]*infos.NodeInfo{},
 		taskRegisteredTaskManagerTable: newRegisteredTaskManagerTable(),
+		idGenerator:                    NewIdGenerator(),
 	}
 	sun.Scheduler = newUserDefinedScheduler(sun.taskRegisteredTaskManagerTable)
 	RegisterSunServer(rpc, &sun)

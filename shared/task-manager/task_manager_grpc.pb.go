@@ -24,11 +24,11 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TaskManagerServiceClient interface {
 	// Deploy a task to the task manager.
-	DeployTask(ctx context.Context, in *DeployTaskRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
+	DeployTask(ctx context.Context, in *common.ExecuteTask, opts ...grpc.CallOption) (*common.NilResponse, error)
 	StartTask(ctx context.Context, in *StartTaskRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 	ProcessOperator(ctx context.Context, in *OperatorRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 	RequestSlot(ctx context.Context, in *RequiredSlotRequest, opts ...grpc.CallOption) (*RequiredSlotResponse, error)
-	PushStreamData(ctx context.Context, in *PushStreamDataRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
+	PushStreamData(ctx context.Context, in *PushRecordRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 }
 
 type taskManagerServiceClient struct {
@@ -39,7 +39,7 @@ func NewTaskManagerServiceClient(cc grpc.ClientConnInterface) TaskManagerService
 	return &taskManagerServiceClient{cc}
 }
 
-func (c *taskManagerServiceClient) DeployTask(ctx context.Context, in *DeployTaskRequest, opts ...grpc.CallOption) (*common.NilResponse, error) {
+func (c *taskManagerServiceClient) DeployTask(ctx context.Context, in *common.ExecuteTask, opts ...grpc.CallOption) (*common.NilResponse, error) {
 	out := new(common.NilResponse)
 	err := c.cc.Invoke(ctx, "/messenger.TaskManagerService/DeployTask", in, out, opts...)
 	if err != nil {
@@ -75,7 +75,7 @@ func (c *taskManagerServiceClient) RequestSlot(ctx context.Context, in *Required
 	return out, nil
 }
 
-func (c *taskManagerServiceClient) PushStreamData(ctx context.Context, in *PushStreamDataRequest, opts ...grpc.CallOption) (*common.NilResponse, error) {
+func (c *taskManagerServiceClient) PushStreamData(ctx context.Context, in *PushRecordRequest, opts ...grpc.CallOption) (*common.NilResponse, error) {
 	out := new(common.NilResponse)
 	err := c.cc.Invoke(ctx, "/messenger.TaskManagerService/PushStreamData", in, out, opts...)
 	if err != nil {
@@ -89,11 +89,11 @@ func (c *taskManagerServiceClient) PushStreamData(ctx context.Context, in *PushS
 // for forward compatibility
 type TaskManagerServiceServer interface {
 	// Deploy a task to the task manager.
-	DeployTask(context.Context, *DeployTaskRequest) (*common.NilResponse, error)
+	DeployTask(context.Context, *common.ExecuteTask) (*common.NilResponse, error)
 	StartTask(context.Context, *StartTaskRequest) (*common.NilResponse, error)
 	ProcessOperator(context.Context, *OperatorRequest) (*common.NilResponse, error)
 	RequestSlot(context.Context, *RequiredSlotRequest) (*RequiredSlotResponse, error)
-	PushStreamData(context.Context, *PushStreamDataRequest) (*common.NilResponse, error)
+	PushStreamData(context.Context, *PushRecordRequest) (*common.NilResponse, error)
 	mustEmbedUnimplementedTaskManagerServiceServer()
 }
 
@@ -101,7 +101,7 @@ type TaskManagerServiceServer interface {
 type UnimplementedTaskManagerServiceServer struct {
 }
 
-func (UnimplementedTaskManagerServiceServer) DeployTask(context.Context, *DeployTaskRequest) (*common.NilResponse, error) {
+func (UnimplementedTaskManagerServiceServer) DeployTask(context.Context, *common.ExecuteTask) (*common.NilResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeployTask not implemented")
 }
 func (UnimplementedTaskManagerServiceServer) StartTask(context.Context, *StartTaskRequest) (*common.NilResponse, error) {
@@ -113,7 +113,7 @@ func (UnimplementedTaskManagerServiceServer) ProcessOperator(context.Context, *O
 func (UnimplementedTaskManagerServiceServer) RequestSlot(context.Context, *RequiredSlotRequest) (*RequiredSlotResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestSlot not implemented")
 }
-func (UnimplementedTaskManagerServiceServer) PushStreamData(context.Context, *PushStreamDataRequest) (*common.NilResponse, error) {
+func (UnimplementedTaskManagerServiceServer) PushStreamData(context.Context, *PushRecordRequest) (*common.NilResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PushStreamData not implemented")
 }
 func (UnimplementedTaskManagerServiceServer) mustEmbedUnimplementedTaskManagerServiceServer() {}
@@ -130,7 +130,7 @@ func RegisterTaskManagerServiceServer(s grpc.ServiceRegistrar, srv TaskManagerSe
 }
 
 func _TaskManagerService_DeployTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeployTaskRequest)
+	in := new(common.ExecuteTask)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func _TaskManagerService_DeployTask_Handler(srv interface{}, ctx context.Context
 		FullMethod: "/messenger.TaskManagerService/DeployTask",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskManagerServiceServer).DeployTask(ctx, req.(*DeployTaskRequest))
+		return srv.(TaskManagerServiceServer).DeployTask(ctx, req.(*common.ExecuteTask))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -202,7 +202,7 @@ func _TaskManagerService_RequestSlot_Handler(srv interface{}, ctx context.Contex
 }
 
 func _TaskManagerService_PushStreamData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PushStreamDataRequest)
+	in := new(PushRecordRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func _TaskManagerService_PushStreamData_Handler(srv interface{}, ctx context.Con
 		FullMethod: "/messenger.TaskManagerService/PushStreamData",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskManagerServiceServer).PushStreamData(ctx, req.(*PushStreamDataRequest))
+		return srv.(TaskManagerServiceServer).PushStreamData(ctx, req.(*PushRecordRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

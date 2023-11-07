@@ -1,5 +1,7 @@
 package worker
 
+import "satweave/messenger/common"
+
 type InputReceiver struct {
 	/*
 	   PartitionDispenser   \
@@ -10,6 +12,14 @@ type InputReceiver struct {
 	partitions   []*InputPartitionReceiver
 }
 
+func (i *InputReceiver) RecvData(partitionIdx uint64, record *common.Record) {
+	i.partitions[partitionIdx].RecvData(record)
+}
+
 type InputPartitionReceiver struct {
 	queue chan interface{}
+}
+
+func (ipr *InputPartitionReceiver) RecvData(record *common.Record) {
+	ipr.queue <- record
 }

@@ -53,18 +53,25 @@ message ExecuteTask {
   uint64 locate = 8;
   // IP
   string host = 9;
+  // Port
+  uint64 port = 10;
   // 使用的worker
-  uint64 worker_id = 10;
+  uint64 worker_id = 11;
+  uint64 task_manager_id = 12;
 }
 
 message InputEndpoints {
   string host = 1;
-  uint64 worker_id = 2;
+  uint64 port = 2;
+  uint64 task_manager_id = 3;
+  uint64 worker_id = 4;
 }
 
 message OutputEndpoints {
   string host = 1;
-  uint64 worker_id = 2;
+  uint64 port = 2;
+  uint64 task_manager_id = 3;
+  uint64 worker_id = 4;
 }
 
 // logical Task
@@ -88,11 +95,26 @@ message RequiredSlotDescription {
 
 }
 
-message StreamData {
-  repeated KeyValueData kv = 1;
+message Record {
+  string data_id = 1; // for filter
+  DataType data_type = 2;
+  bytes data = 3;
+  uint64 timestamp = 4;
+  string partition_key = 5; // for partitioning
 
-  message KeyValueData {
-    string key = 1;
-    string value = 2;
+  enum DataType {
+    STRING = 0;
+    KEYVALUE = 1;
+    CHECKPOINT = 2;
   }
+
+  message KeyValue {
+    repeated string keys = 1;
+    repeated string values = 2;
+  }
+
+  message Checkpoint {
+    uint64 id = 1;
+  }
+
 }

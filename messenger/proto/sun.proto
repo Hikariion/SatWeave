@@ -21,7 +21,7 @@ message SubmitJobResponse {
 }
 
 message SubmitJobRequest {
-  Task tasks = 1;
+  repeated Task tasks = 1;
 };
 
 message TaskManagerResult {

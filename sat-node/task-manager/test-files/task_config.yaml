@@ -5,12 +5,12 @@ tasks:
   - cls: KeyByInputOp
     currency: 1
     input_tasks: [SimpleSource]
-    locate: 1
+    locate: 2
   - cls: SumOp
     currency: 2
     input_tasks: [KeyByInputOp]
-    locate: 1
+    locate: 3
   - cls: SimpleSink
     currency: 1
     input_tasks: [SumOp]
-    locate: 1
+    locate: 4

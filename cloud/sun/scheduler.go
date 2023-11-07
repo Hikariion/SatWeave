@@ -44,7 +44,7 @@ func (u *UserDefinedScheduler) Schedule(clusterId int, tasks []*common.Task) (ma
 		}
 		logicalMap[locate] = append(logicalMap[locate], task)
 	}
-	executeMap, err := u.TransformLogicalMapToExecuteMap(clusterId, logicalMap)
+	executeMap, err := u.TransformLogicalMapToExecuteMap(clusterId, logicalMap, tasks)
 	if err != nil {
 		logger.Errorf("UserDefinedScheduler.TransformLogicalMapToExecuteMap() failed: %v", err)
 		return nil, nil, err
@@ -52,7 +52,7 @@ func (u *UserDefinedScheduler) Schedule(clusterId int, tasks []*common.Task) (ma
 	return logicalMap, executeMap, nil
 }
 
-func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, logicalMap map[uint64][]*common.Task) (map[uint64][]*common.ExecuteTask, error) {
+func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, logicalMap map[uint64][]*common.Task, tasks []*common.Task) (map[uint64][]*common.ExecuteTask, error) {
 	// TODO(qiu): get free slot on each node
 	availWorkersMap, err := u.AskForAvailableWorkers(logicalMap)
 	if err != nil {
@@ -63,21 +63,25 @@ func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, lo
 	nameToExecuteTask := make(map[string]*common.ExecuteTask) // subtask_name -> execute_task
 	for taskManagerID, logicalTasks := range logicalMap {
 		taskManagerHost := u.RegisteredTaskManagerTable.getHost(taskManagerID)
+		taskManagerPort := u.RegisteredTaskManagerTable.getPort(taskManagerID)
 		executeMap[taskManagerID] = make([]*common.ExecuteTask, 0)
 		usedWorkerIdx := 0
 		for _, logicalTask := range logicalTasks {
+			workerID := availWorkersMap[taskManagerID][usedWorkerIdx]
+			usedWorkerIdx++
 			for i := 0; i < int(logicalTask.Currency); i++ {
-				workerID := availWorkersMap[taskManagerID][usedWorkerIdx]
-				usedWorkerIdx++
+				logger.Infof("task manager id %v availWorkersMap worker id %v", taskManagerID, availWorkersMap[taskManagerID])
 				subTaskName := u.getSubTaskName(logicalTask.ClsName, i, int(logicalTask.Currency))
 				executeTask := &common.ExecuteTask{
-					ClsName:      logicalTask.ClsName,
-					Resources:    logicalTask.Resources,
-					TaskFile:     logicalTask.TaskFile,
-					SubtaskName:  subTaskName,
-					PartitionIdx: int64(i),
-					Host:         taskManagerHost,
-					WorkerId:     workerID,
+					TaskManagerId: taskManagerID,
+					ClsName:       logicalTask.ClsName,
+					Resources:     logicalTask.Resources,
+					TaskFile:      logicalTask.TaskFile,
+					SubtaskName:   subTaskName,
+					PartitionIdx:  int64(i),
+					Host:          taskManagerHost,
+					Port:          taskManagerPort,
+					WorkerId:      workerID,
 				}
 				executeMap[taskManagerID] = append(executeMap[taskManagerID], executeTask)
 				nameToExecuteTask[subTaskName] = executeTask
@@ -86,7 +90,9 @@ func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, lo
 	}
 
 	for _, logicalTasks := range logicalMap {
+		logger.Infof("logicalTasks: %v", logicalTasks)
 		for _, logicalTask := range logicalTasks {
+
 			clsName := logicalTask.ClsName
 			if len(logicalTask.InputTasks) > 1 {
 				// TODO(qiu)：只支持单个input_task
@@ -95,7 +101,8 @@ func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, lo
 			for _, inputTaskName := range logicalTask.InputTasks {
 				// 找前驱节点，获取并发数
 				predecessor := new(common.Task)
-				for _, taskP := range logicalTasks {
+				for _, taskP := range tasks {
+					logger.Infof("taskP %v clsName %v", taskP.ClsName, inputTaskName)
 					if taskP.ClsName == inputTaskName {
 						predecessor = taskP
 						break
@@ -112,10 +119,13 @@ func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, lo
 						currentSubTaskName := u.getSubTaskName(logicalTask.ClsName, j, int(logicalTask.Currency))
 						currentExecuteTask := nameToExecuteTask[currentSubTaskName]
 						// TODO(qiu): 这里只映射了节点名，Ip 和 端口 需要从 clusterInfo 中获取
+						logger.Infof("add input_endpoint: %v -> %v", preExecuteTask.SubtaskName, currentExecuteTask.SubtaskName)
 						currentExecuteTask.InputEndpoints = append(currentExecuteTask.InputEndpoints,
-							&common.InputEndpoints{Host: preExecuteTask.Host, WorkerId: preExecuteTask.WorkerId})
+							&common.InputEndpoints{TaskManagerId: preExecuteTask.TaskManagerId, Host: preExecuteTask.Host, Port: preExecuteTask.Port,
+								WorkerId: preExecuteTask.WorkerId})
 						preExecuteTask.OutputEndpoints = append(preExecuteTask.OutputEndpoints,
-							&common.OutputEndpoints{Host: currentExecuteTask.Host, WorkerId: currentExecuteTask.WorkerId})
+							&common.OutputEndpoints{TaskManagerId: currentExecuteTask.TaskManagerId, Host: currentExecuteTask.Host, Port: currentExecuteTask.Port,
+								WorkerId: currentExecuteTask.WorkerId})
 					}
 				}
 
@@ -137,12 +147,8 @@ func (u *UserDefinedScheduler) AskForAvailableWorkers(logicalMap map[uint64][]*c
 			return nil, err
 		}
 		client := task_manager.NewTaskManagerServiceClient(conn)
-		requiredSlotNum := 0
-		for _, task := range tasks {
-			requiredSlotNum += int(task.Currency)
-		}
 		resp, err := client.RequestSlot(context.Background(),
-			&task_manager.RequiredSlotRequest{RequestSlotNum: uint64(requiredSlotNum)})
+			&task_manager.RequiredSlotRequest{RequestSlotNum: uint64(len(tasks))})
 		if err != nil {
 			logger.Errorf("UserDefinedScheduler.AskForAvailablePorts() failed: %v", err)
 			return nil, err
@@ -153,7 +159,7 @@ func (u *UserDefinedScheduler) AskForAvailableWorkers(logicalMap map[uint64][]*c
 }
 
 func (u *UserDefinedScheduler) getSubTaskName(clsName string, idx, currency int) string {
-	return fmt.Sprintf("%s#(%d/%d)", clsName, idx, currency)
+	return fmt.Sprintf("%s#(%d/%d)", clsName, idx+1, currency)
 }
 
 func newUserDefinedScheduler(table *RegisteredTaskManagerTable) *UserDefinedScheduler {
