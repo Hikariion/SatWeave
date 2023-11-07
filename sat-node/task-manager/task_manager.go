@@ -44,6 +44,16 @@ func (t *TaskManager) newSelfDescription(raftId uint64, slotNum uint64, host str
 	}
 }
 
+func (t *TaskManager) PushRecord(_ context.Context, request *task_manager.PushRecordRequest) (*common.NilResponse, error) {
+	workerId := request.WorkerId
+	err := t.workers[workerId].PushRecord(request.Record, request.FromSubtask, request.PartitionIdx)
+	if err != nil {
+		logger.Errorf("task manager id: %v push record to worker id %v failed: %v", t.selfDescription.RaftId, workerId, err)
+		return nil, status.Errorf(codes.Internal, "push record failed: %v", err)
+	}
+	return nil, nil
+}
+
 func (t *TaskManager) DeployTask(_ context.Context, request *common.ExecuteTask) (*common.NilResponse, error) {
 
 	return nil, status.Errorf(codes.Unimplemented, "method DeployTask not implemented")

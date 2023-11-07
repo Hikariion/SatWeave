@@ -54,7 +54,7 @@ func (w *Worker) Free() {
 func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partitionIdx uint64) error {
 	preSubTask := fromSubTask
 	logger.Infof("Recv data(from=%s): %v", preSubTask, record)
-	//w.inputReceiver
+	w.inputReceiver.RecvData(partitionIdx, record)
 	return nil
 }
 

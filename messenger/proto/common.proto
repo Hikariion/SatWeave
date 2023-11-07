@@ -95,18 +95,18 @@ message RequiredSlotDescription {
 
 }
 
+enum DataType {
+  STRING = 0;
+  KEYVALUE = 1;
+  CHECKPOINT = 2;
+}
+
 message Record {
   string data_id = 1; // for filter
   DataType data_type = 2;
   bytes data = 3;
   uint64 timestamp = 4;
   string partition_key = 5; // for partitioning
-
-  enum DataType {
-    STRING = 0;
-    KEYVALUE = 1;
-    CHECKPOINT = 2;
-  }
 
   message KeyValue {
     repeated string keys = 1;

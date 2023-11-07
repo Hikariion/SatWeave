@@ -28,7 +28,7 @@ type TaskManagerServiceClient interface {
 	StartTask(ctx context.Context, in *StartTaskRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 	ProcessOperator(ctx context.Context, in *OperatorRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 	RequestSlot(ctx context.Context, in *RequiredSlotRequest, opts ...grpc.CallOption) (*RequiredSlotResponse, error)
-	PushStreamData(ctx context.Context, in *PushRecordRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
+	PushRecord(ctx context.Context, in *PushRecordRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 }
 
 type taskManagerServiceClient struct {
@@ -75,9 +75,9 @@ func (c *taskManagerServiceClient) RequestSlot(ctx context.Context, in *Required
 	return out, nil
 }
 
-func (c *taskManagerServiceClient) PushStreamData(ctx context.Context, in *PushRecordRequest, opts ...grpc.CallOption) (*common.NilResponse, error) {
+func (c *taskManagerServiceClient) PushRecord(ctx context.Context, in *PushRecordRequest, opts ...grpc.CallOption) (*common.NilResponse, error) {
 	out := new(common.NilResponse)
-	err := c.cc.Invoke(ctx, "/messenger.TaskManagerService/PushStreamData", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/messenger.TaskManagerService/PushRecord", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ type TaskManagerServiceServer interface {
 	StartTask(context.Context, *StartTaskRequest) (*common.NilResponse, error)
 	ProcessOperator(context.Context, *OperatorRequest) (*common.NilResponse, error)
 	RequestSlot(context.Context, *RequiredSlotRequest) (*RequiredSlotResponse, error)
-	PushStreamData(context.Context, *PushRecordRequest) (*common.NilResponse, error)
+	PushRecord(context.Context, *PushRecordRequest) (*common.NilResponse, error)
 	mustEmbedUnimplementedTaskManagerServiceServer()
 }
 
@@ -113,8 +113,8 @@ func (UnimplementedTaskManagerServiceServer) ProcessOperator(context.Context, *O
 func (UnimplementedTaskManagerServiceServer) RequestSlot(context.Context, *RequiredSlotRequest) (*RequiredSlotResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestSlot not implemented")
 }
-func (UnimplementedTaskManagerServiceServer) PushStreamData(context.Context, *PushRecordRequest) (*common.NilResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PushStreamData not implemented")
+func (UnimplementedTaskManagerServiceServer) PushRecord(context.Context, *PushRecordRequest) (*common.NilResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PushRecord not implemented")
 }
 func (UnimplementedTaskManagerServiceServer) mustEmbedUnimplementedTaskManagerServiceServer() {}
 
@@ -201,20 +201,20 @@ func _TaskManagerService_RequestSlot_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TaskManagerService_PushStreamData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TaskManagerService_PushRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PushRecordRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskManagerServiceServer).PushStreamData(ctx, in)
+		return srv.(TaskManagerServiceServer).PushRecord(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/messenger.TaskManagerService/PushStreamData",
+		FullMethod: "/messenger.TaskManagerService/PushRecord",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskManagerServiceServer).PushStreamData(ctx, req.(*PushRecordRequest))
+		return srv.(TaskManagerServiceServer).PushRecord(ctx, req.(*PushRecordRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -243,8 +243,8 @@ var TaskManagerService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _TaskManagerService_RequestSlot_Handler,
 		},
 		{
-			MethodName: "PushStreamData",
-			Handler:    _TaskManagerService_PushStreamData_Handler,
+			MethodName: "PushRecord",
+			Handler:    _TaskManagerService_PushRecord_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
