@@ -77,6 +77,10 @@ func (ipr *InputPartitionReceiver) Run() {
 	}()
 }
 
+func (ipr *InputPartitionReceiver) Stop() {
+	// TODO(qiu)
+}
+
 func NewInputReceiver(inputChannel chan *common.Record, inputEndpoints []*common.InputEndpoints) *InputReceiver {
 	inputReceiver := &InputReceiver{
 		inputChannel: inputChannel,
