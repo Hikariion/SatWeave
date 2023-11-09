@@ -1,7 +1,12 @@
 package worker
 
+/*
+	slot 中实际执行的 subtask(worker)
+*/
+
 import (
 	"satweave/messenger/common"
+	"satweave/sat-node/operators"
 	"satweave/utils/logger"
 	"sync"
 )
@@ -31,10 +36,41 @@ type Worker struct {
 	mu    sync.Mutex
 }
 
+func (w *Worker) initForStartService() {
+
+}
+
+func (w *Worker) isSourceOp() bool {
+	// TODO(qiu): need to complete
+	return false
+}
+
+func (w *Worker) isSinkOp() bool {
+	// TODO(qiu): needo to complete
+	return false
+}
 func (w *Worker) IsAvailable() bool {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return w.state == workerIdle
+}
+
+func (w *Worker) ComputeCore(clsName string, inputChannel, outputChannel chan *common.Record) {
+
+}
+
+func (w *Worker) innerComputeCore(clsName string, inputChannel, outputChannel chan *common.Record) error {
+	// 具体执行逻辑
+	var taskInstance operators.OperatorBase
+	for {
+		dataID := "dataID" // TODO(进程安全) gen
+		timestamp := utils.
+	}
+	return nil
+}
+
+func (w *Worker) initInputReceiver(input)  {
+
 }
 
 // Set 用于 worker 被调用时的设置
