@@ -4,5 +4,5 @@ type SumOp struct {
 	counter map[string]uint64
 }
 
-func (s *SumOp) Compute(data string) {
+func (s *SumOp) Compute(data []byte) {
 }

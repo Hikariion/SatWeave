@@ -1,10 +1,8 @@
 package operators
 
-import "satweave/messenger/common"
-
 type SourceOperator struct {
 }
 
-func (s *SourceOperator) Compute(record *common.Record) {
+func (s *SourceOperator) Compute(data []byte) {
 
 }

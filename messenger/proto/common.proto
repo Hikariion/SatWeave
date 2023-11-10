@@ -96,9 +96,9 @@ message RequiredSlotDescription {
 }
 
 enum DataType {
-  STRING = 0;
-  KEYVALUE = 1;
-  CHECKPOINT = 2;
+  PICKLE = 0;
+  CHECKPOINT = 1;
+  FINISH = 2;
 }
 
 message Record {
@@ -106,7 +106,7 @@ message Record {
   DataType data_type = 2;
   bytes data = 3;
   uint64 timestamp = 4;
-  string partition_key = 5; // for partitioning
+  uint64 partition_key = 5; // for partitioning
 
   message KeyValue {
     repeated string keys = 1;
@@ -115,6 +115,10 @@ message Record {
 
   message Checkpoint {
     uint64 id = 1;
+  }
+
+  message Finish {
+
   }
 
 }

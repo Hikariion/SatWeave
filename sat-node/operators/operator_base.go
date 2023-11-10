@@ -1,9 +1,9 @@
 package operators
 
-import "satweave/messenger/common"
-
+// OperatorBase
+// 用户自定义算子的基类
 type OperatorBase interface {
 	SetName(name string)
-	Init(map[string]string)
-	Compute(record *common.Record)
+	//Init(map[string]string)
+	Compute(data []byte) (string, error)
 }
