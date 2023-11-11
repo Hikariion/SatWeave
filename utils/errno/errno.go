@@ -172,10 +172,12 @@ var (
 const (
 	/* TaskManager error */
 	CodeRequestSlotFail int32 = TaskManagerError + iota
+	CodeSlotCapacityNotEnough
 )
 
 var (
-	RequestSlotFail = newErr(CodeRequestSlotFail, "request slot fail")
+	RequestSlotFail       = newErr(CodeRequestSlotFail, "request slot fail")
+	SlotCapacityNotEnough = newErr(CodeSlotCapacityNotEnough, "slot capacity not enough")
 )
 
 type Errno struct {

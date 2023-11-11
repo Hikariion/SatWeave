@@ -91,6 +91,9 @@ func NewInputReceiver(inputChannel chan *common.Record, inputEndpoints []*common
 		inputPartitionReceiver := NewInputPartitionReceiver(inputChannel, inputReceiver.barrier)
 		inputReceiver.partitions = append(inputReceiver.partitions, inputPartitionReceiver)
 	}
+	// 启动所有的 InputPartitionReceiver
+	// TODO(qiu): 传参数，控制停止所有 InputPartitionReceiver
+	inputReceiver.RunAllPartitionReceiver()
 	return inputReceiver
 }
 

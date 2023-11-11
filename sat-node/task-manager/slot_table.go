@@ -2,6 +2,7 @@ package task_manager
 
 import (
 	"satweave/messenger/common"
+	"satweave/utils/errno"
 	"satweave/utils/logger"
 	"sync"
 )
@@ -23,8 +24,18 @@ func (st *SlotTable) deployExecuteTask(executeTask *common.ExecuteTask) error {
 
 	if len(st.table) >= int(st.capacity) {
 		logger.Errorf("raft %d slot table length >= capacity", st.raftId)
-		return
+		return errno.SlotCapacityNotEnough
 	}
+
+	subtaskName := executeTask.SubtaskName
+	if _, ok := st.table[subtaskName]; ok {
+		logger.Errorf("raft %d slot table has subtask %s", st.raftId, subtaskName)
+		return errno.RequestSlotFail
+	}
+
+	st.table[subtaskName] = NewSlot(st.raftId, executeTask)
+
+	logger.Infof("raft %d deploy subtask %s success", st.raftId, subtaskName)
 
 	return nil
 }

@@ -21,10 +21,10 @@ type TaskManager struct {
 	ctx             context.Context
 	config          *Config
 	workers         []*worker.Worker
-	mutex           sync.Mutex
+	mutex           *sync.Mutex
 	selfDescription *common.TaskManagerDescription
-
-	cancelFunc context.CancelFunc
+	slotTable       *SlotTable
+	cancelFunc      context.CancelFunc
 }
 
 func (t *TaskManager) initWorkers() error {
@@ -46,6 +46,8 @@ func (t *TaskManager) newSelfDescription(raftId uint64, slotNum uint64, host str
 
 func (t *TaskManager) PushRecord(_ context.Context, request *task_manager.PushRecordRequest) (*common.NilResponse, error) {
 	workerId := request.WorkerId
+	// TODO(qiu): 增加转发模式
+	t.slotTable[request]
 	err := t.workers[workerId].PushRecord(request.Record, request.FromSubtask, request.PartitionIdx)
 	if err != nil {
 		logger.Errorf("task manager id: %v push record to worker id %v failed: %v", t.selfDescription.RaftId, workerId, err)
@@ -54,9 +56,22 @@ func (t *TaskManager) PushRecord(_ context.Context, request *task_manager.PushRe
 	return nil, nil
 }
 
-func (t *TaskManager) DeployTask(_ context.Context, request *common.ExecuteTask) (*common.NilResponse, error) {
+func (t *TaskManager) DeployTask(_ context.Context, executeTask *common.ExecuteTask) (*common.NilResponse, error) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
 
-	return nil, status.Errorf(codes.Unimplemented, "method DeployTask not implemented")
+	if t.selfDescription.SlotNumber <= 0 {
+		logger.Errorf("task manager id: %v slot number is %v, not enough", t.selfDescription.RaftId)
+		return nil, errno.SlotCapacityNotEnough
+	}
+
+	err := t.slotTable.deployExecuteTask(executeTask)
+	if err != nil {
+		logger.Errorf("deploy execute task %v failed, err: %v", executeTask, err)
+	}
+
+	t.selfDescription.SlotNumber--
+	return nil, nil
 }
 
 func (t *TaskManager) registerToCloud() error {
@@ -130,8 +145,10 @@ func NewTaskManager(ctx context.Context, config *Config, raftID uint64, server *
 		ctx:        taskManagerCtx,
 		config:     config,
 		cancelFunc: cancelFunc,
+		mutex:      &sync.Mutex{},
 	}
 
+	taskManager.slotTable = NewSlotTable(raftID, slotNum)
 	taskManager.selfDescription = taskManager.newSelfDescription(raftID, slotNum, host, port)
 	taskManager.workers = make([]*worker.Worker, slotNum)
 	for i := 0; i < int(taskManager.selfDescription.SlotNumber); i++ {
