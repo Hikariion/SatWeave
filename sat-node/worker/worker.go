@@ -21,49 +21,57 @@ const (
 )
 
 type Worker struct {
+	// raftID
+	raftId uint64
 	// 算子名
 	clsName string
-	// 用 UUID 唯一标识这个 worker
-	workerId        string
+	// 用 UUID 唯一标识这个 subtask
+	subtaskId       string
+	workerId        uint64
 	inputEndpoints  []*common.InputEndpoints
 	outputEndpoints []*common.OutputEndpoints
 	subTaskName     string
-	partitionIdx    uint64
+	partitionIdx    int64
 
 	inputReceiver   *InputReceiver
 	outputDispenser *OutputDispenser
+
+	cls operators.OperatorBase
 
 	// 表示该worker是否可用，true 表示可用 false 表示不可用
 	state workerState
 	mu    sync.Mutex
 }
 
-func (w *Worker) initForStartService() {
+func (w *Worker) startComputeOnStandletonProcess(inputChannel chan *common.Record, outputChannel chan *common.Record) {
+	w.ComputeCore(w.clsName, inputChannel, outputChannel)
+}
 
+func (w *Worker) initForStartService() {
+	var inputChannel chan *common.Record
+	var outputChannel chan *common.Record
+	if !w.isSourceOp() {
+		inputChannel = w.initInputReceiver(w.inputEndpoints)
+	}
+	if !w.isSinkOp() {
+		outputChannel = w.initOutputDispenser(w.outputEndpoints)
+	}
+	w.startComputeOnStandletonProcess(inputChannel, outputChannel)
 }
 
 // 判断是否为 source 算子
-func (w *Worker) isSourceOp(cls operators.OperatorBase) bool {
-	if _, ok := interface{}(cls).(operators.SourceOperatorBase); ok {
-		return true
-	}
-	return false
+func (w *Worker) isSourceOp() bool {
+	return w.cls.IsSourceOp()
 }
 
 // 判断是否为 sink 算子
-func (w *Worker) isSinkOp(cls operators.OperatorBase) bool {
-	if _, ok := interface{}(cls).(operators.SinkOperatorBase); ok {
-		return true
-	}
-	return false
+func (w *Worker) isSinkOp() bool {
+	return w.cls.IsSinkOp()
 }
 
 // 判断是否为 key 算子
-func (w *Worker) isKeyOp(cls operators.OperatorBase) bool {
-	if _, ok := interface{}(cls).(operators.KeyOperatorBase); ok {
-		return true
-	}
-	return false
+func (w *Worker) isKeyOp() bool {
+	return w.cls.IsKeyByOp()
 }
 
 func (w *Worker) pushFinishRecordToOutPutChannel(outputChannel chan *common.Record) {
@@ -91,17 +99,25 @@ func (w *Worker) IsAvailable() bool {
 func (w *Worker) ComputeCore(clsName string, inputChannel, outputChannel chan *common.Record) {
 	// TODO(qiu):SourceOp 中通过 StopIteration 异常（迭代器终止）来表示
 	// 用 error 代替？
+	go func() {
+		err := w.innerComputeCore(clsName, inputChannel, outputChannel)
+		if err != nil {
+			logger.Errorf("ComputeCore error: %v", err)
+			// TODO(qiu): 添加错误处理
+		}
+	}()
 }
 
 func (w *Worker) innerComputeCore(clsName string, inputChannel, outputChannel chan *common.Record) error {
 	// 具体执行逻辑
 	cls := operators.FactoryMap[clsName]()
+	w.cls = cls
 	// 判断是否为 source 算子
-	isSourceOp := w.isSourceOp(cls)
+	isSourceOp := w.isSourceOp()
 	// 判断是否为 sink 算子
-	isSinkOp := w.isSinkOp(cls)
+	isSinkOp := w.isSinkOp()
 	// 判断是否为 key 算子
-	isKeyOp := w.isKeyOp(cls)
+	isKeyOp := w.isKeyOp()
 
 	taskInstance := cls
 	cls.SetName(w.subTaskName)
@@ -181,11 +197,19 @@ func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partition
 	return nil
 }
 
-func NewWorker() *Worker {
+func NewWorker(raftId uint64, executeTask *common.ExecuteTask) *Worker {
 	worker := &Worker{
-		workerId: uuid.New().String(),
+		raftId:          raftId,
+		subtaskId:       uuid.New().String(),
+		clsName:         executeTask.ClsName,
+		inputEndpoints:  executeTask.InputEndpoints,
+		outputEndpoints: executeTask.OutputEndpoints,
+		subTaskName:     executeTask.SubtaskName,
+		partitionIdx:    executeTask.PartitionIdx,
+		workerId:        executeTask.WorkerId,
+
+		inputReceiver:   nil,
+		outputDispenser: nil,
 	}
-	// TODO(qiu)：初始化 functionMap
-	worker.state = workerIdle
 	return worker
 }
