@@ -8,8 +8,8 @@ func (op *SimpleSource) Init(map[string]string) {
 
 }
 
-func (op *SimpleSource) Compute([]byte) (string, error) {
-	return "", nil
+func (op *SimpleSource) Compute([]byte) ([]byte, error) {
+	return nil, nil
 }
 
 func (op *SimpleSource) SetName(name string) {

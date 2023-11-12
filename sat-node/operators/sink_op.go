@@ -8,8 +8,8 @@ func (op *SinkOperator) Init(map[string]string) {
 
 }
 
-func (op *SinkOperator) Compute([]byte) (string, error) {
-	return "", nil
+func (op *SinkOperator) Compute([]byte) ([]byte, error) {
+	return nil, nil
 }
 
 func (op *SinkOperator) SetName(name string) {

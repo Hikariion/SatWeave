@@ -8,8 +8,8 @@ func (op *KeyByInputOp) Init(map[string]string) {
 
 }
 
-func (op *KeyByInputOp) Compute([]byte) (string, error) {
-	return "", nil
+func (op *KeyByInputOp) Compute([]byte) ([]byte, error) {
+	return nil, nil
 }
 
 func (op *KeyByInputOp) SetName(name string) {

@@ -5,7 +5,7 @@ package operators
 type OperatorBase interface {
 	SetName(name string)
 	Init(map[string]string)
-	Compute(data []byte) (string, error)
+	Compute(data []byte) ([]byte, error)
 	IsSourceOp() bool
 	IsSinkOp() bool
 	IsKeyByOp() bool
