@@ -13,13 +13,14 @@ type InputReceiver struct {
 	   PartitionDispenser   -    subtask   ->   InputReceiver   ->   channel
 	   PartitionDispenser   /            (遇到 event 阻塞，类似 Gate)
 	*/
-	inputChannel chan *common.Record
-	partitions   []*InputPartitionReceiver
+	channel    chan *common.Record
+	partitions []*InputPartitionReceiver
 	// TODO(qiu): barrier 需要 new 并且初始化，大小 = partition 数量
-	barrier *sync.WaitGroup
+	barrier  *sync.WaitGroup
+	allowOne chan struct{}
 }
 
-func (i *InputReceiver) RecvData(partitionIdx uint64, record *common.Record) {
+func (i *InputReceiver) RecvData(partitionIdx int64, record *common.Record) {
 	i.partitions[partitionIdx].RecvData(record)
 }
 
@@ -30,16 +31,27 @@ func (i *InputReceiver) RunAllPartitionReceiver() {
 }
 
 type InputPartitionReceiver struct {
-	queue   chan *common.Record
-	channel chan *common.Record
-	barrier *sync.WaitGroup
+	queue    chan *common.Record
+	channel  chan *common.Record
+	barrier  *sync.WaitGroup
+	allowOne chan struct{}
 }
 
 func (ipr *InputPartitionReceiver) RecvData(record *common.Record) {
 	ipr.queue <- record
 }
 
-func (ipr *InputPartitionReceiver) praseDataAndCarryToChannel(inputQueue chan *common.Record, outputChannel chan *common.Record, barrier *sync.WaitGroup, allowOne chan struct{}) error {
+func (ipr *InputPartitionReceiver) praseDataAndCarryToChannel(inputQueue chan *common.Record, outputChannel chan *common.Record,
+	eventBarrier *sync.WaitGroup, allowOne chan struct{}) error {
+	err := ipr.innerPraseDataAndCarryToChannel(inputQueue, outputChannel, eventBarrier, allowOne)
+	if err != nil {
+		logger.Errorf("InputPartitionReceiver.innerPraseDataAndCarryToChannel() failed: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (ipr *InputPartitionReceiver) innerPraseDataAndCarryToChannel(inputQueue chan *common.Record, outputChannel chan *common.Record, barrier *sync.WaitGroup, allowOne chan struct{}) error {
 	var needBarrierDataType = common.DataType_CHECKPOINT
 	for {
 		data := <-inputQueue
@@ -83,12 +95,13 @@ func (ipr *InputPartitionReceiver) Stop() {
 
 func NewInputReceiver(inputChannel chan *common.Record, inputEndpoints []*common.InputEndpoints) *InputReceiver {
 	inputReceiver := &InputReceiver{
-		inputChannel: inputChannel,
-		barrier:      &sync.WaitGroup{},
-		partitions:   make([]*InputPartitionReceiver, 0),
+		channel:    inputChannel,
+		barrier:    &sync.WaitGroup{},
+		partitions: make([]*InputPartitionReceiver, 0),
+		allowOne:   make(chan struct{}, 1),
 	}
 	for i := 0; i < len(inputEndpoints); i++ {
-		inputPartitionReceiver := NewInputPartitionReceiver(inputChannel, inputReceiver.barrier)
+		inputPartitionReceiver := NewInputPartitionReceiver(inputReceiver.channel, inputReceiver.barrier, inputReceiver.allowOne)
 		inputReceiver.partitions = append(inputReceiver.partitions, inputPartitionReceiver)
 	}
 	// 启动所有的 InputPartitionReceiver
@@ -97,7 +110,7 @@ func NewInputReceiver(inputChannel chan *common.Record, inputEndpoints []*common
 	return inputReceiver
 }
 
-func NewInputPartitionReceiver(channel chan *common.Record, eventBarrier *sync.WaitGroup) *InputPartitionReceiver {
+func NewInputPartitionReceiver(channel chan *common.Record, eventBarrier *sync.WaitGroup, allowOne chan struct{}) *InputPartitionReceiver {
 	return &InputPartitionReceiver{
 		channel: channel,
 		queue:   make(chan *common.Record, 1000),

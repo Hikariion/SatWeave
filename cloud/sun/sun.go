@@ -121,7 +121,7 @@ func (s *Sun) innerSubmitJob(ctx context.Context, tasks []*common.Task) error {
 		return err
 	}
 
-	// deploy
+	// deploy 创建对应的 worker
 	err = s.deployExecuteTasks(ctx, executeMap)
 	if err != nil {
 		logger.Errorf("deploy execute tasks failed: %v", err)
@@ -129,7 +129,7 @@ func (s *Sun) innerSubmitJob(ctx context.Context, tasks []*common.Task) error {
 	}
 	logger.Infof("deploy execute tasks success")
 
-	// start
+	// start 让 worker run起来
 
 	return nil
 }
@@ -144,6 +144,7 @@ func (s *Sun) deployExecuteTasks(ctx context.Context, executeMap map[uint64][]*c
 			return err
 		}
 		client := task_manager.NewTaskManagerServiceClient(conn)
+		// 每个 Execute task 都需要 deploy
 		for _, executeTask := range executeTasks {
 			_, err := client.DeployTask(ctx, executeTask)
 			if err != nil {

@@ -9,30 +9,29 @@ import (
 	"satweave/cloud/sun"
 	"satweave/messenger"
 	"satweave/messenger/common"
-	"satweave/sat-node/worker"
 	"satweave/shared/task-manager"
 	"satweave/utils/errno"
 	"satweave/utils/logger"
 	"sync"
+	"sync/atomic"
 )
 
 type TaskManager struct {
 	task_manager.UnimplementedTaskManagerServiceServer
-	ctx             context.Context
-	config          *Config
-	workers         []*worker.Worker
-	mutex           *sync.Mutex
+	ctx    context.Context
+	config *Config
+	mutex  *sync.Mutex
+	// selfDescription 里的 slotNum 是剩余的 slotNum 数量
 	selfDescription *common.TaskManagerDescription
 	slotTable       *SlotTable
 	cancelFunc      context.CancelFunc
+	nextWorkerId    atomic.Uint64
 }
 
-func (t *TaskManager) initWorkers() error {
-	t.workers = make([]*worker.Worker, t.config.SlotNum)
-	for i := 0; i < t.config.SlotNum; i++ {
-		t.workers[i] = worker.NewWorker()
-	}
-	return nil
+func (t *TaskManager) GetNextWorkerId() uint64 {
+	id := t.nextWorkerId.Load()
+	t.nextWorkerId.Add(1)
+	return id
 }
 
 func (t *TaskManager) newSelfDescription(raftId uint64, slotNum uint64, host string, port uint64) *common.TaskManagerDescription {
@@ -47,8 +46,12 @@ func (t *TaskManager) newSelfDescription(raftId uint64, slotNum uint64, host str
 func (t *TaskManager) PushRecord(_ context.Context, request *task_manager.PushRecordRequest) (*common.NilResponse, error) {
 	workerId := request.WorkerId
 	// TODO(qiu): 增加转发模式
-	t.slotTable[request]
-	err := t.workers[workerId].PushRecord(request.Record, request.FromSubtask, request.PartitionIdx)
+	worker, err := t.slotTable.getWorkerByWorkerId(workerId)
+	if err != nil {
+		logger.Errorf("task manager id: %v get worker id %v failed: %v", t.selfDescription.RaftId, workerId, err)
+		return nil, status.Errorf(codes.Internal, "get worker failed: %v", err)
+	}
+	err = worker.PushRecord(request.Record, request.FromSubtask, request.PartitionIdx)
 	if err != nil {
 		logger.Errorf("task manager id: %v push record to worker id %v failed: %v", t.selfDescription.RaftId, workerId, err)
 		return nil, status.Errorf(codes.Internal, "push record failed: %v", err)
@@ -104,19 +107,8 @@ func (t *TaskManager) Run() {
 	}
 }
 
-func (t *TaskManager) GetFreeWorkerIdList() []uint64 {
-	var freeWorkerIdList []uint64
-	for i := 0; i < len(t.workers); i++ {
-		if t.workers[i].IsAvailable() == true {
-			freeWorkerIdList = append(freeWorkerIdList, uint64(i))
-		}
-	}
-	return freeWorkerIdList
-}
-
 func (t *TaskManager) RequestSlot(_ context.Context, request *task_manager.RequiredSlotRequest) (*task_manager.RequiredSlotResponse, error) {
-	freeWorkerIdList := t.GetFreeWorkerIdList()
-	if request.RequestSlotNum > uint64(len(freeWorkerIdList)) {
+	if request.RequestSlotNum > t.selfDescription.SlotNumber {
 		logger.Errorf("request slot num is larger than free worker num")
 		return &task_manager.RequiredSlotResponse{
 			AvailableWorkers: nil,
@@ -127,7 +119,10 @@ func (t *TaskManager) RequestSlot(_ context.Context, request *task_manager.Requi
 	}
 
 	// 返回可用的workerId
-	assignedWorkerIdList := freeWorkerIdList[:request.RequestSlotNum]
+	assignedWorkerIdList := make([]uint64, 0)
+	for i := 0; i < int(request.RequestSlotNum); i++ {
+		assignedWorkerIdList = append(assignedWorkerIdList, t.GetNextWorkerId())
+	}
 	return &task_manager.RequiredSlotResponse{
 		AvailableWorkers: assignedWorkerIdList,
 	}, nil
@@ -150,10 +145,6 @@ func NewTaskManager(ctx context.Context, config *Config, raftID uint64, server *
 
 	taskManager.slotTable = NewSlotTable(raftID, slotNum)
 	taskManager.selfDescription = taskManager.newSelfDescription(raftID, slotNum, host, port)
-	taskManager.workers = make([]*worker.Worker, slotNum)
-	for i := 0; i < int(taskManager.selfDescription.SlotNumber); i++ {
-		taskManager.workers[i] = worker.NewWorker()
-	}
 
 	task_manager.RegisterTaskManagerServiceServer(server, taskManager)
 	return taskManager

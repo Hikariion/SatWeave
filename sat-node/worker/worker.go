@@ -13,13 +13,6 @@ import (
 	"sync"
 )
 
-type workerState uint64
-
-const (
-	workerIdle workerState = iota
-	workerBusy
-)
-
 type Worker struct {
 	// raftID
 	raftId uint64
@@ -38,9 +31,7 @@ type Worker struct {
 
 	cls operators.OperatorBase
 
-	// 表示该worker是否可用，true 表示可用 false 表示不可用
-	state workerState
-	mu    sync.Mutex
+	mu sync.Mutex
 }
 
 func (w *Worker) startComputeOnStandletonProcess(inputChannel chan *common.Record, outputChannel chan *common.Record) {
@@ -88,12 +79,6 @@ func (w *Worker) initInputReceiver(inputEndpoints []*common.InputEndpoints) chan
 	inputChannel := make(chan *common.Record, 1000)
 	w.inputReceiver = NewInputReceiver(inputChannel, inputEndpoints)
 	return inputChannel
-}
-
-func (w *Worker) IsAvailable() bool {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	return w.state == workerIdle
 }
 
 func (w *Worker) ComputeCore(clsName string, inputChannel, outputChannel chan *common.Record) {
@@ -176,21 +161,7 @@ func (w *Worker) initOutputDispenser(outputEndpoints []*common.OutputEndpoints) 
 
 }
 
-// Set 用于 worker 被调用时的设置
-func (w *Worker) Set() {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	w.state = workerBusy
-}
-
-func (w *Worker) Free() {
-	// TODO(qiu): 清空已有设置
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	w.state = workerIdle
-}
-
-func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partitionIdx uint64) error {
+func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partitionIdx int64) error {
 	preSubTask := fromSubTask
 	logger.Infof("Recv data(from=%s): %v", preSubTask, record)
 	w.inputReceiver.RecvData(partitionIdx, record)

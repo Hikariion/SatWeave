@@ -13,9 +13,10 @@ const (
 )
 
 type Slot struct {
-	raftID  uint64
-	subTask *worker.Worker
-	status  slotState
+	raftID   uint64
+	workerID uint64
+	subTask  *worker.Worker
+	status   slotState
 }
 
 func (s *Slot) start() {
@@ -24,8 +25,9 @@ func (s *Slot) start() {
 
 func NewSlot(raftId uint64, executeTask *common.ExecuteTask) *Slot {
 	return &Slot{
-		raftID:  raftId,
-		subTask: worker.NewWorker(raftId, executeTask),
-		status:  deployed,
+		raftID:   raftId,
+		subTask:  worker.NewWorker(raftId, executeTask),
+		status:   deployed,
+		workerID: executeTask.WorkerId,
 	}
 }

@@ -2,6 +2,7 @@ package task_manager
 
 import (
 	"satweave/messenger/common"
+	"satweave/sat-node/worker"
 	"satweave/utils/errno"
 	"satweave/utils/logger"
 	"sync"
@@ -13,6 +14,15 @@ type SlotTable struct {
 	table    map[string]*Slot // subtask_name -> slot
 
 	mutex *sync.Mutex
+}
+
+func (st *SlotTable) getWorkerByWorkerId(id uint64) (*worker.Worker, error) {
+	for _, slot := range st.table {
+		if slot.workerID == id {
+			return slot.subTask, nil
+		}
+	}
+	return nil, errno.WorkerNotFound
 }
 
 func (st *SlotTable) deployExecuteTask(executeTask *common.ExecuteTask) error {
