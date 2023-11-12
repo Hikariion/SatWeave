@@ -13,7 +13,7 @@ type PartitionerBase interface {
 type KeyPartitioner struct {
 }
 
-func (k *KeyPartitioner) Partitioning(record *common.Record, partitionNum uint64) (uint64, error) {
+func (k *KeyPartitioner) Partitioning(record *common.Record, partitionNum int64) (int64, error) {
 	partitionKey := record.PartitionKey
 	return partitionKey % partitionNum, nil
 }
@@ -29,8 +29,8 @@ func (t *TimestampPartitioner) Partitioning(record *common.Record, partitionNum 
 type RandomPartitioner struct {
 }
 
-func (r *RandomPartitioner) Partitioning(record *common.Record, partitionNum uint64) (uint64, error) {
+func (r *RandomPartitioner) Partitioning(record *common.Record, partitionNum int64) (int64, error) {
 	rand.Seed(time.Now().UnixNano())
 	randomNum := rand.Intn(int(partitionNum))
-	return uint64(randomNum) % partitionNum, nil
+	return int64(randomNum) % partitionNum, nil
 }

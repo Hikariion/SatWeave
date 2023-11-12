@@ -16,7 +16,7 @@ service TaskManagerService {
 message PushRecordRequest {
   Record record = 1;
   string from_subtask = 2;
-  uint64 partition_idx = 3;
+  int64 partition_idx = 3;
   uint64 worker_id = 5;
 }
 

@@ -19,7 +19,7 @@ type OutputDispenser struct {
 	channel                  chan *common.Record
 	outPutEndPoints          []*common.OutputEndpoints
 	subtaskName              string
-	partitionIdx             uint64
+	partitionIdx             int64
 	outputPartitionDispenser []*OutputPartitionDispenser
 }
 
@@ -27,8 +27,22 @@ func (o *OutputDispenser) pushData(record *common.Record) {
 	o.channel <- record
 }
 
-func (o *OutputDispenser) partitioningDataAndCarryToNextSubtask(inputChannel chan *common.Record, outputEndpoints []*common.OutputEndpoints,
-	subtaskName string, partitionIdx uint64) {
+func (o *OutputDispenser) partitioningDataAndCarryToNextSubtask(inputChannel chan *common.Record, outputEndPoints []*common.OutputEndpoints,
+	subtaskName string, partitionIdx int64) error {
+
+	err := o.innerPartitioningDataAndCarryToNextSubtask(inputChannel, outputEndPoints, subtaskName, partitionIdx)
+	if err != nil {
+		logger.Errorf("partitioning data and carry to next subtask failed: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func (o *OutputDispenser) innerPartitioningDataAndCarryToNextSubtask(inputChannel chan *common.Record, outputEndpoints []*common.OutputEndpoints,
+	subtaskName string, partitionIdx int64) error {
+
+	// 初始化 outputPartitionDispenser
 	partitions := make([]*OutputPartitionDispenser, 0)
 	for _, endPoint := range outputEndpoints {
 		partitions = append(partitions, NewOutputPartitionDispenser(subtaskName, partitionIdx, endPoint))
@@ -38,25 +52,58 @@ func (o *OutputDispenser) partitioningDataAndCarryToNextSubtask(inputChannel cha
 
 	needBroadCastDataType := common.DataType_CHECKPOINT
 
+	// TODO(qiu): 利用 error break？
 	for {
-		// TODO(qiu): 这个inputchannel是不是应该从结构体里读？
 		record := <-inputChannel
 		if record.DataType == needBroadCastDataType {
 			// BroadCast
 			for _, outputPartitionDispenser := range partitions {
-				outputPartitionDispenser.pushData(record)
+				err := outputPartitionDispenser.pushData(record)
+				if err != nil {
+					logger.Errorf("push data to next subtask failed: %v", err)
+				}
 			}
 		} else {
 			// Partitioning
-			partitionIdx := -1
-			if record.PartitionKey != nil {
-
+			var partitionIdx int64
+			partitionIdx = -1
+			if record.PartitionKey != -1 {
+				keyPartitioner := &KeyPartitioner{}
+				idx, err := keyPartitioner.Partitioning(record, int64(partitionNum))
+				if err != nil {
+					logger.Errorf("partitioning record failed: %v", err)
+					return err
+				}
+				partitionIdx = idx
+			} else {
+				randomPartitioner := &RandomPartitioner{}
+				idx, err := randomPartitioner.Partitioning(record, int64(partitionNum))
+				if err != nil {
+					logger.Errorf("partitioning record failed: %v", err)
+					return err
+				}
+				partitionIdx = idx
+			}
+			err := partitions[partitionIdx].pushData(record)
+			if err != nil {
+				logger.Errorf("push data to next subtask failed: %v", err)
+				return err
 			}
 		}
 	}
 }
 
-func NewOutputDispenser(outputChannel chan *common.Record, outputEndpoints []*common.OutputEndpoints, subtaskName string, partitionIdx uint64) *OutputDispenser {
+func (o *OutputDispenser) Run() {
+	go func() {
+		err := o.partitioningDataAndCarryToNextSubtask(o.channel, o.outPutEndPoints, o.subtaskName, o.partitionIdx)
+		if err != nil {
+			logger.Errorf("partitioning data and carry to next subtask failed: %v", err)
+			return
+		}
+	}()
+}
+
+func NewOutputDispenser(outputChannel chan *common.Record, outputEndpoints []*common.OutputEndpoints, subtaskName string, partitionIdx int64) *OutputDispenser {
 	// 这里 output_endpoints 是按 partition_idx 顺序排列的
 	outputDispenser := &OutputDispenser{
 		channel:                  outputChannel,
@@ -70,16 +117,17 @@ func NewOutputDispenser(outputChannel chan *common.Record, outputEndpoints []*co
 
 type OutputPartitionDispenser struct {
 	subTaskName  string
-	partitionIdx uint64
+	partitionIdx int64
 	endPoint     *common.OutputEndpoints
 }
 
+// 把 record 发送到下一个节点
 func (opd *OutputPartitionDispenser) pushData(record *common.Record) error {
 	// TODO： use rpc to push data need get
 	// 获得 endpoint 对应的 taskManager 的 rpc client
-	taskManagetHost := opd.endPoint.Host
+	taskManagerHost := opd.endPoint.Host
 	taskManagerPort := opd.endPoint.Port
-	conn, err := messenger.GetRpcConn(taskManagetHost, taskManagerPort)
+	conn, err := messenger.GetRpcConn(taskManagerHost, taskManagerPort)
 	if err != nil {
 		logger.Errorf("get rpc conn failed: %v", err)
 		return err
@@ -102,7 +150,7 @@ func (opd *OutputPartitionDispenser) pushData(record *common.Record) error {
 	return nil
 }
 
-func NewOutputPartitionDispenser(subTaskName string, partitionIdx uint64, endPoint *common.OutputEndpoints) *OutputPartitionDispenser {
+func NewOutputPartitionDispenser(subTaskName string, partitionIdx int64, endPoint *common.OutputEndpoints) *OutputPartitionDispenser {
 	return &OutputPartitionDispenser{
 		subTaskName:  subTaskName,
 		partitionIdx: partitionIdx,
