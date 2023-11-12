@@ -121,26 +121,23 @@ func (w *Worker) innerComputeCore(clsName string, inputChannel, outputChannel ch
 			inputData = record.Data
 			dataId = record.DataId
 			timestamp = record.Timestamp
-
-			if record.DataType == common.DataType_FINISH {
-				logger.Infof("%v finished successfully!", w.subTaskName)
-				if !isSinkOp {
-					w.pushFinishRecordToOutPutChannel(outputChannel)
-					// 退出循环
-					break
-				}
-			}
 		} else {
 			dataId = "data_id"
 			timestamp = timestampUtil.GetTimeStamp()
 		}
 
 		if isKeyOp {
-			// TODO(qiu) ???
-			// output_data = input_data
-			// partitionKey = taskInstance.Compute(inputData)
+			outputData = inputData
+			// TODO(qiu): 把 Compute 的返回值都改成 bytes
+			key, err := taskInstance.Compute(inputData)
+			if err != nil {
+				logger.Errorf("Compute error: %v", err)
+				// return err
+			}
+			partitionKey = int(key)
 		} else {
-			// outputData = taskInstance.Compute(data)
+			data, err := taskInstance.Compute(inputData)
+			outputData = data
 		}
 
 		if !isSinkOp {
@@ -149,7 +146,6 @@ func (w *Worker) innerComputeCore(clsName string, inputChannel, outputChannel ch
 			outputChannel <- output
 		}
 	}
-	return nil
 }
 
 func (w *Worker) initOutputDispenser(outputEndpoints []*common.OutputEndpoints) chan *common.Record {
@@ -166,6 +162,13 @@ func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partition
 	logger.Infof("Recv data(from=%s): %v", preSubTask, record)
 	w.inputReceiver.RecvData(partitionIdx, record)
 	return nil
+}
+
+// Run 启动 Worker
+func (w *Worker) Run() {
+	// 启动 Receiver 和 Dispenser
+
+	// 启动 worker 核心进程
 }
 
 func NewWorker(raftId uint64, executeTask *common.ExecuteTask) *Worker {
