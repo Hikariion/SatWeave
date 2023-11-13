@@ -1,0 +1,8 @@
+tasks:
+  - cls: SimpleSource
+    currency: 1
+    locate: 1
+  - cls: SimpleSink
+    currency: 5
+    input_tasks: [SimpleSource]
+    locate: 4

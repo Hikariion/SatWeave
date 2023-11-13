@@ -55,6 +55,8 @@ func (u *UserDefinedScheduler) Schedule(clusterId int, tasks []*common.Task) (ma
 func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, logicalMap map[uint64][]*common.Task, tasks []*common.Task) (map[uint64][]*common.ExecuteTask, error) {
 	// TODO(qiu): get free slot on each node
 	availWorkersMap, err := u.AskForAvailableWorkers(logicalMap)
+	logger.Infof("==================Map=======================")
+	logger.Infof("%v", availWorkersMap)
 	if err != nil {
 		logger.Errorf("UserDefinedScheduler.AskForAvailablePorts() failed: %v", err)
 		return nil, err
@@ -65,11 +67,12 @@ func (u *UserDefinedScheduler) TransformLogicalMapToExecuteMap(clusterId int, lo
 		taskManagerHost := u.RegisteredTaskManagerTable.getHost(taskManagerID)
 		taskManagerPort := u.RegisteredTaskManagerTable.getPort(taskManagerID)
 		executeMap[taskManagerID] = make([]*common.ExecuteTask, 0)
-		usedWorkerIdx := 0
+
 		for _, logicalTask := range logicalTasks {
-			workerID := availWorkersMap[taskManagerID][usedWorkerIdx]
-			usedWorkerIdx++
+			usedWorkerIdx := 0
 			for i := 0; i < int(logicalTask.Currency); i++ {
+				workerID := availWorkersMap[taskManagerID][usedWorkerIdx]
+				usedWorkerIdx++
 				logger.Infof("task manager id %v availWorkersMap worker id %v", taskManagerID, availWorkersMap[taskManagerID])
 				subTaskName := u.getSubTaskName(logicalTask.ClsName, i, int(logicalTask.Currency))
 				executeTask := &common.ExecuteTask{
@@ -146,9 +149,13 @@ func (u *UserDefinedScheduler) AskForAvailableWorkers(logicalMap map[uint64][]*c
 			logger.Errorf("UserDefinedScheduler.AskForAvailablePorts() failed: %v", err)
 			return nil, err
 		}
+		slotNum := 0
+		for _, task := range tasks {
+			slotNum += int(task.Currency)
+		}
 		client := task_manager.NewTaskManagerServiceClient(conn)
 		resp, err := client.RequestSlot(context.Background(),
-			&task_manager.RequiredSlotRequest{RequestSlotNum: uint64(len(tasks))})
+			&task_manager.RequiredSlotRequest{RequestSlotNum: uint64(slotNum)})
 		if err != nil {
 			logger.Errorf("UserDefinedScheduler.AskForAvailablePorts() failed: %v", err)
 			return nil, err

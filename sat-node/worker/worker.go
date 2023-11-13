@@ -5,6 +5,8 @@ package worker
 */
 
 import (
+	"bytes"
+	"encoding/binary"
 	"github.com/google/uuid"
 	"satweave/messenger/common"
 	"satweave/sat-node/operators"
@@ -31,11 +33,18 @@ type Worker struct {
 
 	cls operators.OperatorBase
 
+	inputChannel  chan *common.Record
+	outputChannel chan *common.Record
+
 	mu sync.Mutex
 }
 
-func (w *Worker) startComputeOnStandletonProcess(inputChannel chan *common.Record, outputChannel chan *common.Record) {
-	w.ComputeCore(w.clsName, inputChannel, outputChannel)
+func (w *Worker) startComputeOnStandletonProcess() error {
+	err := w.ComputeCore(w.clsName, w.inputChannel, w.outputChannel)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (w *Worker) initForStartService() {
@@ -47,7 +56,8 @@ func (w *Worker) initForStartService() {
 	if !w.isSinkOp() {
 		outputChannel = w.initOutputDispenser(w.outputEndpoints)
 	}
-	w.startComputeOnStandletonProcess(inputChannel, outputChannel)
+	w.inputChannel = inputChannel
+	w.outputChannel = outputChannel
 }
 
 // 判断是否为 source 算子
@@ -81,16 +91,25 @@ func (w *Worker) initInputReceiver(inputEndpoints []*common.InputEndpoints) chan
 	return inputChannel
 }
 
-func (w *Worker) ComputeCore(clsName string, inputChannel, outputChannel chan *common.Record) {
+func (w *Worker) ComputeCore(clsName string, inputChannel, outputChannel chan *common.Record) error {
 	// TODO(qiu):SourceOp 中通过 StopIteration 异常（迭代器终止）来表示
 	// 用 error 代替？
+	errChan := make(chan error, 1)
 	go func() {
 		err := w.innerComputeCore(clsName, inputChannel, outputChannel)
 		if err != nil {
 			logger.Errorf("ComputeCore error: %v", err)
 			// TODO(qiu): 添加错误处理
+			errChan <- err
 		}
+		close(errChan)
 	}()
+
+	if err := <-errChan; err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (w *Worker) innerComputeCore(clsName string, inputChannel, outputChannel chan *common.Record) error {
@@ -112,7 +131,9 @@ func (w *Worker) innerComputeCore(clsName string, inputChannel, outputChannel ch
 	for {
 		var dataId string // TODO(进程安全) gen
 		var timestamp uint64
-		partitionKey := -1
+		var partitionKey int64
+		partitionKey = -1
+		// input 和 output 的数据类型都是 []byte
 		var inputData []byte
 		var outputData []byte
 		if !isSourceOp {
@@ -129,20 +150,35 @@ func (w *Worker) innerComputeCore(clsName string, inputChannel, outputChannel ch
 		if isKeyOp {
 			outputData = inputData
 			// TODO(qiu): 把 Compute 的返回值都改成 bytes
-			key, err := taskInstance.Compute(inputData)
+			keyBytes, err := taskInstance.Compute(inputData)
 			if err != nil {
 				logger.Errorf("Compute error: %v", err)
 				// return err
 			}
-			partitionKey = int(key)
+			buf := bytes.NewBuffer(keyBytes)
+			// 小端存储
+			err = binary.Read(buf, binary.LittleEndian, &partitionKey)
+			if err != nil {
+				logger.Errorf("binary.Read error: %v", err)
+				return err
+			}
 		} else {
 			data, err := taskInstance.Compute(inputData)
+			if err != nil {
+				logger.Errorf("subtask: %v Compute failed", w.subTaskName)
+			}
 			outputData = data
 		}
 
 		if !isSinkOp {
 			// TODO(qiu) 将 output_data 转成 record
-			output := &common.Record{}
+			output := &common.Record{
+				DataId:       dataId,
+				DataType:     common.DataType_PICKLE,
+				Data:         outputData,
+				Timestamp:    timestamp,
+				PartitionKey: partitionKey,
+			}
 			outputChannel <- output
 		}
 	}
@@ -166,9 +202,12 @@ func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partition
 
 // Run 启动 Worker
 func (w *Worker) Run() {
+	// TODO(qiu)：都还需要添加错误处理
 	// 启动 Receiver 和 Dispenser
-
+	w.inputReceiver.RunAllPartitionReceiver()
+	w.outputDispenser.Run()
 	// 启动 worker 核心进程
+	w.startComputeOnStandletonProcess()
 }
 
 func NewWorker(raftId uint64, executeTask *common.ExecuteTask) *Worker {

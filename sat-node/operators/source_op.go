@@ -1,29 +1,29 @@
 package operators
 
-type SimpleSource struct {
+type SourceOperator struct {
 	name string
 }
 
-func (op *SimpleSource) Init(map[string]string) {
+func (op *SourceOperator) Init(map[string]string) {
 
 }
 
-func (op *SimpleSource) Compute([]byte) ([]byte, error) {
+func (op *SourceOperator) Compute([]byte) ([]byte, error) {
 	return nil, nil
 }
 
-func (op *SimpleSource) SetName(name string) {
+func (op *SourceOperator) SetName(name string) {
 	op.name = name
 }
 
-func (op *SimpleSource) IsSourceOp() bool {
+func (op *SourceOperator) IsSourceOp() bool {
 	return true
 }
 
-func (op *SimpleSource) IsSinkOp() bool {
+func (op *SourceOperator) IsSinkOp() bool {
 	return false
 }
 
-func (op *SimpleSource) IsKeyByOp() bool {
+func (op *SourceOperator) IsKeyByOp() bool {
 	return false
 }

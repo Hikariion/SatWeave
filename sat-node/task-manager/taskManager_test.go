@@ -39,7 +39,7 @@ func testTaskManager(t *testing.T) {
 	sun.PrintTaskManagerTable()
 
 	t.Run("test sun schedule ", func(t *testing.T) {
-		userTasks, err := common.ReadUserDefinedTasks("./test-files/task_config.yaml")
+		userTasks, err := common.ReadUserDefinedTasks("./test-files/test.yaml")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, userTasks)
 		//logger.Infof("%v", userTasks)
