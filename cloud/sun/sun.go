@@ -32,6 +32,11 @@ type Sun struct {
 type IdGenerator struct {
 }
 
+type TaskTuple struct {
+	TaskManagerId uint64
+	ExecuteTask *common.ExecuteTask
+}
+
 func NewIdGenerator() *IdGenerator {
 	return &IdGenerator{}
 }
@@ -155,6 +160,74 @@ func (s *Sun) deployExecuteTasks(ctx context.Context, executeMap map[uint64][]*c
 		logger.Infof("Deploy all execute task on task manager id: %v, success", taskManagerId)
 	}
 
+	return nil
+}
+
+func (s *Sun) startExecuteTasks(logicalMap map[uint64][]*common.Task, executeMap map[uint64][]*common.ExecuteTask) error {
+	// clsName -> Task
+	taskNameInvertedIndex := make(map[string]*common.Task)
+	for _, tasks := range logicalMap {
+		for _, task := range tasks {
+			if _, ok := taskNameInvertedIndex[task.ClsName]; !ok {
+				taskNameInvertedIndex[task.ClsName] = task
+			}
+		}
+	}
+
+	// clsName -> output task: List[str]
+	nextLogicalTasks := make(map[string][]string)
+	for _, tasks := range logicalMap {
+		for _, task := range tasks {
+			for _, preTask := range task.InputTasks {
+				if _, ok := nextLogicalTasks[preTask]; !ok {
+					nextLogicalTasks[preTask] = make([]string, 0)
+				}
+				nextLogicalTasks[preTask] = append(nextLogicalTasks[preTask], task.ClsName)
+			}
+		}
+	}
+
+	// subtaskName -> (taskManagerId, ExecuteTask)
+	subTaskNameInvertedIndex := make(map[string]*TaskTuple)
+	for taskManagerId, executeTasks := range executeMap {
+		for _, executeTask := range executeTasks {
+			subTaskNameInvertedIndex[executeTask.SubtaskName] = &TaskTuple{
+				TaskManagerId: taskManagerId,
+				ExecuteTask: executeTask,
+			}
+		}
+	}
+
+	startedTasks := make(map[string]bool)
+	for clsName, _ := range taskNameInvertedIndex {
+
+	}
+
+
+
+	return nil
+}
+
+func (s *Sun) dfsToStartExecuteTask(clsName string, nextLogicalTasks map[string][]string, logicalTaskNameInvertedIndex map[string][]*common.Task,
+	subtaskNameInvertedIndex map[string]) {
+
+}
+
+func (s *Sun) innerDfsToStartExecuteTask(taskManagerID uint64, executeTask *common.ExecuteTask) error {
+	host := s.taskRegisteredTaskManagerTable.table[taskManagerID].Host
+	port := s.taskRegisteredTaskManagerTable.table[taskManagerID].Port
+	conn, err := messenger.GetRpcConn(host, port)
+	if err != nil {
+		logger.Errorf("Fail to get rpc conn on TaskManager %v", taskManagerID)
+		return err
+	}
+	client := task_manager.NewTaskManagerServiceClient(conn)
+	_, err = client.StartTask(context.Background(), &task_manager.StartTaskRequest{
+		SubtaskName: executeTask.SubtaskName,
+	})
+	if err != nil {
+		logger.Errorf("Fail to start subtask: %v on task manager id: ", executeTask.SubtaskName, taskManagerID)
+	}
 	return nil
 }
 

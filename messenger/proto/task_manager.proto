@@ -45,5 +45,5 @@ message OperatorRequest {
 
 
 message StartTaskRequest {
-
+  string subtask_name = 1;
 }
