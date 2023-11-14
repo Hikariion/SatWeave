@@ -3,6 +3,7 @@ package task_manager
 import (
 	"satweave/messenger/common"
 	"satweave/sat-node/worker"
+	"satweave/utils/logger"
 )
 
 type slotState uint64
@@ -20,7 +21,8 @@ type Slot struct {
 }
 
 func (s *Slot) start() {
-
+	logger.Infof("raft id %v subtask %v begin to run...", s.raftID, s.subTask.SubTaskName)
+	s.subTask.Run()
 }
 
 func NewSlot(raftId uint64, executeTask *common.ExecuteTask) *Slot {

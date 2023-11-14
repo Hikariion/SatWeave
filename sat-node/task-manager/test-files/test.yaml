@@ -3,6 +3,6 @@ tasks:
     currency: 1
     locate: 1
   - cls: SimpleSink
-    currency: 5
+    currency: 1
     input_tasks: [SimpleSource]
     locate: 4

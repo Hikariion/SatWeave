@@ -6,6 +6,7 @@ package worker
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"github.com/google/uuid"
 	"satweave/messenger/common"
@@ -25,7 +26,7 @@ type Worker struct {
 	workerId        uint64
 	inputEndpoints  []*common.InputEndpoints
 	outputEndpoints []*common.OutputEndpoints
-	subTaskName     string
+	SubTaskName     string
 	partitionIdx    int64
 
 	inputReceiver   *InputReceiver
@@ -35,6 +36,9 @@ type Worker struct {
 
 	inputChannel  chan *common.Record
 	outputChannel chan *common.Record
+
+	ctx    context.Context
+	cancel context.CancelFunc
 
 	mu sync.Mutex
 }
@@ -50,6 +54,9 @@ func (w *Worker) startComputeOnStandletonProcess() error {
 func (w *Worker) initForStartService() {
 	var inputChannel chan *common.Record
 	var outputChannel chan *common.Record
+	// init op
+	cls := operators.FactoryMap[w.clsName]()
+	w.cls = cls
 	if !w.isSourceOp() {
 		inputChannel = w.initInputReceiver(w.inputEndpoints)
 	}
@@ -96,7 +103,7 @@ func (w *Worker) ComputeCore(clsName string, inputChannel, outputChannel chan *c
 	// 用 error 代替？
 	errChan := make(chan error, 1)
 	go func() {
-		err := w.innerComputeCore(clsName, inputChannel, outputChannel)
+		err := w.innerComputeCore(inputChannel, outputChannel)
 		if err != nil {
 			logger.Errorf("ComputeCore error: %v", err)
 			// TODO(qiu): 添加错误处理
@@ -112,10 +119,8 @@ func (w *Worker) ComputeCore(clsName string, inputChannel, outputChannel chan *c
 	return nil
 }
 
-func (w *Worker) innerComputeCore(clsName string, inputChannel, outputChannel chan *common.Record) error {
+func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Record) error {
 	// 具体执行逻辑
-	cls := operators.FactoryMap[clsName]()
-	w.cls = cls
 	// 判断是否为 source 算子
 	isSourceOp := w.isSourceOp()
 	// 判断是否为 sink 算子
@@ -123,63 +128,69 @@ func (w *Worker) innerComputeCore(clsName string, inputChannel, outputChannel ch
 	// 判断是否为 key 算子
 	isKeyOp := w.isKeyOp()
 
-	taskInstance := cls
-	cls.SetName(w.subTaskName)
+	taskInstance := w.cls
+	taskInstance.SetName(w.SubTaskName)
 	// TODO(qiu): cls Init
 	// TODO(qiu): succ start event?
 
 	for {
-		var dataId string // TODO(进程安全) gen
-		var timestamp uint64
-		var partitionKey int64
-		partitionKey = -1
-		// input 和 output 的数据类型都是 []byte
-		var inputData []byte
-		var outputData []byte
-		if !isSourceOp {
-			record := <-inputChannel
-			// 注意 这里的 data 是 []byte
-			inputData = record.Data
-			dataId = record.DataId
-			timestamp = record.Timestamp
-		} else {
-			dataId = "data_id"
-			timestamp = timestampUtil.GetTimeStamp()
-		}
+		select {
+		case <-w.ctx.Done():
+			logger.Infof("finish cls %v", w.clsName)
+			return nil
+		default:
+			var dataId string // TODO(进程安全) gen
+			var timestamp uint64
+			var partitionKey int64
+			partitionKey = -1
+			// input 和 output 的数据类型都是 []byte
+			var inputData []byte
+			var outputData []byte
+			if !isSourceOp {
+				record := <-inputChannel
+				// 注意 这里的 data 是 []byte
+				inputData = record.Data
+				dataId = record.DataId
+				timestamp = record.Timestamp
+			} else {
+				dataId = "data_id"
+				timestamp = timestampUtil.GetTimeStamp()
+			}
 
-		if isKeyOp {
-			outputData = inputData
-			// TODO(qiu): 把 Compute 的返回值都改成 bytes
-			keyBytes, err := taskInstance.Compute(inputData)
-			if err != nil {
-				logger.Errorf("Compute error: %v", err)
-				// return err
+			if isKeyOp {
+				outputData = inputData
+				// TODO(qiu): 把 Compute 的返回值都改成 bytes
+				keyBytes, err := taskInstance.Compute(inputData)
+				if err != nil {
+					logger.Errorf("Compute error: %v", err)
+					// return err
+				}
+				buf := bytes.NewBuffer(keyBytes)
+				// 小端存储
+				err = binary.Read(buf, binary.LittleEndian, &partitionKey)
+				if err != nil {
+					logger.Errorf("binary.Read error: %v", err)
+					return err
+				}
+			} else {
+				data, err := taskInstance.Compute(inputData)
+				if err != nil {
+					logger.Errorf("subtask: %v Compute failed", w.SubTaskName)
+				}
+				outputData = data
 			}
-			buf := bytes.NewBuffer(keyBytes)
-			// 小端存储
-			err = binary.Read(buf, binary.LittleEndian, &partitionKey)
-			if err != nil {
-				logger.Errorf("binary.Read error: %v", err)
-				return err
-			}
-		} else {
-			data, err := taskInstance.Compute(inputData)
-			if err != nil {
-				logger.Errorf("subtask: %v Compute failed", w.subTaskName)
-			}
-			outputData = data
-		}
 
-		if !isSinkOp {
-			// TODO(qiu) 将 output_data 转成 record
-			output := &common.Record{
-				DataId:       dataId,
-				DataType:     common.DataType_PICKLE,
-				Data:         outputData,
-				Timestamp:    timestamp,
-				PartitionKey: partitionKey,
+			if !isSinkOp {
+				// TODO(qiu) 将 output_data 转成 record
+				output := &common.Record{
+					DataId:       dataId,
+					DataType:     common.DataType_PICKLE,
+					Data:         outputData,
+					Timestamp:    timestamp,
+					PartitionKey: partitionKey,
+				}
+				outputChannel <- output
 			}
-			outputChannel <- output
 		}
 	}
 }
@@ -188,7 +199,7 @@ func (w *Worker) initOutputDispenser(outputEndpoints []*common.OutputEndpoints) 
 	// TODO(qiu): 调整 channel 容量
 	outputChannel := make(chan *common.Record, 1000)
 	// TODO(qiu): 研究一下 PartitionIdx 的作用
-	w.outputDispenser = NewOutputDispenser(outputChannel, outputEndpoints, w.subTaskName, w.partitionIdx)
+	w.outputDispenser = NewOutputDispenser(outputChannel, outputEndpoints, w.SubTaskName, w.partitionIdx)
 	return outputChannel
 
 }
@@ -202,27 +213,41 @@ func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partition
 
 // Run 启动 Worker
 func (w *Worker) Run() {
+	w.initForStartService()
+	logger.Infof("init finish")
 	// TODO(qiu)：都还需要添加错误处理
 	// 启动 Receiver 和 Dispenser
 	w.inputReceiver.RunAllPartitionReceiver()
-	w.outputDispenser.Run()
-	// 启动 worker 核心进程
-	w.startComputeOnStandletonProcess()
+	logger.Infof("subtask %v start input receiver finish...", w.SubTaskName)
+	//w.outputDispenser.Run()
+	//logger.Infof("subtask %v start output dispenser finish...", w.SubTaskName)
+	//// 启动 worker 核心进程
+	//w.startComputeOnStandletonProcess()
+	logger.Infof("start core compute process success...")
+}
+
+func (w *Worker) Stop() {
+	w.cancel()
 }
 
 func NewWorker(raftId uint64, executeTask *common.ExecuteTask) *Worker {
+	// TODO(qiu): 这个 ctx 是否可以继承 task manager
+	workerCtx, cancel := context.WithCancel(context.Background())
 	worker := &Worker{
 		raftId:          raftId,
 		subtaskId:       uuid.New().String(),
 		clsName:         executeTask.ClsName,
 		inputEndpoints:  executeTask.InputEndpoints,
 		outputEndpoints: executeTask.OutputEndpoints,
-		subTaskName:     executeTask.SubtaskName,
+		SubTaskName:     executeTask.SubtaskName,
 		partitionIdx:    executeTask.PartitionIdx,
 		workerId:        executeTask.WorkerId,
 
 		inputReceiver:   nil,
 		outputDispenser: nil,
+
+		ctx:    workerCtx,
+		cancel: cancel,
 	}
 	return worker
 }

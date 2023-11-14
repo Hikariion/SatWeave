@@ -74,7 +74,15 @@ func (t *TaskManager) DeployTask(_ context.Context, executeTask *common.ExecuteT
 	}
 
 	t.selfDescription.SlotNumber--
-	return nil, nil
+	return &common.NilResponse{}, nil
+}
+
+func (t *TaskManager) StartTask(_ context.Context, request *task_manager.StartTaskRequest) (*common.NilResponse, error) {
+	subtaskName := request.SubtaskName
+	logger.Infof("task manager id %v starting subtask %v", t.selfDescription.RaftId, subtaskName)
+	slot := t.slotTable.getSlot(subtaskName)
+	slot.start()
+	return &common.NilResponse{}, nil
 }
 
 func (t *TaskManager) registerToCloud() error {

@@ -52,5 +52,12 @@ func testTaskManager(t *testing.T) {
 
 		logger.Infof("logicalTaskMap: %v", logicalTaskMap)
 		logger.Infof("executeTaskMap: %v", executeTaskMap)
+
+		err = sun.DeployExecuteTasks(context.Background(), executeTaskMap)
+		assert.NoError(t, err)
+
+		err = sun.StartExecuteTasks(logicalTaskMap, executeTaskMap)
+		assert.NoError(t, err)
 	})
+
 }

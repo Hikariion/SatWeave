@@ -128,7 +128,7 @@ func (s *Sun) innerSubmitJob(ctx context.Context, tasks []*common.Task) error {
 	}
 
 	// deploy 创建对应的 worker
-	err = s.deployExecuteTasks(ctx, executeMap)
+	err = s.DeployExecuteTasks(ctx, executeMap)
 	if err != nil {
 		logger.Errorf("deploy execute tasks failed: %v", err)
 		return err
@@ -140,7 +140,7 @@ func (s *Sun) innerSubmitJob(ctx context.Context, tasks []*common.Task) error {
 	return nil
 }
 
-func (s *Sun) deployExecuteTasks(ctx context.Context, executeMap map[uint64][]*common.ExecuteTask) error {
+func (s *Sun) DeployExecuteTasks(ctx context.Context, executeMap map[uint64][]*common.ExecuteTask) error {
 	for taskManagerId, executeTasks := range executeMap {
 		host := s.taskRegisteredTaskManagerTable.table[taskManagerId].Host
 		port := s.taskRegisteredTaskManagerTable.table[taskManagerId].Port
@@ -164,7 +164,7 @@ func (s *Sun) deployExecuteTasks(ctx context.Context, executeMap map[uint64][]*c
 	return nil
 }
 
-func (s *Sun) startExecuteTasks(logicalMap map[uint64][]*common.Task, executeMap map[uint64][]*common.ExecuteTask) error {
+func (s *Sun) StartExecuteTasks(logicalMap map[uint64][]*common.Task, executeMap map[uint64][]*common.ExecuteTask) error {
 	// clsName -> Task
 	taskNameInvertedIndex := make(map[string]*common.Task)
 	for _, tasks := range logicalMap {
