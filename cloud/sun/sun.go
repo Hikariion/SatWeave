@@ -2,6 +2,7 @@ package sun
 
 import (
 	"context"
+	"fmt"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -34,7 +35,7 @@ type IdGenerator struct {
 
 type TaskTuple struct {
 	TaskManagerId uint64
-	ExecuteTask *common.ExecuteTask
+	ExecuteTask   *common.ExecuteTask
 }
 
 func NewIdGenerator() *IdGenerator {
@@ -193,33 +194,52 @@ func (s *Sun) startExecuteTasks(logicalMap map[uint64][]*common.Task, executeMap
 		for _, executeTask := range executeTasks {
 			subTaskNameInvertedIndex[executeTask.SubtaskName] = &TaskTuple{
 				TaskManagerId: taskManagerId,
-				ExecuteTask: executeTask,
+				ExecuteTask:   executeTask,
 			}
 		}
 	}
 
 	startedTasks := make(map[string]bool)
 	for clsName, _ := range taskNameInvertedIndex {
-
+		if _, ok := startedTasks[clsName]; !ok {
+			s.dfsToStartExecuteTask(clsName, nextLogicalTasks, taskNameInvertedIndex, subTaskNameInvertedIndex, startedTasks)
+		}
 	}
-
-
 
 	return nil
 }
 
-func (s *Sun) dfsToStartExecuteTask(clsName string, nextLogicalTasks map[string][]string, logicalTaskNameInvertedIndex map[string][]*common.Task,
-	subtaskNameInvertedIndex map[string]) {
+func (s *Sun) dfsToStartExecuteTask(clsName string, nextLogicalTasks map[string][]string, logicalTaskNameInvertedIndex map[string]*common.Task,
+	subtaskNameInvertedIndex map[string]*TaskTuple, startedTasks map[string]bool) {
+	if _, ok := startedTasks[clsName]; ok {
+		return
+	}
+	startedTasks[clsName] = true
+	list, ok := nextLogicalTasks[clsName]
+	if ok {
+		for _, nextLogicalTaskName := range list {
+			if _, exists := startedTasks[nextLogicalTaskName]; !exists {
+				s.dfsToStartExecuteTask(nextLogicalTaskName, nextLogicalTasks, logicalTaskNameInvertedIndex, subtaskNameInvertedIndex, startedTasks)
+			}
+		}
+	}
+
+	logicalTask := logicalTaskNameInvertedIndex[clsName]
+	for i := 0; i < int(logicalTask.Currency); i++ {
+		subtaskName := s.getSubTaskName(clsName, i, int(logicalTask.Currency))
+		taskManagerId := subtaskNameInvertedIndex[subtaskName].TaskManagerId
+		executeTask := subtaskNameInvertedIndex[subtaskName].ExecuteTask
+		s.innerDfsToStartExecuteTask(taskManagerId, executeTask)
+	}
 
 }
 
-func (s *Sun) innerDfsToStartExecuteTask(taskManagerID uint64, executeTask *common.ExecuteTask) error {
+func (s *Sun) innerDfsToStartExecuteTask(taskManagerID uint64, executeTask *common.ExecuteTask) {
 	host := s.taskRegisteredTaskManagerTable.table[taskManagerID].Host
 	port := s.taskRegisteredTaskManagerTable.table[taskManagerID].Port
 	conn, err := messenger.GetRpcConn(host, port)
 	if err != nil {
 		logger.Errorf("Fail to get rpc conn on TaskManager %v", taskManagerID)
-		return err
 	}
 	client := task_manager.NewTaskManagerServiceClient(conn)
 	_, err = client.StartTask(context.Background(), &task_manager.StartTaskRequest{
@@ -228,7 +248,7 @@ func (s *Sun) innerDfsToStartExecuteTask(taskManagerID uint64, executeTask *comm
 	if err != nil {
 		logger.Errorf("Fail to start subtask: %v on task manager id: ", executeTask.SubtaskName, taskManagerID)
 	}
-	return nil
+	return
 }
 
 func (s *Sun) RegisterTaskManager(_ context.Context, desc *common.TaskManagerDescription) (*common.NilResponse, error) {
@@ -249,6 +269,10 @@ func (s *Sun) PrintTaskManagerTable() {
 	logger.Infof("Sun printing task manager table...")
 	logger.Infof("%v", s.taskRegisteredTaskManagerTable.table)
 	logger.Infof("%v", s.Scheduler.RegisteredTaskManagerTable)
+}
+
+func (s *Sun) getSubTaskName(clsName string, idx, currency int) string {
+	return fmt.Sprintf("%s#(%d/%d)", clsName, idx+1, currency)
 }
 
 func NewSun(rpc *messenger.RpcServer) *Sun {
