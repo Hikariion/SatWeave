@@ -94,7 +94,7 @@ func (w *Worker) pushFinishRecordToOutPutChannel(outputChannel chan *common.Reco
 func (w *Worker) initInputReceiver(inputEndpoints []*common.InputEndpoints) chan *common.Record {
 	// TODO(qiu): 调整 channel 容量
 	inputChannel := make(chan *common.Record, 1000)
-	w.inputReceiver = NewInputReceiver(inputChannel, inputEndpoints)
+	w.inputReceiver = NewInputReceiver(w.ctx, inputChannel, inputEndpoints)
 	return inputChannel
 }
 
@@ -213,16 +213,20 @@ func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partition
 
 // Run 启动 Worker
 func (w *Worker) Run() {
+	logger.Infof("begin to init")
 	w.initForStartService()
 	logger.Infof("init finish")
 	// TODO(qiu)：都还需要添加错误处理
 	// 启动 Receiver 和 Dispenser
-	w.inputReceiver.RunAllPartitionReceiver()
+	if w.inputReceiver != nil {
+		w.inputReceiver.RunAllPartitionReceiver()
+	}
 	logger.Infof("subtask %v start input receiver finish...", w.SubTaskName)
-	//w.outputDispenser.Run()
+	//go w.outputDispenser.Run()
 	//logger.Infof("subtask %v start output dispenser finish...", w.SubTaskName)
 	//// 启动 worker 核心进程
 	//w.startComputeOnStandletonProcess()
+	//time.Sleep(60 * time.Second)
 	logger.Infof("start core compute process success...")
 }
 

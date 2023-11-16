@@ -58,6 +58,8 @@ func testTaskManager(t *testing.T) {
 
 		err = sun.StartExecuteTasks(logicalTaskMap, executeTaskMap)
 		assert.NoError(t, err)
+
+		//time.Sleep(60 * time.Second)
 	})
 
 }

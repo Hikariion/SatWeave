@@ -82,6 +82,7 @@ func (t *TaskManager) StartTask(_ context.Context, request *task_manager.StartTa
 	logger.Infof("task manager id %v starting subtask %v", t.selfDescription.RaftId, subtaskName)
 	slot := t.slotTable.getSlot(subtaskName)
 	slot.start()
+	logger.Infof("return response")
 	return &common.NilResponse{}, nil
 }
 

@@ -28,8 +28,11 @@ func (i *InputReceiver) RecvData(partitionIdx int64, record *common.Record) {
 }
 
 func (i *InputReceiver) RunAllPartitionReceiver() {
+	if i.partitions == nil {
+		return
+	}
 	for _, partition := range i.partitions {
-		partition.Run()
+		go partition.innerPraseDataAndCarryToChannel(partition.queue, partition.channel, partition.barrier, partition.allowOne)
 	}
 }
 
@@ -56,9 +59,12 @@ func (ipr *InputPartitionReceiver) praseDataAndCarryToChannel(inputQueue chan *c
 }
 
 func (ipr *InputPartitionReceiver) innerPraseDataAndCarryToChannel(inputQueue chan *common.Record, outputChannel chan *common.Record, barrier *sync.WaitGroup, allowOne chan struct{}) error {
+	logger.Infof("start innerPraseDataAndCarryToChannel....")
 	var needBarrierDataType = common.DataType_CHECKPOINT
 	for {
+		logger.Infof("block here")
 		data := <-inputQueue
+		logger.Infof("do not reach here")
 		if data.DataType == needBarrierDataType {
 			// TODO(qiu): 需要在某个地方初始化 wg
 			barrier.Done()
@@ -86,17 +92,8 @@ func (ipr *InputPartitionReceiver) innerPraseDataAndCarryToChannel(inputQueue ch
 
 func (ipr *InputPartitionReceiver) Run() {
 	logger.Infof("partition run ...")
-	go func() {
-		select {
-		case <-ipr.ctx.Done():
-			return
-		default:
-			err := ipr.praseDataAndCarryToChannel(ipr.queue, ipr.channel, ipr.barrier, make(chan struct{}, 1))
-			if err != nil {
-				logger.Fatalf("InputPartitionReceiver.praseDataAndCarryToChannel() failed: %v", err)
-			}
-		}
-	}()
+
+	ipr.innerPraseDataAndCarryToChannel(ipr.queue, ipr.channel, ipr.barrier, make(chan struct{}, 1))
 }
 
 func NewInputReceiver(ctx context.Context, inputChannel chan *common.Record, inputEndpoints []*common.InputEndpoints) *InputReceiver {
@@ -111,9 +108,6 @@ func NewInputReceiver(ctx context.Context, inputChannel chan *common.Record, inp
 		inputPartitionReceiver := inputReceiver.NewInputPartitionReceiver(inputReceiver.channel, inputReceiver.barrier, inputReceiver.allowOne)
 		inputReceiver.partitions = append(inputReceiver.partitions, inputPartitionReceiver)
 	}
-	// 启动所有的 InputPartitionReceiver
-	// TODO(qiu): 传参数，控制停止所有 InputPartitionReceiver
-	inputReceiver.RunAllPartitionReceiver()
 	return inputReceiver
 }
 
