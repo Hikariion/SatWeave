@@ -27,3 +27,7 @@ func (op *KeyByInputOp) IsSinkOp() bool {
 func (op *KeyByInputOp) IsKeyByOp() bool {
 	return true
 }
+
+func (op *KeyByInputOp) Checkpoint() []byte {
+	return nil
+}

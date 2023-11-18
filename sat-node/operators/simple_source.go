@@ -73,3 +73,7 @@ func (op *SimpleSource) IsSinkOp() bool {
 func (op *SimpleSource) IsKeyByOp() bool {
 	return false
 }
+
+func (op *SimpleSource) Checkpoint() []byte {
+	return nil
+}

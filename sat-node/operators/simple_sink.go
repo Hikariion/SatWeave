@@ -31,3 +31,7 @@ func (op *SimpleSink) IsSinkOp() bool {
 func (op *SimpleSink) IsKeyByOp() bool {
 	return false
 }
+
+func (op *SimpleSink) Checkpoint() []byte {
+	return nil
+}
