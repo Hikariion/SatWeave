@@ -45,7 +45,9 @@ type InputPartitionReceiver struct {
 }
 
 func (ipr *InputPartitionReceiver) RecvData(record *common.Record) {
+	logger.Infof("push record %v to queue", record)
 	ipr.queue <- record
+	logger.Infof("push record %v to queue finished", record)
 }
 
 func (ipr *InputPartitionReceiver) praseDataAndCarryToChannel(inputQueue chan *common.Record, outputChannel chan *common.Record,
@@ -62,30 +64,35 @@ func (ipr *InputPartitionReceiver) innerPraseDataAndCarryToChannel(inputQueue ch
 	logger.Infof("start innerPraseDataAndCarryToChannel....")
 	var needBarrierDataType = common.DataType_CHECKPOINT
 	for {
-		logger.Infof("block here")
-		data := <-inputQueue
-		logger.Infof("do not reach here")
-		if data.DataType == needBarrierDataType {
-			// TODO(qiu): 需要在某个地方初始化 wg
-			barrier.Done()
-			logger.Infof("Receive Barrier wg --, begin to wait ... ")
-			barrier.Wait()
-			logger.Infof("Block finished, begin to make checkpoint")
-			// 重置 wg，每个协程都只执行一次
-			barrier.Add(1)
-			// allowOne 用于只让一个协程往 output 发送数据
-			select {
-			case <-allowOne:
-				logger.Infof("Be the allowOne, transfer checkpoint signal")
+		select {
+		case <-ipr.ctx.Done():
+			return nil
+		default:
+			logger.Infof("block here")
+			data := <-inputQueue
+			logger.Infof("do not reach here")
+			if data.DataType == needBarrierDataType {
+				// TODO(qiu): 需要在某个地方初始化 wg
+				barrier.Done()
+				logger.Infof("Receive Barrier wg --, begin to wait ... ")
+				barrier.Wait()
+				logger.Infof("Block finished, begin to make checkpoint")
+				// 重置 wg，每个协程都只执行一次
+				barrier.Add(1)
+				// allowOne 用于只让一个协程往 output 发送数据
+				select {
+				case <-allowOne:
+					logger.Infof("Be the allowOne, transfer checkpoint signal")
+					outputChannel <- data
+					// 休眠 1s
+					time.Sleep(1 * time.Second)
+					allowOne <- struct{}{}
+				default:
+					logger.Infof("Do not be the allowOne, do not transfer checkpoint signal")
+				}
+			} else {
 				outputChannel <- data
-				// 休眠 1s
-				time.Sleep(1 * time.Second)
-				allowOne <- struct{}{}
-			default:
-				logger.Infof("Do not be the allowOne, do not transfer checkpoint signal")
 			}
-		} else {
-			outputChannel <- data
 		}
 	}
 }

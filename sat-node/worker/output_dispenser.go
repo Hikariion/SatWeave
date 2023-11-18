@@ -16,6 +16,7 @@ OutputDispenser
 	                           (SubTaskClient) \ PartitionDispenser
 */
 type OutputDispenser struct {
+	ctx                      context.Context
 	channel                  chan *common.Record
 	outPutEndPoints          []*common.OutputEndpoints
 	subtaskName              string
@@ -30,11 +31,7 @@ func (o *OutputDispenser) pushData(record *common.Record) {
 func (o *OutputDispenser) partitioningDataAndCarryToNextSubtask(inputChannel chan *common.Record, outputEndPoints []*common.OutputEndpoints,
 	subtaskName string, partitionIdx int64) error {
 
-	err := o.innerPartitioningDataAndCarryToNextSubtask(inputChannel, outputEndPoints, subtaskName, partitionIdx)
-	if err != nil {
-		logger.Errorf("partitioning data and carry to next subtask failed: %v", err)
-		return err
-	}
+	go o.innerPartitioningDataAndCarryToNextSubtask(inputChannel, outputEndPoints, subtaskName, partitionIdx)
 
 	return nil
 }
@@ -54,58 +51,64 @@ func (o *OutputDispenser) innerPartitioningDataAndCarryToNextSubtask(inputChanne
 
 	// TODO(qiu): 利用 error break？
 	for {
-		record := <-inputChannel
-		if record.DataType == needBroadCastDataType {
-			// BroadCast
-			for _, outputPartitionDispenser := range partitions {
-				err := outputPartitionDispenser.pushData(record)
+		select {
+		case <-o.ctx.Done():
+			return nil
+		default:
+			logger.Infof("output dispenser %s start, block here", o.subtaskName)
+			record := <-inputChannel
+			logger.Infof("output dispenser %s get record: %v", o.subtaskName, record)
+			if record.DataType == needBroadCastDataType {
+				// BroadCast
+				for _, outputPartitionDispenser := range partitions {
+					err := outputPartitionDispenser.pushData(record)
+					if err != nil {
+						logger.Errorf("push data to next subtask failed: %v", err)
+					}
+				}
+			} else {
+				// Partitioning
+				var partitionIdx int64
+				partitionIdx = -1
+				if record.PartitionKey != -1 {
+					keyPartitioner := &KeyPartitioner{}
+					idx, err := keyPartitioner.Partitioning(record, int64(partitionNum))
+					if err != nil {
+						logger.Errorf("partitioning record failed: %v", err)
+						return err
+					}
+					partitionIdx = idx
+				} else {
+					randomPartitioner := &RandomPartitioner{}
+					idx, err := randomPartitioner.Partitioning(record, int64(partitionNum))
+					if err != nil {
+						logger.Errorf("partitioning record failed: %v", err)
+						return err
+					}
+					partitionIdx = idx
+				}
+				err := partitions[partitionIdx].pushData(record)
 				if err != nil {
 					logger.Errorf("push data to next subtask failed: %v", err)
-				}
-			}
-		} else {
-			// Partitioning
-			var partitionIdx int64
-			partitionIdx = -1
-			if record.PartitionKey != -1 {
-				keyPartitioner := &KeyPartitioner{}
-				idx, err := keyPartitioner.Partitioning(record, int64(partitionNum))
-				if err != nil {
-					logger.Errorf("partitioning record failed: %v", err)
 					return err
 				}
-				partitionIdx = idx
-			} else {
-				randomPartitioner := &RandomPartitioner{}
-				idx, err := randomPartitioner.Partitioning(record, int64(partitionNum))
-				if err != nil {
-					logger.Errorf("partitioning record failed: %v", err)
-					return err
-				}
-				partitionIdx = idx
-			}
-			err := partitions[partitionIdx].pushData(record)
-			if err != nil {
-				logger.Errorf("push data to next subtask failed: %v", err)
-				return err
 			}
 		}
 	}
 }
 
 func (o *OutputDispenser) Run() {
-	go func() {
-		err := o.partitioningDataAndCarryToNextSubtask(o.channel, o.outPutEndPoints, o.subtaskName, o.partitionIdx)
-		if err != nil {
-			logger.Errorf("partitioning data and carry to next subtask failed: %v", err)
-			return
-		}
-	}()
+	err := o.partitioningDataAndCarryToNextSubtask(o.channel, o.outPutEndPoints, o.subtaskName, o.partitionIdx)
+	if err != nil {
+		logger.Errorf("partitioning data and carry to next subtask failed: %v", err)
+		return
+	}
 }
 
-func NewOutputDispenser(outputChannel chan *common.Record, outputEndpoints []*common.OutputEndpoints, subtaskName string, partitionIdx int64) *OutputDispenser {
+func NewOutputDispenser(ctx context.Context, outputChannel chan *common.Record, outputEndpoints []*common.OutputEndpoints, subtaskName string, partitionIdx int64) *OutputDispenser {
 	// 这里 output_endpoints 是按 partition_idx 顺序排列的
 	outputDispenser := &OutputDispenser{
+		ctx:                      ctx,
 		channel:                  outputChannel,
 		outPutEndPoints:          outputEndpoints,
 		subtaskName:              subtaskName,
