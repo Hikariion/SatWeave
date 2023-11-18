@@ -142,6 +142,15 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 				logger.Infof("here input data %s", string(inputData))
 				dataId = record.DataId
 				timestamp = record.Timestamp
+
+				// 收到结束的信号
+				if record.DataType == common.DataType_FINISH {
+					logger.Infof("%v finished successfully", w.SubTaskName)
+					if !isSinkOp {
+						w.pushFinishRecordToOutPutChannel(outputChannel)
+						return nil
+					}
+				}
 			} else {
 				dataId = "data_id"
 				timestamp = timestampUtil.GetTimeStamp()
@@ -208,6 +217,18 @@ func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partition
 	logger.Infof("Recv data(from=%s): %v", preSubTask, record)
 	w.inputReceiver.RecvData(partitionIdx, record)
 	return nil
+}
+
+func (w *Worker) PushFinishRecordToOutputChannel(outputChannel chan *common.Record) {
+	record := &common.Record{
+		DataId:    "last_finish_data_id",
+		DataType:  common.DataType_FINISH,
+		Timestamp: timestampUtil.GetTimeStamp(),
+		// TODO(qiu): 这里Data是空的，需要修改
+		Data:         nil,
+		PartitionKey: -1,
+	}
+	outputChannel <- record
 }
 
 // Run 启动 Worker

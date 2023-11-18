@@ -47,7 +47,7 @@ func (o *OutputDispenser) innerPartitioningDataAndCarryToNextSubtask(inputChanne
 
 	partitionNum := len(partitions)
 
-	needBroadCastDataType := common.DataType_CHECKPOINT
+	needBroadCastDataType := []common.DataType{common.DataType_CHECKPOINT, common.DataType_FINISH}
 
 	// TODO(qiu): 利用 error break？
 	for {
@@ -58,7 +58,7 @@ func (o *OutputDispenser) innerPartitioningDataAndCarryToNextSubtask(inputChanne
 			logger.Infof("output dispenser %s start, block here", o.subtaskName)
 			record := <-inputChannel
 			logger.Infof("output dispenser %s get record: %v", o.subtaskName, record)
-			if record.DataType == needBroadCastDataType {
+			if ContainType(needBroadCastDataType, record.DataType) {
 				// BroadCast
 				for _, outputPartitionDispenser := range partitions {
 					err := outputPartitionDispenser.pushData(record)

@@ -62,7 +62,7 @@ func (ipr *InputPartitionReceiver) praseDataAndCarryToChannel(inputQueue chan *c
 
 func (ipr *InputPartitionReceiver) innerPraseDataAndCarryToChannel(inputQueue chan *common.Record, outputChannel chan *common.Record, barrier *sync.WaitGroup, allowOne chan struct{}) error {
 	logger.Infof("start innerPraseDataAndCarryToChannel....")
-	var needBarrierDataType = common.DataType_CHECKPOINT
+	needBarrierDataType := []common.DataType{common.DataType_CHECKPOINT, common.DataType_FINISH}
 	for {
 		select {
 		case <-ipr.ctx.Done():
@@ -71,7 +71,7 @@ func (ipr *InputPartitionReceiver) innerPraseDataAndCarryToChannel(inputQueue ch
 			logger.Infof("block here")
 			data := <-inputQueue
 			logger.Infof("do not reach here")
-			if data.DataType == needBarrierDataType {
+			if ContainType(needBarrierDataType, data.DataType) {
 				// TODO(qiu): 需要在某个地方初始化 wg
 				barrier.Done()
 				logger.Infof("Receive Barrier wg --, begin to wait ... ")
@@ -95,6 +95,15 @@ func (ipr *InputPartitionReceiver) innerPraseDataAndCarryToChannel(inputQueue ch
 			}
 		}
 	}
+}
+
+func ContainType(list []common.DataType, element common.DataType) bool {
+	for _, v := range list {
+		if v == element {
+			return true
+		}
+	}
+	return false
 }
 
 func (ipr *InputPartitionReceiver) Run() {
