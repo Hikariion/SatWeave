@@ -56,7 +56,7 @@ func (t *TaskManager) PushRecord(_ context.Context, request *task_manager.PushRe
 		logger.Errorf("task manager id: %v push record to worker id %v failed: %v", t.selfDescription.RaftId, workerId, err)
 		return nil, status.Errorf(codes.Internal, "push record failed: %v", err)
 	}
-	return nil, nil
+	return &common.NilResponse{}, nil
 }
 
 func (t *TaskManager) DeployTask(_ context.Context, executeTask *common.ExecuteTask) (*common.NilResponse, error) {

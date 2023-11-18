@@ -54,15 +54,17 @@ func (w *Worker) startComputeOnStandletonProcess() error {
 func (w *Worker) initForStartService() {
 	var inputChannel chan *common.Record
 	var outputChannel chan *common.Record
-	// init op
-	cls := operators.FactoryMap[w.clsName]()
-	w.cls = cls
 	if !w.isSourceOp() {
 		inputChannel = w.initInputReceiver(w.inputEndpoints)
 	}
 	if !w.isSinkOp() {
 		outputChannel = w.initOutputDispenser(w.outputEndpoints)
 	}
+
+	// init operator
+	w.cls.Init(make(map[string]string))
+	w.cls.SetName(w.SubTaskName)
+
 	w.inputChannel = inputChannel
 	w.outputChannel = outputChannel
 }
@@ -93,7 +95,7 @@ func (w *Worker) pushFinishRecordToOutPutChannel(outputChannel chan *common.Reco
 
 func (w *Worker) initInputReceiver(inputEndpoints []*common.InputEndpoints) chan *common.Record {
 	// TODO(qiu): 调整 channel 容量
-	inputChannel := make(chan *common.Record, 1000)
+	inputChannel := make(chan *common.Record, 10000)
 	w.inputReceiver = NewInputReceiver(w.ctx, inputChannel, inputEndpoints)
 	return inputChannel
 }
@@ -101,25 +103,13 @@ func (w *Worker) initInputReceiver(inputEndpoints []*common.InputEndpoints) chan
 func (w *Worker) ComputeCore(clsName string, inputChannel, outputChannel chan *common.Record) error {
 	// TODO(qiu):SourceOp 中通过 StopIteration 异常（迭代器终止）来表示
 	// 用 error 代替？
-	errChan := make(chan error, 1)
-	go func() {
-		err := w.innerComputeCore(inputChannel, outputChannel)
-		if err != nil {
-			logger.Errorf("ComputeCore error: %v", err)
-			// TODO(qiu): 添加错误处理
-			errChan <- err
-		}
-		close(errChan)
-	}()
-
-	if err := <-errChan; err != nil {
-		return err
-	}
+	go w.innerComputeCore(inputChannel, outputChannel)
 
 	return nil
 }
 
 func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Record) error {
+	logger.Infof("start innerComputeCore...")
 	// 具体执行逻辑
 	// 判断是否为 source 算子
 	isSourceOp := w.isSourceOp()
@@ -129,8 +119,6 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 	isKeyOp := w.isKeyOp()
 
 	taskInstance := w.cls
-	taskInstance.SetName(w.SubTaskName)
-	// TODO(qiu): cls Init
 	// TODO(qiu): succ start event?
 
 	for {
@@ -142,7 +130,7 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 			var dataId string // TODO(进程安全) gen
 			var timestamp uint64
 			var partitionKey int64
-			partitionKey = -1
+			partitionKey = 0
 			// input 和 output 的数据类型都是 []byte
 			var inputData []byte
 			var outputData []byte
@@ -150,6 +138,7 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 				record := <-inputChannel
 				// 注意 这里的 data 是 []byte
 				inputData = record.Data
+				logger.Infof("here input data %s", string(inputData))
 				dataId = record.DataId
 				timestamp = record.Timestamp
 			} else {
@@ -160,6 +149,7 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 			if isKeyOp {
 				outputData = inputData
 				// TODO(qiu): 把 Compute 的返回值都改成 bytes
+				logger.Infof("cls %v compute input data: %v", w.clsName, inputData)
 				keyBytes, err := taskInstance.Compute(inputData)
 				if err != nil {
 					logger.Errorf("Compute error: %v", err)
@@ -189,7 +179,10 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 					Timestamp:    timestamp,
 					PartitionKey: partitionKey,
 				}
+				logger.Infof("output channel %v", output)
 				outputChannel <- output
+			} else {
+				logger.Infof("sink word %v", string(inputData))
 			}
 		}
 	}
@@ -197,9 +190,9 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 
 func (w *Worker) initOutputDispenser(outputEndpoints []*common.OutputEndpoints) chan *common.Record {
 	// TODO(qiu): 调整 channel 容量
-	outputChannel := make(chan *common.Record, 1000)
+	outputChannel := make(chan *common.Record, 10000)
 	// TODO(qiu): 研究一下 PartitionIdx 的作用
-	w.outputDispenser = NewOutputDispenser(outputChannel, outputEndpoints, w.SubTaskName, w.partitionIdx)
+	w.outputDispenser = NewOutputDispenser(w.ctx, outputChannel, outputEndpoints, w.SubTaskName, w.partitionIdx)
 	return outputChannel
 
 }
@@ -213,19 +206,20 @@ func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partition
 
 // Run 启动 Worker
 func (w *Worker) Run() {
-	logger.Infof("begin to init")
-	w.initForStartService()
-	logger.Infof("init finish")
 	// TODO(qiu)：都还需要添加错误处理
 	// 启动 Receiver 和 Dispenser
 	if w.inputReceiver != nil {
 		w.inputReceiver.RunAllPartitionReceiver()
+		logger.Infof("subtask %v start input receiver finish...", w.SubTaskName)
 	}
-	logger.Infof("subtask %v start input receiver finish...", w.SubTaskName)
-	//go w.outputDispenser.Run()
-	//logger.Infof("subtask %v start output dispenser finish...", w.SubTaskName)
-	//// 启动 worker 核心进程
-	//w.startComputeOnStandletonProcess()
+
+	if w.outputDispenser != nil {
+		w.outputDispenser.Run()
+		logger.Infof("subtask %v start output dispenser finish...", w.SubTaskName)
+	}
+
+	// 启动 worker 核心进程
+	w.startComputeOnStandletonProcess()
 	//time.Sleep(60 * time.Second)
 	logger.Infof("start core compute process success...")
 }
@@ -253,5 +247,13 @@ func NewWorker(raftId uint64, executeTask *common.ExecuteTask) *Worker {
 		ctx:    workerCtx,
 		cancel: cancel,
 	}
+
+	// init op
+	cls := operators.FactoryMap[worker.clsName]()
+	worker.cls = cls
+
+	// worker 初始化
+	worker.initForStartService()
+
 	return worker
 }

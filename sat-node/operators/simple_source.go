@@ -3,7 +3,7 @@ package operators
 import (
 	"bufio"
 	"os"
-	"regexp"
+	"satweave/utils/logger"
 	"strings"
 )
 
@@ -14,28 +14,28 @@ type SimpleSource struct {
 }
 
 func (op *SimpleSource) Init(map[string]string) {
-	op.wordsChan = make(chan string, 10)
+	op.wordsChan = make(chan string, 1)
 	op.done = make(chan bool)
 
 	go func() {
 		defer close(op.wordsChan)
-		file, err := os.Open("./document")
+		file, err := os.Open("./test-files/document.txt")
 		if err != nil {
+			logger.Errorf("open file failed: %v", err)
 			close(op.done)
 			return
 		}
 		defer file.Close()
 
 		scanner := bufio.NewScanner(file)
-		re := regexp.MustCompile("[.,\\s]+")
+		scanner.Split(bufio.ScanWords)
 
 		for scanner.Scan() {
-			line := scanner.Text()
-			words := re.Split(line, -1)
-			for _, word := range words {
-				if word != "" {
-					op.wordsChan <- strings.ToLower(word)
-				}
+			word := scanner.Text()
+			logger.Infof("read word %s", word)
+			if word != "" {
+				logger.Infof("send word %s, push", word)
+				op.wordsChan <- strings.ToLower(word)
 			}
 		}
 		close(op.done)
@@ -45,6 +45,7 @@ func (op *SimpleSource) Init(map[string]string) {
 func (op *SimpleSource) Compute([]byte) ([]byte, error) {
 	select {
 	case word, ok := <-op.wordsChan:
+		logger.Infof("word: %s", word)
 		if !ok {
 			// TODO(qiu): 可以返回错误，表示没有单词了
 			return nil, nil
