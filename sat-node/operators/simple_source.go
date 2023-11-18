@@ -3,6 +3,7 @@ package operators
 import (
 	"bufio"
 	"os"
+	"satweave/utils/errno"
 	"satweave/utils/logger"
 	"strings"
 )
@@ -48,7 +49,7 @@ func (op *SimpleSource) Compute([]byte) ([]byte, error) {
 		logger.Infof("word: %s", word)
 		if !ok {
 			// TODO(qiu): 可以返回错误，表示没有单词了
-			return nil, nil
+			return nil, errno.JobFinished
 		}
 		return []byte(word), nil
 	case <-op.done:

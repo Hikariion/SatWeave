@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"satweave/messenger/common"
 	"satweave/sat-node/operators"
+	"satweave/utils/errno"
 	"satweave/utils/logger"
 	timestampUtil "satweave/utils/timestamp"
 	"sync"
@@ -165,7 +166,12 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 			} else {
 				data, err := taskInstance.Compute(inputData)
 				if err != nil {
+					if err == errno.JobFinished {
+						// TODO(qiu): 通知后续的算子，处理结束
+						return err
+					}
 					logger.Errorf("subtask: %v Compute failed", w.SubTaskName)
+					return err
 				}
 				outputData = data
 			}
