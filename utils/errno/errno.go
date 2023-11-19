@@ -15,6 +15,7 @@ const (
 	GatewayError
 	CommonError
 	TaskManagerError
+	JobManagerError
 
 	SystemError int32 = 77 * 1000
 )
@@ -170,7 +171,8 @@ var (
 )
 
 const (
-	/* TaskManager error */
+	/* Task Manager error */
+
 	CodeRequestSlotFail int32 = TaskManagerError + iota
 	CodeSlotCapacityNotEnough
 	CodeWorkerNotFound
@@ -182,6 +184,16 @@ var (
 	SlotCapacityNotEnough = newErr(CodeSlotCapacityNotEnough, "slot capacity not enough")
 	WorkerNotFound        = newErr(CodeWorkerNotFound, "worker not found")
 	JobFinished           = newErr(CodeJobFinished, "job finished")
+)
+
+const (
+	/* Job Manager error */
+
+	CodeRegisterJobFail int32 = JobManagerError + iota
+)
+
+var (
+	RegisterJobFail = newErr(CodeRegisterJobFail, "register job fail")
 )
 
 type Errno struct {

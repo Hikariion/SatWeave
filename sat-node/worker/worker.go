@@ -8,12 +8,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"fmt"
 	"github.com/google/uuid"
 	"satweave/messenger/common"
 	"satweave/sat-node/operators"
 	"satweave/utils/errno"
+	"satweave/utils/generator"
 	"satweave/utils/logger"
 	timestampUtil "satweave/utils/timestamp"
+	"strconv"
 	"sync"
 )
 
@@ -42,6 +45,8 @@ type Worker struct {
 	cancel context.CancelFunc
 
 	mu sync.Mutex
+
+	CheckpointDir string
 }
 
 func (w *Worker) startComputeOnStandletonProcess() error {
@@ -53,21 +58,19 @@ func (w *Worker) startComputeOnStandletonProcess() error {
 }
 
 func (w *Worker) initForStartService() {
-	var inputChannel chan *common.Record
-	var outputChannel chan *common.Record
 	if !w.isSourceOp() {
-		inputChannel = w.initInputReceiver(w.inputEndpoints)
+		w.inputChannel = w.initInputReceiver(w.inputEndpoints)
+	} else {
+		// 用来接收 checkpoint 等 event
+		w.inputChannel = make(chan *common.Record, 100)
 	}
 	if !w.isSinkOp() {
-		outputChannel = w.initOutputDispenser(w.outputEndpoints)
+		w.outputChannel = w.initOutputDispenser(w.outputEndpoints)
 	}
 
 	// init operator
 	w.cls.Init(make(map[string]string))
 	w.cls.SetName(w.SubTaskName)
-
-	w.inputChannel = inputChannel
-	w.outputChannel = outputChannel
 }
 
 // 判断是否为 source 算子
@@ -128,23 +131,28 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 			logger.Infof("finish cls %v", w.clsName)
 			return nil
 		default:
-			var dataId string // TODO(进程安全) gen
-			var timestamp uint64
+			var record *common.Record
+			var dataType common.DataType
+			var dataId string
+			var timeStamp uint64
 			var partitionKey int64
-			partitionKey = 0
+			// TODO: 初始化成 -1？
+			partitionKey = -1
 			// input 和 output 的数据类型都是 []byte
 			var inputData []byte
 			var outputData []byte
 			if !isSourceOp {
-				record := <-inputChannel
+				// 不是 source op
+				record = <-inputChannel
+				dataType = record.DataType
 				// 注意 这里的 data 是 []byte
 				inputData = record.Data
 				logger.Infof("here input data %s", string(inputData))
 				dataId = record.DataId
-				timestamp = record.Timestamp
+				timeStamp = record.Timestamp
 
 				// 收到结束的信号
-				if record.DataType == common.DataType_FINISH {
+				if dataType == common.DataType_FINISH {
 					logger.Infof("%v finished successfully", w.SubTaskName)
 					if !isSinkOp {
 						w.pushFinishRecordToOutPutChannel(outputChannel)
@@ -152,46 +160,65 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 					}
 				}
 			} else {
-				dataId = "data_id"
-				timestamp = timestampUtil.GetTimeStamp()
+				// 是 source op
+				select {
+				case record = <-inputChannel:
+					inputData = record.Data
+					dataType = record.DataType
+				default:
+					// SourceOp 没用 event，继续处理
+					dataId = strconv.FormatInt(generator.GetDataIdGeneratorInstance().Next(), 10)
+					dataType = common.DataType_PICKLE
+					timeStamp = timestampUtil.GetTimeStamp()
+					inputData = nil
+				}
 			}
 
 			if isKeyOp {
 				outputData = inputData
-				// TODO(qiu): 把 Compute 的返回值都改成 bytes
-				logger.Infof("cls %v compute input data: %v", w.clsName, inputData)
-				keyBytes, err := taskInstance.Compute(inputData)
-				if err != nil {
-					logger.Errorf("Compute error: %v", err)
-					// return err
-				}
-				buf := bytes.NewBuffer(keyBytes)
-				// 小端存储
-				err = binary.Read(buf, binary.LittleEndian, &partitionKey)
-				if err != nil {
-					logger.Errorf("binary.Read error: %v", err)
-					return err
-				}
-			} else {
-				data, err := taskInstance.Compute(inputData)
-				if err != nil {
-					if err == errno.JobFinished {
-						// TODO(qiu): 通知后续的算子，处理结束
+				if dataType == common.DataType_PICKLE {
+					keyBytes, err := taskInstance.Compute(inputData)
+					if err != nil {
+						logger.Errorf("Compute error: %v", err)
 						return err
 					}
-					logger.Errorf("subtask: %v Compute failed", w.SubTaskName)
-					return err
+					buf := bytes.NewBuffer(keyBytes)
+					// 小端存储
+					// TODO：相应的 keyby op 转 bytes 的时候，也要转成小端存储
+					err = binary.Read(buf, binary.LittleEndian, &partitionKey)
+					if err != nil {
+						logger.Errorf("binary.Read error: %v", err)
+						return err
+					}
 				}
-				outputData = data
+			} else {
+				if dataType == common.DataType_PICKLE {
+					data, err := taskInstance.Compute(inputData)
+					if err != nil {
+						if err == errno.JobFinished {
+							// TODO(qiu): 通知后续的算子，处理结束
+							return err
+						}
+						logger.Errorf("subtask: %v Compute failed", w.SubTaskName)
+						return err
+					}
+					outputData = data
+				} else if dataType == common.DataType_CHECKPOINT {
+					// checkpoint
+					outputData = inputData
+					taskInstance.Checkpoint()
+				} else {
+					logger.Fatalf("Failed: unknown data type: %v", dataType)
+				}
 			}
 
 			if !isSinkOp {
 				// TODO(qiu) 将 output_data 转成 record
 				output := &common.Record{
 					DataId:       dataId,
-					DataType:     common.DataType_PICKLE,
+					DataType:     dataType,
 					Data:         outputData,
-					Timestamp:    timestamp,
+					Timestamp:    timeStamp,
 					PartitionKey: partitionKey,
 				}
 				logger.Infof("output channel %v", output)
@@ -281,6 +308,10 @@ func NewWorker(raftId uint64, executeTask *common.ExecuteTask) *Worker {
 
 	// worker 初始化
 	worker.initForStartService()
-
+	worker.CheckpointDir = fmt.Sprintf("tmp/tm/%d/%s/%d/checkpoint", worker.raftId, worker.SubTaskName, worker.partitionIdx)
 	return worker
+}
+
+func triggerCheckpoint() {
+	// 只有 SourceOp 才会被调用该函数
 }
