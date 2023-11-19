@@ -28,6 +28,8 @@ type Sun struct {
 	Scheduler                      *UserDefinedScheduler
 
 	idGenerator *IdGenerator
+
+	checkpointCoordinator *CheckpointCoordinator
 }
 
 type IdGenerator struct {
@@ -110,34 +112,41 @@ func (s *Sun) ReportClusterInfo(_ context.Context, clusterInfo *infos.ClusterInf
 
 func (s *Sun) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*SubmitJobResponse, error) {
 	jobId := s.idGenerator.Next()
-	err := s.innerSubmitJob(ctx, request.Tasks)
+	executeMap, err := s.innerSubmitJob(ctx, request.Tasks)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "submit job failed: %v", err)
+		return &SubmitJobResponse{}, status.Errorf(codes.Internal, "submit job failed: %v", err)
 	}
+
+	// 把所有 Op 信息注册到 CheckpointCoordinator 里
+	err = s.checkpointCoordinator.registerJob(jobId, executeMap)
+	if err != nil {
+		return
+	}
+
 	return &SubmitJobResponse{
 		JobId: jobId,
 	}, nil
 }
 
-func (s *Sun) innerSubmitJob(ctx context.Context, tasks []*common.Task) error {
+func (s *Sun) innerSubmitJob(ctx context.Context, tasks []*common.Task) (map[uint64][]*common.ExecuteTask, error) {
 	// scheduler
 	_, executeMap, err := s.Scheduler.Schedule(0, tasks)
 	if err != nil {
 		logger.Errorf("schedule failed: %v", err)
-		return err
+		return nil, err
 	}
 
 	// deploy 创建对应的 worker
 	err = s.DeployExecuteTasks(ctx, executeMap)
 	if err != nil {
 		logger.Errorf("deploy execute tasks failed: %v", err)
-		return err
+		return nil, err
 	}
 	logger.Infof("deploy execute tasks success")
 
-	// start 让 worker run起来
+	// TODO start 让 worker run起来
 
-	return nil
+	return executeMap, nil
 }
 
 func (s *Sun) DeployExecuteTasks(ctx context.Context, executeMap map[uint64][]*common.ExecuteTask) error {
@@ -289,6 +298,7 @@ func NewSun(rpc *messenger.RpcServer) *Sun {
 		taskRegisteredTaskManagerTable: newRegisteredTaskManagerTable(),
 		idGenerator:                    NewIdGenerator(),
 	}
+	sun.checkpointCoordinator = NewCheckpointCoordinator(sun.taskRegisteredTaskManagerTable)
 	sun.Scheduler = newUserDefinedScheduler(sun.taskRegisteredTaskManagerTable)
 	RegisterSunServer(rpc, &sun)
 	return &sun

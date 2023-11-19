@@ -190,10 +190,12 @@ const (
 	/* Job Manager error */
 
 	CodeRegisterJobFail int32 = JobManagerError + iota
+	CodeTriggerCheckpointFail
 )
 
 var (
-	RegisterJobFail = newErr(CodeRegisterJobFail, "register job fail")
+	RegisterJobFail       = newErr(CodeRegisterJobFail, "register job fail")
+	TriggerCheckpointFail = newErr(CodeTriggerCheckpointFail, "trigger checkpoint fail")
 )
 
 type Errno struct {

@@ -10,7 +10,14 @@ service TaskManagerService {
   rpc StartTask(StartTaskRequest) returns (NilResponse) {}
   rpc ProcessOperator(OperatorRequest) returns (NilResponse) {}
   rpc RequestSlot(RequiredSlotRequest) returns (RequiredSlotResponse) {}
+  // From other subtask
   rpc PushRecord(PushRecordRequest) returns (NilResponse) {}
+  // From job manager
+  rpc TriggerCheckpoint(TriggerCheckpointRequest) returns (NilResponse) {}
+}
+
+message TriggerCheckpointRequest {
+  Record.Checkpoint checkpoint = 1;
 }
 
 message PushRecordRequest {
