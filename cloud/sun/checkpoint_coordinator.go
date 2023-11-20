@@ -27,7 +27,7 @@ func (c *CheckpointCoordinator) registerJob(jobId string, executeTaskMap map[uin
 	return nil
 }
 
-func (c *CheckpointCoordinator) triggerCheckpoint(jobId string, checkpointId uint64) error {
+func (c *CheckpointCoordinator) triggerCheckpoint(jobId string, checkpointId uint64, cancelJob bool) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -36,13 +36,25 @@ func (c *CheckpointCoordinator) triggerCheckpoint(jobId string, checkpointId uin
 		return errno.TriggerCheckpointFail
 	}
 
-	err := c.table[jobId].triggerCheckpoint(checkpointId, c.RegisteredTaskManagerTable)
+	err := c.table[jobId].triggerCheckpoint(checkpointId, c.RegisteredTaskManagerTable, cancelJob)
 	if err != nil {
 		logger.Errorf("Failed to trigger checkpoint: %v", err)
 		return err
 	}
 
 	return nil
+}
+
+func (c *CheckpointCoordinator) AcknowledgeCheckpoint(request *AcknowledgeCheckpointRequest) bool {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	jobId := request.JobId
+	if _, exists := c.table[jobId]; !exists {
+		logger.Errorf("Failed to acknowledge checkpoint: jobId %v does not exist", jobId)
+		return false
+	}
+
 }
 
 func NewCheckpointCoordinator(registeredTaskManagerTable *RegisteredTaskManagerTable) *CheckpointCoordinator {

@@ -115,6 +115,7 @@ message Record {
 
   message Checkpoint {
     uint64 id = 1;
+    bool cancel_job = 2;
   }
 
   message Finish {

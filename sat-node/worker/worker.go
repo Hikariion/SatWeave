@@ -90,15 +90,6 @@ func (w *Worker) isKeyOp() bool {
 	return w.cls.IsKeyByOp()
 }
 
-func (w *Worker) pushFinishRecordToOutPutChannel(outputChannel chan *common.Record) {
-	record := &common.Record{
-		DataId:   "last_finish_data_id",
-		DataType: common.DataType_FINISH,
-		// TODO(qiu): 没写完，只有架子
-	}
-	outputChannel <- record
-}
-
 func (w *Worker) initInputReceiver(inputEndpoints []*common.InputEndpoints) chan *common.Record {
 	// TODO(qiu): 调整 channel 容量
 	inputChannel := make(chan *common.Record, 10000)
@@ -109,8 +100,28 @@ func (w *Worker) initInputReceiver(inputEndpoints []*common.InputEndpoints) chan
 func (w *Worker) ComputeCore(clsName string, inputChannel, outputChannel chan *common.Record) error {
 	// TODO(qiu):SourceOp 中通过 StopIteration 异常（迭代器终止）来表示
 	// 用 error 代替？
-	go w.innerComputeCore(inputChannel, outputChannel)
+	errChan := make(chan error, 1)
+	go func() {
+		err := w.innerComputeCore(inputChannel, outputChannel)
+		if err != nil {
+			logger.Errorf("innerComputeCore error: %v", err)
+			errChan <- err
+			return
+		}
+		errChan <- nil
+	}()
 
+	err := <-errChan
+	if err != nil {
+		logger.Errorf("innerComputeCore error: %v", err)
+		if err == errno.JobFinished {
+			logger.Infof("%s finished successfully", w.SubTaskName)
+			w.PushFinishEventToOutputChannel(outputChannel)
+		} else {
+			logger.Errorf("Failed: run %s task failed, err %v", w.SubTaskName, err)
+			return err
+		}
+	}
 	return nil
 }
 
@@ -152,15 +163,6 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 				logger.Infof("here input data %s", string(inputData))
 				dataId = record.DataId
 				timeStamp = record.Timestamp
-
-				// 收到结束的信号
-				if dataType == common.DataType_FINISH {
-					logger.Infof("%v finished successfully", w.SubTaskName)
-					if !isSinkOp {
-						w.pushFinishRecordToOutPutChannel(outputChannel)
-						return nil
-					}
-				}
 			} else {
 				// 是 source op
 				select {
@@ -168,13 +170,15 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 					inputData = record.Data
 					dataType = record.DataType
 				default:
-					// SourceOp 没用 event，继续处理
+					// SourceOp 没有 event，继续处理
 					dataId = strconv.FormatInt(int64(generator.GetDataIdGeneratorInstance().Next()), 10)
 					dataType = common.DataType_PICKLE
 					timeStamp = timestampUtil.GetTimeStamp()
 					inputData = nil
 				}
 			}
+
+			logger.Infof("%v recv: %s(type=%v)", w.SubTaskName, string(inputData), dataType)
 
 			if isKeyOp {
 				outputData = inputData
@@ -192,6 +196,25 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 						logger.Errorf("binary.Read error: %v", err)
 						return err
 					}
+				} else if dataType == common.DataType_CHECKPOINT {
+					w.PushCheckpointEventToOutputChannel(inputData, outputChannel)
+					tmp := &common.Record_Checkpoint{}
+					err := tmp.Unmarshal(inputData)
+					if err != nil {
+						logger.Errorf("Fail to unmarchal checkpoint data: %v", err)
+						return err
+					}
+					if tmp.CancelJob == true {
+						break
+					} else {
+						continue
+					}
+				} else if dataType == common.DataType_FINISH {
+					w.PushFinishEventToOutputChannel(outputChannel)
+					logger.Infof("%s finished successfully", w.SubTaskName)
+					break
+				} else {
+					logger.Fatalf("Failed: unknown data type: %v", dataType)
 				}
 			} else {
 				if dataType == common.DataType_PICKLE {
@@ -206,8 +229,9 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 					}
 					outputData = data
 				} else if dataType == common.DataType_CHECKPOINT {
-					// checkpoint
-					outputData = inputData
+					if !isSinkOp {
+						w.PushCheckpointEventToOutputChannel(inputData, outputChannel)
+					}
 					// 把 inputData 转成 record    []byte -> checkpoint
 					t := &common.Record_Checkpoint{}
 					err := t.Unmarshal(inputData)
@@ -223,6 +247,18 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 						return err
 					}
 					logger.Infof("%s success save snapshot state", w.SubTaskName)
+					if t.CancelJob == true {
+						logger.Infof("%s cancel job", w.SubTaskName)
+						break
+					} else {
+						continue
+					}
+				} else if dataType == common.DataType_FINISH {
+					logger.Infof("%s finished successfully", w.SubTaskName)
+					if !isSinkOp {
+						w.PushFinishEventToOutputChannel(outputChannel)
+						break
+					}
 				} else {
 					logger.Fatalf("Failed: unknown data type: %v", dataType)
 				}
@@ -262,7 +298,19 @@ func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partition
 	return nil
 }
 
-func (w *Worker) PushFinishRecordToOutputChannel(outputChannel chan *common.Record) {
+func (w *Worker) PushEventRecordToOutputChannel(dataId string, dataType common.DataType,
+	data []byte, outputChannel chan *common.Record) {
+	record := &common.Record{
+		DataId:       dataId,
+		DataType:     dataType,
+		Data:         data,
+		Timestamp:    timestampUtil.GetTimeStamp(),
+		PartitionKey: -1,
+	}
+	outputChannel <- record
+}
+
+func (w *Worker) PushFinishEventToOutputChannel(outputChannel chan *common.Record) {
 	record := &common.Record{
 		DataId:    "last_finish_data_id",
 		DataType:  common.DataType_FINISH,
@@ -272,6 +320,13 @@ func (w *Worker) PushFinishRecordToOutputChannel(outputChannel chan *common.Reco
 		PartitionKey: -1,
 	}
 	outputChannel <- record
+}
+
+func (w *Worker) PushCheckpointEventToOutputChannel(checkpoint []byte,
+	outputChannel chan *common.Record) {
+	w.PushEventRecordToOutputChannel("checkpoint_data_id", common.DataType_CHECKPOINT,
+		checkpoint, outputChannel)
+	return
 }
 
 // Run 启动 Worker

@@ -36,13 +36,15 @@ func findSourceOps(executeTaskMap map[uint64][]*common.ExecuteTask) map[uint64][
 	return sourceOps
 }
 
-func (s *SpecificJobInfo) triggerCheckpoint(checkpointId uint64, registeredTaskManagerTable *RegisteredTaskManagerTable) error {
+func (s *SpecificJobInfo) triggerCheckpoint(checkpointId uint64, registeredTaskManagerTable *RegisteredTaskManagerTable,
+	cancelJob bool) error {
 	// 传入 registered task manager table 是为了找到对应  task manager 的endpoint
 	for taskManagerId, tasks := range s.sourceOps {
 		taskManagerHost := registeredTaskManagerTable.getHost(taskManagerId)
 		taskManagerPort := s.registeredTaskManagerTable.getPort(taskManagerId)
 		for _, task := range tasks {
-			err := s.innerTriggerCheckpoint(taskManagerId, taskManagerHost, taskManagerPort, task.WorkerId, task.SubtaskName, checkpointId)
+			err := s.innerTriggerCheckpoint(taskManagerId, taskManagerHost, taskManagerPort, task.WorkerId,
+				task.SubtaskName, checkpointId, cancelJob)
 			if err != nil {
 				return err
 			}
@@ -51,7 +53,8 @@ func (s *SpecificJobInfo) triggerCheckpoint(checkpointId uint64, registeredTaskM
 	return nil
 }
 
-func (s *SpecificJobInfo) innerTriggerCheckpoint(taskManagerId uint64, subtaskHost string, subtaskPort uint64, workerId uint64, subtaskName string, checkpointId uint64) error {
+func (s *SpecificJobInfo) innerTriggerCheckpoint(taskManagerId uint64, subtaskHost string, subtaskPort uint64,
+	workerId uint64, subtaskName string, checkpointId uint64, cancelJob bool) error {
 	conn, err := messenger.GetRpcConn(subtaskHost, subtaskPort)
 	if err != nil {
 		return err
@@ -63,7 +66,8 @@ func (s *SpecificJobInfo) innerTriggerCheckpoint(taskManagerId uint64, subtaskHo
 	_, err = client.TriggerCheckpoint(context.Background(), &task_manager.TriggerCheckpointRequest{
 		WorkerId: workerId,
 		Checkpoint: &common.Record_Checkpoint{
-			Id: checkpointId,
+			Id:        checkpointId,
+			CancelJob: cancelJob,
 		},
 	})
 	if err != nil {

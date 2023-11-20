@@ -148,8 +148,12 @@ func (t *TaskManager) TriggerCheckpoint(_ context.Context, request *task_manager
 		logger.Errorf("get worker by worker id %v failed: %v", workerId, err)
 		return &common.NilResponse{}, errno.WorkerNotFound
 	}
-	worker.TriggerCheckpoint()
-	return nil, nil
+	err = worker.TriggerCheckpoint(request.Checkpoint)
+	if err != nil {
+		logger.Errorf("trigger checkpoint failed: %v", err)
+		return &common.NilResponse{}, err
+	}
+	return &common.NilResponse{}, nil
 }
 
 func NewTaskManager(ctx context.Context, config *Config, raftID uint64, server *messenger.RpcServer,

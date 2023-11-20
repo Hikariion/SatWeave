@@ -27,10 +27,15 @@ type SunClient interface {
 	MoonRegister(ctx context.Context, in *infos.NodeInfo, opts ...grpc.CallOption) (*RegisterResult, error)
 	GetLeaderInfo(ctx context.Context, in *infos.NodeInfo, opts ...grpc.CallOption) (*infos.NodeInfo, error)
 	ReportClusterInfo(ctx context.Context, in *infos.ClusterInfo, opts ...grpc.CallOption) (*common.Result, error)
-	RegisterTaskManager(ctx context.Context, in *common.TaskManagerDescription, opts ...grpc.CallOption) (*common.NilResponse, error)
 	GetRegisterTaskManagerTable(ctx context.Context, in *common.NilRequest, opts ...grpc.CallOption) (*TaskManagerResult, error)
+	// from user front client
 	SubmitJob(ctx context.Context, in *SubmitJobRequest, opts ...grpc.CallOption) (*SubmitJobResponse, error)
-	TriggerCheckpoint(ctx context.Context, in *TriggerCheckpointRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
+	TriggerCheckpoint(ctx context.Context, in *TriggerCheckpointRequest, opts ...grpc.CallOption) (*TriggerCheckpointResponse, error)
+	RestoreFromCheckpoint(ctx context.Context, in *RestoreFromCheckpointRequest, opts ...grpc.CallOption) (*RestoreFromCheckpointResponse, error)
+	// from task manager
+	RegisterTaskManager(ctx context.Context, in *common.TaskManagerDescription, opts ...grpc.CallOption) (*common.NilResponse, error)
+	// from subtask
+	AcknowledgeCheckpoint(ctx context.Context, in *AcknowledgeCheckpointRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 }
 
 type sunClient struct {
@@ -68,15 +73,6 @@ func (c *sunClient) ReportClusterInfo(ctx context.Context, in *infos.ClusterInfo
 	return out, nil
 }
 
-func (c *sunClient) RegisterTaskManager(ctx context.Context, in *common.TaskManagerDescription, opts ...grpc.CallOption) (*common.NilResponse, error) {
-	out := new(common.NilResponse)
-	err := c.cc.Invoke(ctx, "/messenger.Sun/RegisterTaskManager", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *sunClient) GetRegisterTaskManagerTable(ctx context.Context, in *common.NilRequest, opts ...grpc.CallOption) (*TaskManagerResult, error) {
 	out := new(TaskManagerResult)
 	err := c.cc.Invoke(ctx, "/messenger.Sun/GetRegisterTaskManagerTable", in, out, opts...)
@@ -95,9 +91,36 @@ func (c *sunClient) SubmitJob(ctx context.Context, in *SubmitJobRequest, opts ..
 	return out, nil
 }
 
-func (c *sunClient) TriggerCheckpoint(ctx context.Context, in *TriggerCheckpointRequest, opts ...grpc.CallOption) (*common.NilResponse, error) {
-	out := new(common.NilResponse)
+func (c *sunClient) TriggerCheckpoint(ctx context.Context, in *TriggerCheckpointRequest, opts ...grpc.CallOption) (*TriggerCheckpointResponse, error) {
+	out := new(TriggerCheckpointResponse)
 	err := c.cc.Invoke(ctx, "/messenger.Sun/TriggerCheckpoint", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sunClient) RestoreFromCheckpoint(ctx context.Context, in *RestoreFromCheckpointRequest, opts ...grpc.CallOption) (*RestoreFromCheckpointResponse, error) {
+	out := new(RestoreFromCheckpointResponse)
+	err := c.cc.Invoke(ctx, "/messenger.Sun/restoreFromCheckpoint", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sunClient) RegisterTaskManager(ctx context.Context, in *common.TaskManagerDescription, opts ...grpc.CallOption) (*common.NilResponse, error) {
+	out := new(common.NilResponse)
+	err := c.cc.Invoke(ctx, "/messenger.Sun/RegisterTaskManager", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sunClient) AcknowledgeCheckpoint(ctx context.Context, in *AcknowledgeCheckpointRequest, opts ...grpc.CallOption) (*common.NilResponse, error) {
+	out := new(common.NilResponse)
+	err := c.cc.Invoke(ctx, "/messenger.Sun/AcknowledgeCheckpoint", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -111,10 +134,15 @@ type SunServer interface {
 	MoonRegister(context.Context, *infos.NodeInfo) (*RegisterResult, error)
 	GetLeaderInfo(context.Context, *infos.NodeInfo) (*infos.NodeInfo, error)
 	ReportClusterInfo(context.Context, *infos.ClusterInfo) (*common.Result, error)
-	RegisterTaskManager(context.Context, *common.TaskManagerDescription) (*common.NilResponse, error)
 	GetRegisterTaskManagerTable(context.Context, *common.NilRequest) (*TaskManagerResult, error)
+	// from user front client
 	SubmitJob(context.Context, *SubmitJobRequest) (*SubmitJobResponse, error)
-	TriggerCheckpoint(context.Context, *TriggerCheckpointRequest) (*common.NilResponse, error)
+	TriggerCheckpoint(context.Context, *TriggerCheckpointRequest) (*TriggerCheckpointResponse, error)
+	RestoreFromCheckpoint(context.Context, *RestoreFromCheckpointRequest) (*RestoreFromCheckpointResponse, error)
+	// from task manager
+	RegisterTaskManager(context.Context, *common.TaskManagerDescription) (*common.NilResponse, error)
+	// from subtask
+	AcknowledgeCheckpoint(context.Context, *AcknowledgeCheckpointRequest) (*common.NilResponse, error)
 	mustEmbedUnimplementedSunServer()
 }
 
@@ -131,17 +159,23 @@ func (UnimplementedSunServer) GetLeaderInfo(context.Context, *infos.NodeInfo) (*
 func (UnimplementedSunServer) ReportClusterInfo(context.Context, *infos.ClusterInfo) (*common.Result, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReportClusterInfo not implemented")
 }
-func (UnimplementedSunServer) RegisterTaskManager(context.Context, *common.TaskManagerDescription) (*common.NilResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RegisterTaskManager not implemented")
-}
 func (UnimplementedSunServer) GetRegisterTaskManagerTable(context.Context, *common.NilRequest) (*TaskManagerResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRegisterTaskManagerTable not implemented")
 }
 func (UnimplementedSunServer) SubmitJob(context.Context, *SubmitJobRequest) (*SubmitJobResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SubmitJob not implemented")
 }
-func (UnimplementedSunServer) TriggerCheckpoint(context.Context, *TriggerCheckpointRequest) (*common.NilResponse, error) {
+func (UnimplementedSunServer) TriggerCheckpoint(context.Context, *TriggerCheckpointRequest) (*TriggerCheckpointResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerCheckpoint not implemented")
+}
+func (UnimplementedSunServer) RestoreFromCheckpoint(context.Context, *RestoreFromCheckpointRequest) (*RestoreFromCheckpointResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RestoreFromCheckpoint not implemented")
+}
+func (UnimplementedSunServer) RegisterTaskManager(context.Context, *common.TaskManagerDescription) (*common.NilResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterTaskManager not implemented")
+}
+func (UnimplementedSunServer) AcknowledgeCheckpoint(context.Context, *AcknowledgeCheckpointRequest) (*common.NilResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AcknowledgeCheckpoint not implemented")
 }
 func (UnimplementedSunServer) mustEmbedUnimplementedSunServer() {}
 
@@ -210,24 +244,6 @@ func _Sun_ReportClusterInfo_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Sun_RegisterTaskManager_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(common.TaskManagerDescription)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SunServer).RegisterTaskManager(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/messenger.Sun/RegisterTaskManager",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SunServer).RegisterTaskManager(ctx, req.(*common.TaskManagerDescription))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Sun_GetRegisterTaskManagerTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(common.NilRequest)
 	if err := dec(in); err != nil {
@@ -282,6 +298,60 @@ func _Sun_TriggerCheckpoint_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Sun_RestoreFromCheckpoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestoreFromCheckpointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SunServer).RestoreFromCheckpoint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/messenger.Sun/restoreFromCheckpoint",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SunServer).RestoreFromCheckpoint(ctx, req.(*RestoreFromCheckpointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sun_RegisterTaskManager_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(common.TaskManagerDescription)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SunServer).RegisterTaskManager(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/messenger.Sun/RegisterTaskManager",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SunServer).RegisterTaskManager(ctx, req.(*common.TaskManagerDescription))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sun_AcknowledgeCheckpoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AcknowledgeCheckpointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SunServer).AcknowledgeCheckpoint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/messenger.Sun/AcknowledgeCheckpoint",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SunServer).AcknowledgeCheckpoint(ctx, req.(*AcknowledgeCheckpointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Sun_ServiceDesc is the grpc.ServiceDesc for Sun service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -302,10 +372,6 @@ var Sun_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Sun_ReportClusterInfo_Handler,
 		},
 		{
-			MethodName: "RegisterTaskManager",
-			Handler:    _Sun_RegisterTaskManager_Handler,
-		},
-		{
 			MethodName: "GetRegisterTaskManagerTable",
 			Handler:    _Sun_GetRegisterTaskManagerTable_Handler,
 		},
@@ -316,6 +382,18 @@ var Sun_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TriggerCheckpoint",
 			Handler:    _Sun_TriggerCheckpoint_Handler,
+		},
+		{
+			MethodName: "restoreFromCheckpoint",
+			Handler:    _Sun_RestoreFromCheckpoint_Handler,
+		},
+		{
+			MethodName: "RegisterTaskManager",
+			Handler:    _Sun_RegisterTaskManager_Handler,
+		},
+		{
+			MethodName: "AcknowledgeCheckpoint",
+			Handler:    _Sun_AcknowledgeCheckpoint_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

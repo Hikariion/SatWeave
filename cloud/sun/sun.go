@@ -284,7 +284,7 @@ func (s *Sun) PrintTaskManagerTable() {
 
 func (s *Sun) TriggerCheckpoint(_ context.Context, request *TriggerCheckpointRequest) (*common.NilResponse, error) {
 	checkpointId := generator.GetDataIdGeneratorInstance().Next()
-	err := s.checkpointCoordinator.triggerCheckpoint(request.JobId, checkpointId)
+	err := s.checkpointCoordinator.triggerCheckpoint(request.JobId, checkpointId, request.CancelJob)
 	if err != nil {
 		logger.Errorf("trigger checkpoint failed: %v", err)
 		return &common.NilResponse{}, errno.TriggerCheckpointFail

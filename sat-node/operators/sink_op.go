@@ -1,7 +1,7 @@
 package operators
 
 type SinkOperator struct {
-	name string
+	OperatorBase
 }
 
 func (op *SinkOperator) Init(map[string]string) {
@@ -10,10 +10,6 @@ func (op *SinkOperator) Init(map[string]string) {
 
 func (op *SinkOperator) Compute([]byte) ([]byte, error) {
 	return nil, nil
-}
-
-func (op *SinkOperator) SetName(name string) {
-	op.name = name
 }
 
 func (op *SinkOperator) IsSourceOp() bool {

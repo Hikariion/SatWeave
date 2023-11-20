@@ -10,14 +10,37 @@ service Sun {
   rpc MoonRegister(NodeInfo) returns (RegisterResult) {}
   rpc GetLeaderInfo(NodeInfo) returns (NodeInfo) {}
   rpc ReportClusterInfo(ClusterInfo) returns (Result) {}
-  rpc RegisterTaskManager(TaskManagerDescription) returns (NilResponse) {}
   rpc GetRegisterTaskManagerTable(NilRequest) returns (TaskManagerResult) {}
+
+  // from user front client
   rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse) {}
-  rpc TriggerCheckpoint(TriggerCheckpointRequest) returns (NilResponse) {}
+  rpc TriggerCheckpoint(TriggerCheckpointRequest) returns (TriggerCheckpointResponse) {}
+  rpc restoreFromCheckpoint(RestoreFromCheckpointRequest) returns (RestoreFromCheckpointResponse) {}
+
+  // from task manager
+  rpc RegisterTaskManager(TaskManagerDescription) returns (NilResponse) {}
+
+  // from subtask
+  rpc AcknowledgeCheckpoint(AcknowledgeCheckpointRequest) returns (NilResponse) {}
 }
 
 message TriggerCheckpointRequest {
   string job_id = 1;
+  bool cancel_job = 2;
+}
+
+message TriggerCheckpointResponse {
+  Status status = 1;
+  uint64 checkpoint_id = 2;
+}
+
+message RestoreFromCheckpointRequest {
+  uint64 checkpoint_id = 1;
+}
+
+message RestoreFromCheckpointResponse {
+  Status status = 1;
+  string job_id = 2;
 }
 
 message SubmitJobResponse {
@@ -42,4 +65,12 @@ message RegisterResult {
 
 message RegisterTaskManagerRequest {
   TaskManagerDescription task_manager_desc = 1;
+}
+
+message AcknowledgeCheckpointRequest {
+  Status statue = 1;
+  string subtask_name = 2;
+  string job_id = 3;
+  uint64 checkpoint_id = 4;
+
 }

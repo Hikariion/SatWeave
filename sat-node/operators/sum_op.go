@@ -1,7 +1,7 @@
 package operators
 
 type SumOp struct {
-	name    string
+	OperatorBase
 	counter map[string]uint64
 }
 
@@ -16,10 +16,6 @@ func (op *SumOp) Compute(data []byte) ([]byte, error) {
 	}
 	op.counter[dataStr]++
 	return nil, nil
-}
-
-func (op *SumOp) SetName(name string) {
-	op.name = name
 }
 
 func (op *SumOp) IsSourceOp() bool {
