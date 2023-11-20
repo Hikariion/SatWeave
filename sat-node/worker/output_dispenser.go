@@ -31,6 +31,7 @@ func (o *OutputDispenser) pushData(record *common.Record) {
 func (o *OutputDispenser) partitioningDataAndCarryToNextSubtask(inputChannel chan *common.Record, outputEndPoints []*common.OutputEndpoints,
 	subtaskName string, partitionIdx int64) error {
 
+	// TODO(qiu): 这里需要捕获err来停止线程
 	go o.innerPartitioningDataAndCarryToNextSubtask(inputChannel, outputEndPoints, subtaskName, partitionIdx)
 
 	return nil

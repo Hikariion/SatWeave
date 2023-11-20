@@ -10,6 +10,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/google/uuid"
+	"os"
+	"path"
 	"satweave/messenger/common"
 	"satweave/sat-node/operators"
 	"satweave/utils/errno"
@@ -167,7 +169,7 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 					dataType = record.DataType
 				default:
 					// SourceOp 没用 event，继续处理
-					dataId = strconv.FormatInt(generator.GetDataIdGeneratorInstance().Next(), 10)
+					dataId = strconv.FormatInt(int64(generator.GetDataIdGeneratorInstance().Next()), 10)
 					dataType = common.DataType_PICKLE
 					timeStamp = timestampUtil.GetTimeStamp()
 					inputData = nil
@@ -206,7 +208,21 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 				} else if dataType == common.DataType_CHECKPOINT {
 					// checkpoint
 					outputData = inputData
-					taskInstance.Checkpoint()
+					// 把 inputData 转成 record    []byte -> checkpoint
+					t := &common.Record_Checkpoint{}
+					err := t.Unmarshal(inputData)
+					if err != nil {
+						logger.Errorf("Fail to unmarchal checkpoint data: %v", err)
+						return err
+					}
+					checkpointState := taskInstance.Checkpoint()
+
+					err = w.saveCheckpointState(checkpointState, t.Id)
+					if err != nil {
+						logger.Errorf("Fail to save checkpoint state: %v", err)
+						return err
+					}
+					logger.Infof("%s success save snapshot state", w.SubTaskName)
 				} else {
 					logger.Fatalf("Failed: unknown data type: %v", dataType)
 				}
@@ -312,6 +328,34 @@ func NewWorker(raftId uint64, executeTask *common.ExecuteTask) *Worker {
 	return worker
 }
 
-func (w *Worker) TriggerCheckpoint() {
+// 1. checkpoint 的时候，需要将 checkpoint 的数据写入到文件中
+// TODO 2. checkpoint 的时候，存储到卫星的相邻节点上
+func (w *Worker) saveCheckpointState(checkpointState []byte, checkpointId uint64) error {
+	filePath := path.Join(w.CheckpointDir, fmt.Sprintf("chk_%d", checkpointId))
+
+	err := os.WriteFile(filePath, checkpointState, 0644)
+	if err != nil {
+		logger.Errorf("os.WriteFile error: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func (w *Worker) TriggerCheckpoint(checkpoint *common.Record_Checkpoint) error {
 	// 只有 SourceOp 才会被调用该函数
+	checkpointData, err := checkpoint.Marshal()
+	if err != nil {
+		logger.Errorf("checkpoint.Marshal error: %v", err)
+		return err
+	}
+	data := &common.Record{
+		DataId:       "checkpoint_data_id",
+		DataType:     common.DataType_CHECKPOINT,
+		Data:         checkpointData,
+		Timestamp:    timestampUtil.GetTimeStamp(),
+		PartitionKey: -1,
+	}
+	w.inputChannel <- data
+	return nil
 }

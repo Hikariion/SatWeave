@@ -36,29 +36,38 @@ func findSourceOps(executeTaskMap map[uint64][]*common.ExecuteTask) map[uint64][
 	return sourceOps
 }
 
-func (s *SpecificJobInfo) triggerCheckpoint(registeredTaskManagerTable *RegisteredTaskManagerTable) error {
+func (s *SpecificJobInfo) triggerCheckpoint(checkpointId uint64, registeredTaskManagerTable *RegisteredTaskManagerTable) error {
 	// 传入 registered task manager table 是为了找到对应  task manager 的endpoint
 	for taskManagerId, tasks := range s.sourceOps {
-		taskManagerHost := s.registeredTaskManagerTable.getHost(taskManagerId)
-		port := s.registeredTaskManagerTable.getPort(taskManagerId)
+		taskManagerHost := registeredTaskManagerTable.getHost(taskManagerId)
+		taskManagerPort := s.registeredTaskManagerTable.getPort(taskManagerId)
 		for _, task := range tasks {
-			subtaskName := task.SubtaskName
-			workerId := task.WorkerId
-			// 获取 rpc client
-			conn, err := messenger.GetRpcConn(taskManagerHost, port)
+			err := s.innerTriggerCheckpoint(taskManagerId, taskManagerHost, taskManagerPort, task.WorkerId, task.SubtaskName, checkpointId)
 			if err != nil {
 				return err
 			}
-			client := task_manager.NewTaskManagerServiceClient(conn)
-			// 触发 checkpoint
-			//TODO: 这里还没写完, 需要传入 checkpoint 的参数
-			logger.Infof("Try to trigger checkpoint for subtask %v(task manager id: %v)", subtaskName, taskManagerId)
-			_, err = client.TriggerCheckpoint(context.Background(), &task_manager.TriggerCheckpointRequest{
-				WorkerId: workerId,
-			})
-
-			conn.Close()
 		}
+	}
+	return nil
+}
+
+func (s *SpecificJobInfo) innerTriggerCheckpoint(taskManagerId uint64, subtaskHost string, subtaskPort uint64, workerId uint64, subtaskName string, checkpointId uint64) error {
+	conn, err := messenger.GetRpcConn(subtaskHost, subtaskPort)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	client := task_manager.NewTaskManagerServiceClient(conn)
+	logger.Infof("Try to trigger checkpoint for subtask %v(task manager id: %v)", subtaskName, taskManagerId)
+	_, err = client.TriggerCheckpoint(context.Background(), &task_manager.TriggerCheckpointRequest{
+		WorkerId: workerId,
+		Checkpoint: &common.Record_Checkpoint{
+			Id: checkpointId,
+		},
+	})
+	if err != nil {
+		return err
 	}
 	return nil
 }

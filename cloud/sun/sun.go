@@ -11,6 +11,7 @@ import (
 	"satweave/sat-node/infos"
 	task_manager "satweave/shared/task-manager"
 	"satweave/utils/errno"
+	"satweave/utils/generator"
 	"satweave/utils/logger"
 	"sync"
 	"sync/atomic"
@@ -282,7 +283,8 @@ func (s *Sun) PrintTaskManagerTable() {
 }
 
 func (s *Sun) TriggerCheckpoint(_ context.Context, request *TriggerCheckpointRequest) (*common.NilResponse, error) {
-	err := s.checkpointCoordinator.triggerCheckpoint(request.JobId)
+	checkpointId := generator.GetDataIdGeneratorInstance().Next()
+	err := s.checkpointCoordinator.triggerCheckpoint(request.JobId, checkpointId)
 	if err != nil {
 		logger.Errorf("trigger checkpoint failed: %v", err)
 		return &common.NilResponse{}, errno.TriggerCheckpointFail

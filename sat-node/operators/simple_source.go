@@ -2,6 +2,8 @@ package operators
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/binary"
 	"os"
 	"satweave/utils/errno"
 	"satweave/utils/logger"
@@ -12,6 +14,7 @@ type SimpleSource struct {
 	name      string
 	wordsChan chan string
 	done      chan bool
+	counter   uint64
 }
 
 func (op *SimpleSource) Init(map[string]string) {
@@ -75,5 +78,13 @@ func (op *SimpleSource) IsKeyByOp() bool {
 }
 
 func (op *SimpleSource) Checkpoint() []byte {
-	return nil
+	counter := op.counter
+	buf := new(bytes.Buffer)
+	// 小端存储
+	err := binary.Write(buf, binary.LittleEndian, counter)
+	if err != nil {
+		logger.Errorf("binary.Write error: %v", err)
+		return nil
+	}
+	return buf.Bytes()
 }
