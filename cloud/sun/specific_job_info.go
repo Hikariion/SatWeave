@@ -5,6 +5,7 @@ import (
 	"satweave/messenger"
 	"satweave/messenger/common"
 	task_manager "satweave/shared/task-manager"
+	"satweave/utils/logger"
 )
 
 // 管理某个具体的 Job 的信息
@@ -42,8 +43,7 @@ func (s *SpecificJobInfo) triggerCheckpoint(registeredTaskManagerTable *Register
 		port := s.registeredTaskManagerTable.getPort(taskManagerId)
 		for _, task := range tasks {
 			subtaskName := task.SubtaskName
-			// workerId := task.WorkerId
-
+			workerId := task.WorkerId
 			// 获取 rpc client
 			conn, err := messenger.GetRpcConn(taskManagerHost, port)
 			if err != nil {
@@ -51,8 +51,11 @@ func (s *SpecificJobInfo) triggerCheckpoint(registeredTaskManagerTable *Register
 			}
 			client := task_manager.NewTaskManagerServiceClient(conn)
 			// 触发 checkpoint
-			//TODO: 这里还没写完
-			_, err = client.TriggerCheckpoint(context.Background(), &task_manager.TriggerCheckpointRequest{})
+			//TODO: 这里还没写完, 需要传入 checkpoint 的参数
+			logger.Infof("Try to trigger checkpoint for subtask %v(task manager id: %v)", subtaskName, taskManagerId)
+			_, err = client.TriggerCheckpoint(context.Background(), &task_manager.TriggerCheckpointRequest{
+				WorkerId: workerId,
+			})
 
 			conn.Close()
 		}

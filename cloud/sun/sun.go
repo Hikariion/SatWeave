@@ -10,6 +10,7 @@ import (
 	"satweave/messenger/common"
 	"satweave/sat-node/infos"
 	task_manager "satweave/shared/task-manager"
+	"satweave/utils/errno"
 	"satweave/utils/logger"
 	"sync"
 	"sync/atomic"
@@ -120,7 +121,7 @@ func (s *Sun) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*Submit
 	// 把所有 Op 信息注册到 CheckpointCoordinator 里
 	err = s.checkpointCoordinator.registerJob(jobId, executeMap)
 	if err != nil {
-		return
+		return &SubmitJobResponse{}, errno.RegisterJobFail
 	}
 
 	return &SubmitJobResponse{
@@ -278,6 +279,15 @@ func (s *Sun) PrintTaskManagerTable() {
 	logger.Infof("Sun printing task manager table...")
 	logger.Infof("%v", s.taskRegisteredTaskManagerTable.table)
 	logger.Infof("%v", s.Scheduler.RegisteredTaskManagerTable)
+}
+
+func (s *Sun) TriggerCheckpoint(_ context.Context, request *TriggerCheckpointRequest) (*common.NilResponse, error) {
+	err := s.checkpointCoordinator.triggerCheckpoint(request.JobId)
+	if err != nil {
+		logger.Errorf("trigger checkpoint failed: %v", err)
+		return &common.NilResponse{}, errno.TriggerCheckpointFail
+	}
+	return &common.NilResponse{}, nil
 }
 
 func (s *Sun) getSubTaskName(clsName string, idx, currency int) string {

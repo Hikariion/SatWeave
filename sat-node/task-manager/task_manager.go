@@ -141,6 +141,17 @@ func (t *TaskManager) Stop() {
 	t.cancelFunc()
 }
 
+func (t *TaskManager) TriggerCheckpoint(_ context.Context, request *task_manager.TriggerCheckpointRequest) (*common.NilResponse, error) {
+	workerId := request.WorkerId
+	worker, err := t.slotTable.getWorkerByWorkerId(workerId)
+	if err != nil {
+		logger.Errorf("get worker by worker id %v failed: %v", workerId, err)
+		return &common.NilResponse{}, errno.WorkerNotFound
+	}
+	worker.TriggerCheckpoint()
+	return nil, nil
+}
+
 func NewTaskManager(ctx context.Context, config *Config, raftID uint64, server *messenger.RpcServer,
 	slotNum uint64, host string, port uint64) *TaskManager {
 	taskManagerCtx, cancelFunc := context.WithCancel(ctx)

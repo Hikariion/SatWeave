@@ -30,6 +30,7 @@ type SunClient interface {
 	RegisterTaskManager(ctx context.Context, in *common.TaskManagerDescription, opts ...grpc.CallOption) (*common.NilResponse, error)
 	GetRegisterTaskManagerTable(ctx context.Context, in *common.NilRequest, opts ...grpc.CallOption) (*TaskManagerResult, error)
 	SubmitJob(ctx context.Context, in *SubmitJobRequest, opts ...grpc.CallOption) (*SubmitJobResponse, error)
+	TriggerCheckpoint(ctx context.Context, in *TriggerCheckpointRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 }
 
 type sunClient struct {
@@ -94,6 +95,15 @@ func (c *sunClient) SubmitJob(ctx context.Context, in *SubmitJobRequest, opts ..
 	return out, nil
 }
 
+func (c *sunClient) TriggerCheckpoint(ctx context.Context, in *TriggerCheckpointRequest, opts ...grpc.CallOption) (*common.NilResponse, error) {
+	out := new(common.NilResponse)
+	err := c.cc.Invoke(ctx, "/messenger.Sun/TriggerCheckpoint", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SunServer is the server API for Sun service.
 // All implementations must embed UnimplementedSunServer
 // for forward compatibility
@@ -104,6 +114,7 @@ type SunServer interface {
 	RegisterTaskManager(context.Context, *common.TaskManagerDescription) (*common.NilResponse, error)
 	GetRegisterTaskManagerTable(context.Context, *common.NilRequest) (*TaskManagerResult, error)
 	SubmitJob(context.Context, *SubmitJobRequest) (*SubmitJobResponse, error)
+	TriggerCheckpoint(context.Context, *TriggerCheckpointRequest) (*common.NilResponse, error)
 	mustEmbedUnimplementedSunServer()
 }
 
@@ -128,6 +139,9 @@ func (UnimplementedSunServer) GetRegisterTaskManagerTable(context.Context, *comm
 }
 func (UnimplementedSunServer) SubmitJob(context.Context, *SubmitJobRequest) (*SubmitJobResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SubmitJob not implemented")
+}
+func (UnimplementedSunServer) TriggerCheckpoint(context.Context, *TriggerCheckpointRequest) (*common.NilResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerCheckpoint not implemented")
 }
 func (UnimplementedSunServer) mustEmbedUnimplementedSunServer() {}
 
@@ -250,6 +264,24 @@ func _Sun_SubmitJob_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Sun_TriggerCheckpoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerCheckpointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SunServer).TriggerCheckpoint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/messenger.Sun/TriggerCheckpoint",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SunServer).TriggerCheckpoint(ctx, req.(*TriggerCheckpointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Sun_ServiceDesc is the grpc.ServiceDesc for Sun service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -280,6 +312,10 @@ var Sun_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SubmitJob",
 			Handler:    _Sun_SubmitJob_Handler,
+		},
+		{
+			MethodName: "TriggerCheckpoint",
+			Handler:    _Sun_TriggerCheckpoint_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

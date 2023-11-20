@@ -312,6 +312,6 @@ func NewWorker(raftId uint64, executeTask *common.ExecuteTask) *Worker {
 	return worker
 }
 
-func triggerCheckpoint() {
+func (w *Worker) TriggerCheckpoint() {
 	// 只有 SourceOp 才会被调用该函数
 }

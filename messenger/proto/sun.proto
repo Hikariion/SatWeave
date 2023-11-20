@@ -13,6 +13,11 @@ service Sun {
   rpc RegisterTaskManager(TaskManagerDescription) returns (NilResponse) {}
   rpc GetRegisterTaskManagerTable(NilRequest) returns (TaskManagerResult) {}
   rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse) {}
+  rpc TriggerCheckpoint(TriggerCheckpointRequest) returns (NilResponse) {}
+}
+
+message TriggerCheckpointRequest {
+  string job_id = 1;
 }
 
 message SubmitJobResponse {

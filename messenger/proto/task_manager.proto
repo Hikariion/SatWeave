@@ -18,6 +18,7 @@ service TaskManagerService {
 
 message TriggerCheckpointRequest {
   Record.Checkpoint checkpoint = 1;
+  uint64 worker_id = 2;
 }
 
 message PushRecordRequest {
