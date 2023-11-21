@@ -72,4 +72,5 @@ message AcknowledgeCheckpointRequest {
   string subtask_name = 2;
   string job_id = 3;
   uint64 checkpoint_id = 4;
+  File state = 5;
 }

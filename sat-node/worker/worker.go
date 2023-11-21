@@ -306,6 +306,35 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 	}
 }
 
+func (w *Worker) pickleDataProcess(taskInstance operators.OperatorBase, isKeyOp bool, inputData []byte) ([]byte, int64) {
+	var outputData []byte
+	var partitionKey int64
+	partitionKey = -1
+	if isKeyOp {
+		outputData = inputData
+		partitionKeyBytes, _ := taskInstance.Compute(inputData)
+		// TODO 把 partitionKeyBytes 转成 int64
+	} else {
+		outputData, _ = taskInstance.Compute(inputData)
+	}
+	return outputData, partitionKey
+}
+
+func (w *Worker) checkpointEventProcess(taskInstance operators.OperatorBase, isSinkOp bool, inputData []byte) {
+	if !isSinkOp {
+		w.PushCheckpointEventToOutputChannel(inputData, w.outputChannel)
+	}
+	w.checkpoint()
+}
+
+func (w *Worker) finishEventProcess(taskInstance operators.OperatorBase, isSinkOp bool, inputData []byte) {
+
+}
+
+func (w *Worker) checkpoint() {
+
+}
+
 func (w *Worker) initOutputDispenser(outputEndpoints []*common.OutputEndpoints) chan *common.Record {
 	// TODO(qiu): 调整 channel 容量
 	outputChannel := make(chan *common.Record, 10000)
