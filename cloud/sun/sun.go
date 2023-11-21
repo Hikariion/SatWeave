@@ -114,7 +114,7 @@ func (s *Sun) ReportClusterInfo(_ context.Context, clusterInfo *infos.ClusterInf
 
 func (s *Sun) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*SubmitJobResponse, error) {
 	jobId := s.idGenerator.Next()
-	executeMap, err := s.innerSubmitJob(ctx, request.Tasks)
+	executeMap, err := s.innerSubmitJob(ctx, request.Tasks, jobId)
 	if err != nil {
 		return &SubmitJobResponse{}, status.Errorf(codes.Internal, "submit job failed: %v", err)
 	}
@@ -130,7 +130,7 @@ func (s *Sun) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*Submit
 	}, nil
 }
 
-func (s *Sun) innerSubmitJob(ctx context.Context, tasks []*common.Task) (map[uint64][]*common.ExecuteTask, error) {
+func (s *Sun) innerSubmitJob(ctx context.Context, tasks []*common.Task, jobId string) (map[uint64][]*common.ExecuteTask, error) {
 	// scheduler
 	_, executeMap, err := s.Scheduler.Schedule(0, tasks)
 	if err != nil {
@@ -139,7 +139,7 @@ func (s *Sun) innerSubmitJob(ctx context.Context, tasks []*common.Task) (map[uin
 	}
 
 	// deploy 创建对应的 worker
-	err = s.DeployExecuteTasks(ctx, executeMap)
+	err = s.DeployExecuteTasks(ctx, jobId, executeMap)
 	if err != nil {
 		logger.Errorf("deploy execute tasks failed: %v", err)
 		return nil, err
@@ -151,7 +151,7 @@ func (s *Sun) innerSubmitJob(ctx context.Context, tasks []*common.Task) (map[uin
 	return executeMap, nil
 }
 
-func (s *Sun) DeployExecuteTasks(ctx context.Context, executeMap map[uint64][]*common.ExecuteTask) error {
+func (s *Sun) DeployExecuteTasks(ctx context.Context, jobId string, executeMap map[uint64][]*common.ExecuteTask) error {
 	for taskManagerId, executeTasks := range executeMap {
 		host := s.taskRegisteredTaskManagerTable.table[taskManagerId].Host
 		port := s.taskRegisteredTaskManagerTable.table[taskManagerId].Port
@@ -163,7 +163,10 @@ func (s *Sun) DeployExecuteTasks(ctx context.Context, executeMap map[uint64][]*c
 		client := task_manager.NewTaskManagerServiceClient(conn)
 		// 每个 Execute task 都需要 deploy
 		for _, executeTask := range executeTasks {
-			_, err := client.DeployTask(ctx, executeTask)
+			_, err := client.DeployTask(ctx, &task_manager.DeployTaskRequest{
+				ExecTask: executeTask,
+				JobId:    jobId,
+			})
 			if err != nil {
 				logger.Errorf("deploy task on task manager id: %v, failed: %v", taskManagerId, err)
 				return err

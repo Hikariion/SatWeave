@@ -25,10 +25,10 @@ func (s *Slot) start() {
 	s.subTask.Run()
 }
 
-func NewSlot(raftId uint64, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64) *Slot {
+func NewSlot(raftId uint64, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64, jobId string) *Slot {
 	return &Slot{
 		raftID:   raftId,
-		subTask:  worker.NewWorker(raftId, executeTask, jobManagerHost, jobManagerPort),
+		subTask:  worker.NewWorker(raftId, executeTask, jobManagerHost, jobManagerPort, jobId),
 		status:   deployed,
 		workerID: executeTask.WorkerId,
 	}

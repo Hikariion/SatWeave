@@ -24,7 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TaskManagerServiceClient interface {
 	// Deploy a task to the task manager.
-	DeployTask(ctx context.Context, in *common.ExecuteTask, opts ...grpc.CallOption) (*common.NilResponse, error)
+	DeployTask(ctx context.Context, in *DeployTaskRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 	StartTask(ctx context.Context, in *StartTaskRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 	ProcessOperator(ctx context.Context, in *OperatorRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 	RequestSlot(ctx context.Context, in *RequiredSlotRequest, opts ...grpc.CallOption) (*RequiredSlotResponse, error)
@@ -42,7 +42,7 @@ func NewTaskManagerServiceClient(cc grpc.ClientConnInterface) TaskManagerService
 	return &taskManagerServiceClient{cc}
 }
 
-func (c *taskManagerServiceClient) DeployTask(ctx context.Context, in *common.ExecuteTask, opts ...grpc.CallOption) (*common.NilResponse, error) {
+func (c *taskManagerServiceClient) DeployTask(ctx context.Context, in *DeployTaskRequest, opts ...grpc.CallOption) (*common.NilResponse, error) {
 	out := new(common.NilResponse)
 	err := c.cc.Invoke(ctx, "/messenger.TaskManagerService/DeployTask", in, out, opts...)
 	if err != nil {
@@ -101,7 +101,7 @@ func (c *taskManagerServiceClient) TriggerCheckpoint(ctx context.Context, in *Tr
 // for forward compatibility
 type TaskManagerServiceServer interface {
 	// Deploy a task to the task manager.
-	DeployTask(context.Context, *common.ExecuteTask) (*common.NilResponse, error)
+	DeployTask(context.Context, *DeployTaskRequest) (*common.NilResponse, error)
 	StartTask(context.Context, *StartTaskRequest) (*common.NilResponse, error)
 	ProcessOperator(context.Context, *OperatorRequest) (*common.NilResponse, error)
 	RequestSlot(context.Context, *RequiredSlotRequest) (*RequiredSlotResponse, error)
@@ -116,7 +116,7 @@ type TaskManagerServiceServer interface {
 type UnimplementedTaskManagerServiceServer struct {
 }
 
-func (UnimplementedTaskManagerServiceServer) DeployTask(context.Context, *common.ExecuteTask) (*common.NilResponse, error) {
+func (UnimplementedTaskManagerServiceServer) DeployTask(context.Context, *DeployTaskRequest) (*common.NilResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeployTask not implemented")
 }
 func (UnimplementedTaskManagerServiceServer) StartTask(context.Context, *StartTaskRequest) (*common.NilResponse, error) {
@@ -148,7 +148,7 @@ func RegisterTaskManagerServiceServer(s grpc.ServiceRegistrar, srv TaskManagerSe
 }
 
 func _TaskManagerService_DeployTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(common.ExecuteTask)
+	in := new(DeployTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -160,7 +160,7 @@ func _TaskManagerService_DeployTask_Handler(srv interface{}, ctx context.Context
 		FullMethod: "/messenger.TaskManagerService/DeployTask",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskManagerServiceServer).DeployTask(ctx, req.(*common.ExecuteTask))
+		return srv.(TaskManagerServiceServer).DeployTask(ctx, req.(*DeployTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

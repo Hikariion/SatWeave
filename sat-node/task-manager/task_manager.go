@@ -59,7 +59,7 @@ func (t *TaskManager) PushRecord(_ context.Context, request *task_manager.PushRe
 	return &common.NilResponse{}, nil
 }
 
-func (t *TaskManager) DeployTask(_ context.Context, executeTask *common.ExecuteTask) (*common.NilResponse, error) {
+func (t *TaskManager) DeployTask(_ context.Context, request *task_manager.DeployTaskRequest) (*common.NilResponse, error) {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
@@ -68,9 +68,9 @@ func (t *TaskManager) DeployTask(_ context.Context, executeTask *common.ExecuteT
 		return nil, errno.SlotCapacityNotEnough
 	}
 
-	err := t.slotTable.deployExecuteTask(executeTask)
+	err := t.slotTable.deployExecuteTask(request.JobId, request.ExecTask)
 	if err != nil {
-		logger.Errorf("deploy execute task %v failed, err: %v", executeTask, err)
+		logger.Errorf("deploy execute task %v failed, err: %v", request.ExecTask, err)
 	}
 
 	t.selfDescription.SlotNumber--

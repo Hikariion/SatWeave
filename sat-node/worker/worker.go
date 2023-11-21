@@ -55,6 +55,7 @@ type Worker struct {
 	// job manager endpoint
 	jobManagerHost string
 	jobManagerPort uint64
+	jobId          string
 }
 
 func (w *Worker) startComputeOnStandletonProcess() error {
@@ -203,14 +204,25 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 						return err
 					}
 				} else if dataType == common.DataType_CHECKPOINT {
+					// TODO 这里还没处理完
 					w.PushCheckpointEventToOutputChannel(inputData, outputChannel)
+					_ = taskInstance.Checkpoint()
+					logger.Infof("%s success save snapshot state", w.SubTaskName)
+
 					tmp := &common.Record_Checkpoint{}
 					err := tmp.Unmarshal(inputData)
 					if err != nil {
 						logger.Errorf("Fail to unmarchal checkpoint data: %v", err)
 						return err
 					}
+
+					err = w.acknowledgeCheckpoint(w.jobId, tmp.Id, 0, "")
+					if err != nil {
+						logger.Errorf("Fail to acknowledge checkpoint: %v", err)
+						return err
+					}
 					if tmp.CancelJob == true {
+						logger.Infof("%s success finish job", w.SubTaskName)
 						break
 					} else {
 						continue
@@ -253,6 +265,12 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 						return err
 					}
 					logger.Infof("%s success save snapshot state", w.SubTaskName)
+					// TODO: 验证 t.id 是否是 checkpoint id
+					err = w.acknowledgeCheckpoint(w.jobId, t.Id, 0, "")
+					if err != nil {
+						logger.Errorf("Fail to acknowledge checkpoint: %v", err)
+						return err
+					}
 					if t.CancelJob == true {
 						logger.Infof("%s cancel job", w.SubTaskName)
 						break
@@ -391,6 +409,7 @@ func (w *Worker) TriggerCheckpoint(checkpoint *common.Record_Checkpoint) error {
 	return nil
 }
 
+// errCode 默认值为0， ErrMsg 默认值为 ""
 func (w *Worker) acknowledgeCheckpoint(jobId string, checkpointId uint64, errCode int32, errMsg string) error {
 	conn, err := messenger.GetRpcConn(w.jobManagerHost, w.jobManagerPort)
 	if err != nil {
@@ -418,7 +437,7 @@ func (w *Worker) acknowledgeCheckpoint(jobId string, checkpointId uint64, errCod
 	return nil
 }
 
-func NewWorker(raftId uint64, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64) *Worker {
+func NewWorker(raftId uint64, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64, jobId string) *Worker {
 	// TODO(qiu): 这个 ctx 是否可以继承 task manager
 	workerCtx, cancel := context.WithCancel(context.Background())
 	worker := &Worker{
@@ -439,6 +458,7 @@ func NewWorker(raftId uint64, executeTask *common.ExecuteTask, jobManagerHost st
 
 		jobManagerHost: jobManagerHost,
 		jobManagerPort: jobManagerPort,
+		jobId:          jobId,
 	}
 
 	// init op

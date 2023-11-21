@@ -6,7 +6,7 @@ option go_package = "satweave/shared/task-manager";
 
 service TaskManagerService {
   // Deploy a task to the task manager.
-  rpc DeployTask(ExecuteTask) returns (NilResponse) {}
+  rpc DeployTask(DeployTaskRequest) returns (NilResponse) {}
   rpc StartTask(StartTaskRequest) returns (NilResponse) {}
   rpc ProcessOperator(OperatorRequest) returns (NilResponse) {}
   rpc RequestSlot(RequiredSlotRequest) returns (RequiredSlotResponse) {}
@@ -14,6 +14,11 @@ service TaskManagerService {
   rpc PushRecord(PushRecordRequest) returns (NilResponse) {}
   // From job manager
   rpc TriggerCheckpoint(TriggerCheckpointRequest) returns (NilResponse) {}
+}
+
+message DeployTaskRequest {
+  ExecuteTask exec_task = 1;
+  string job_id = 2;
 }
 
 message TriggerCheckpointRequest {
