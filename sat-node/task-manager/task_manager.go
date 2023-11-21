@@ -167,7 +167,7 @@ func NewTaskManager(ctx context.Context, config *Config, raftID uint64, server *
 		mutex:      &sync.Mutex{},
 	}
 
-	taskManager.slotTable = NewSlotTable(raftID, slotNum)
+	taskManager.slotTable = NewSlotTable(raftID, slotNum, taskManager.config.CloudAddr, taskManager.config.CloudPort)
 	taskManager.selfDescription = taskManager.newSelfDescription(raftID, slotNum, host, port)
 
 	task_manager.RegisterTaskManagerServiceServer(server, taskManager)

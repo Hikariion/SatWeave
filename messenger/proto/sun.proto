@@ -68,9 +68,9 @@ message RegisterTaskManagerRequest {
 }
 
 message AcknowledgeCheckpointRequest {
-  Status statue = 1;
+  Status status = 1;
   string subtask_name = 2;
   string job_id = 3;
   uint64 checkpoint_id = 4;
-
+  
 }

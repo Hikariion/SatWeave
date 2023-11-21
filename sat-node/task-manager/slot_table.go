@@ -14,6 +14,9 @@ type SlotTable struct {
 	table    map[string]*Slot // subtask_name -> slot
 
 	mutex *sync.Mutex
+
+	jobManagerHost string
+	jobManagerPort uint64
 }
 
 func (st *SlotTable) getWorkerByWorkerId(id uint64) (*worker.Worker, error) {
@@ -43,7 +46,7 @@ func (st *SlotTable) deployExecuteTask(executeTask *common.ExecuteTask) error {
 		return errno.RequestSlotFail
 	}
 
-	st.table[subtaskName] = NewSlot(st.raftId, executeTask)
+	st.table[subtaskName] = NewSlot(st.raftId, executeTask, st.jobManagerHost, st.jobManagerPort)
 
 	logger.Infof("raft %d deploy subtask %s success", st.raftId, subtaskName)
 
@@ -71,11 +74,14 @@ func (st *SlotTable) getSlot(name string) *Slot {
 	return st.table[name]
 }
 
-func NewSlotTable(raftId uint64, capacity uint64) *SlotTable {
+func NewSlotTable(raftId uint64, capacity uint64, jobManagerHost string, jobManagerPort uint64) *SlotTable {
 	return &SlotTable{
 		raftId:   raftId,
 		capacity: capacity,
 		table:    make(map[string]*Slot),
 		mutex:    &sync.Mutex{},
+
+		jobManagerHost: jobManagerHost,
+		jobManagerPort: jobManagerPort,
 	}
 }

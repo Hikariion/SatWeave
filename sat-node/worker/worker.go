@@ -12,6 +12,8 @@ import (
 	"github.com/google/uuid"
 	"os"
 	"path"
+	"satweave/cloud/sun"
+	"satweave/messenger"
 	"satweave/messenger/common"
 	"satweave/sat-node/operators"
 	"satweave/utils/errno"
@@ -49,6 +51,10 @@ type Worker struct {
 	mu sync.Mutex
 
 	CheckpointDir string
+
+	// job manager endpoint
+	jobManagerHost string
+	jobManagerPort uint64
 }
 
 func (w *Worker) startComputeOnStandletonProcess() error {
@@ -353,36 +359,6 @@ func (w *Worker) Stop() {
 	w.cancel()
 }
 
-func NewWorker(raftId uint64, executeTask *common.ExecuteTask) *Worker {
-	// TODO(qiu): 这个 ctx 是否可以继承 task manager
-	workerCtx, cancel := context.WithCancel(context.Background())
-	worker := &Worker{
-		raftId:          raftId,
-		subtaskId:       uuid.New().String(),
-		clsName:         executeTask.ClsName,
-		inputEndpoints:  executeTask.InputEndpoints,
-		outputEndpoints: executeTask.OutputEndpoints,
-		SubTaskName:     executeTask.SubtaskName,
-		partitionIdx:    executeTask.PartitionIdx,
-		workerId:        executeTask.WorkerId,
-
-		inputReceiver:   nil,
-		outputDispenser: nil,
-
-		ctx:    workerCtx,
-		cancel: cancel,
-	}
-
-	// init op
-	cls := operators.FactoryMap[worker.clsName]()
-	worker.cls = cls
-
-	// worker 初始化
-	worker.initForStartService()
-	worker.CheckpointDir = fmt.Sprintf("tmp/tm/%d/%s/%d/checkpoint", worker.raftId, worker.SubTaskName, worker.partitionIdx)
-	return worker
-}
-
 // 1. checkpoint 的时候，需要将 checkpoint 的数据写入到文件中
 // TODO 2. checkpoint 的时候，存储到卫星的相邻节点上
 func (w *Worker) saveCheckpointState(checkpointState []byte, checkpointId uint64) error {
@@ -413,4 +389,64 @@ func (w *Worker) TriggerCheckpoint(checkpoint *common.Record_Checkpoint) error {
 	}
 	w.inputChannel <- data
 	return nil
+}
+
+func (w *Worker) acknowledgeCheckpoint(jobId string, checkpointId uint64, errCode int32, errMsg string) error {
+	conn, err := messenger.GetRpcConn(w.jobManagerHost, w.jobManagerPort)
+	if err != nil {
+		logger.Errorf("GetRpcConn error: %v", err)
+		return err
+	}
+	defer conn.Close()
+
+	client := sun.NewSunClient(conn)
+	_, err = client.AcknowledgeCheckpoint(context.Background(), &sun.AcknowledgeCheckpointRequest{
+		SubtaskName:  w.SubTaskName,
+		JobId:        jobId,
+		CheckpointId: checkpointId,
+		Status: &common.Status{
+			ErrCode: errCode,
+			Message: errMsg,
+		},
+	})
+
+	if err != nil {
+		logger.Errorf("AcknowledgeCheckpoint error: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func NewWorker(raftId uint64, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64) *Worker {
+	// TODO(qiu): 这个 ctx 是否可以继承 task manager
+	workerCtx, cancel := context.WithCancel(context.Background())
+	worker := &Worker{
+		raftId:          raftId,
+		subtaskId:       uuid.New().String(),
+		clsName:         executeTask.ClsName,
+		inputEndpoints:  executeTask.InputEndpoints,
+		outputEndpoints: executeTask.OutputEndpoints,
+		SubTaskName:     executeTask.SubtaskName,
+		partitionIdx:    executeTask.PartitionIdx,
+		workerId:        executeTask.WorkerId,
+
+		inputReceiver:   nil,
+		outputDispenser: nil,
+
+		ctx:    workerCtx,
+		cancel: cancel,
+
+		jobManagerHost: jobManagerHost,
+		jobManagerPort: jobManagerPort,
+	}
+
+	// init op
+	cls := operators.FactoryMap[worker.clsName]()
+	worker.cls = cls
+
+	// worker 初始化
+	worker.initForStartService()
+	worker.CheckpointDir = fmt.Sprintf("tmp/tm/%d/%s/%d/checkpoint", worker.raftId, worker.SubTaskName, worker.partitionIdx)
+	return worker
 }

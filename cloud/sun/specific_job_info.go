@@ -8,16 +8,18 @@ import (
 	"satweave/utils/logger"
 )
 
-// 管理某个具体的 Job 的信息
+// SpecificJobInfo 管理某个具体的 Job 的信息
 type SpecificJobInfo struct {
 	sourceOps                  map[uint64][]*common.ExecuteTask
 	registeredTaskManagerTable *RegisteredTaskManagerTable
+	ackMap                     *AcknowledgeTable
 }
 
 // NewSpecificJobInfo TODO(qiu): 传的是 task 不是execute task？
 func NewSpecificJobInfo(executeTaskMap map[uint64][]*common.ExecuteTask) *SpecificJobInfo {
 	return &SpecificJobInfo{
 		sourceOps: findSourceOps(executeTaskMap),
+		ackMap:    NewAcknowledgeTable(executeTaskMap),
 	}
 }
 
@@ -36,9 +38,17 @@ func findSourceOps(executeTaskMap map[uint64][]*common.ExecuteTask) map[uint64][
 	return sourceOps
 }
 
+func (s *SpecificJobInfo) AcknowledgeCheckpoint(request *AcknowledgeCheckpointRequest) (bool, error) {
+	return s.ackMap.acknowledgeCheckpoint(request)
+}
+
 func (s *SpecificJobInfo) triggerCheckpoint(checkpointId uint64, registeredTaskManagerTable *RegisteredTaskManagerTable,
 	cancelJob bool) error {
 	// 传入 registered task manager table 是为了找到对应  task manager 的endpoint
+	if s.ackMap.hasCheckpoint(checkpointId) {
+		logger.Errorf("Checkpoint %v already exists", checkpointId)
+		return nil
+	}
 	for taskManagerId, tasks := range s.sourceOps {
 		taskManagerHost := registeredTaskManagerTable.getHost(taskManagerId)
 		taskManagerPort := s.registeredTaskManagerTable.getPort(taskManagerId)
@@ -50,6 +60,7 @@ func (s *SpecificJobInfo) triggerCheckpoint(checkpointId uint64, registeredTaskM
 			}
 		}
 	}
+	s.ackMap.registerPendingCheckpoint(checkpointId)
 	return nil
 }
 

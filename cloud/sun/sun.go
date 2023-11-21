@@ -282,18 +282,42 @@ func (s *Sun) PrintTaskManagerTable() {
 	logger.Infof("%v", s.Scheduler.RegisteredTaskManagerTable)
 }
 
-func (s *Sun) TriggerCheckpoint(_ context.Context, request *TriggerCheckpointRequest) (*common.NilResponse, error) {
+func (s *Sun) TriggerCheckpoint(_ context.Context, request *TriggerCheckpointRequest) (*TriggerCheckpointResponse, error) {
 	checkpointId := generator.GetDataIdGeneratorInstance().Next()
 	err := s.checkpointCoordinator.triggerCheckpoint(request.JobId, checkpointId, request.CancelJob)
 	if err != nil {
 		logger.Errorf("trigger checkpoint failed: %v", err)
-		return &common.NilResponse{}, errno.TriggerCheckpointFail
+		return &TriggerCheckpointResponse{
+			Status: &common.Status{
+				ErrCode: 1,
+				Message: err.Error(),
+			},
+		}, errno.TriggerCheckpointFail
 	}
-	return &common.NilResponse{}, nil
+	return &TriggerCheckpointResponse{
+		Status:       &common.Status{},
+		CheckpointId: checkpointId,
+	}, nil
 }
 
 func (s *Sun) getSubTaskName(clsName string, idx, currency int) string {
 	return fmt.Sprintf("%s#(%d/%d)", clsName, idx+1, currency)
+}
+
+func (s *Sun) AcknowledgeCheckpoint(_ context.Context, request *AcknowledgeCheckpointRequest) (*common.NilResponse, error) {
+	if request.Status.ErrCode != 0 {
+		logger.Errorf("Failed to acknowledge checkpoint: Status.ErrCode != 0, %s", request.Status.Message)
+		return &common.NilResponse{}, errno.AcknowledgeCheckpointFail
+	}
+	succ, err := s.checkpointCoordinator.AcknowledgeCheckpoint(request)
+	if err != nil {
+		logger.Errorf("Failed to acknowledge checkpoint: %v", err)
+		return &common.NilResponse{}, errno.AcknowledgeCheckpointFail
+	}
+	if succ {
+		logger.Infof("Successfully acknowledge checkpoint(id=%v) of job(id=%v)", request.CheckpointId, request.JobId)
+	}
+	return &common.NilResponse{}, nil
 }
 
 func NewSun(rpc *messenger.RpcServer) *Sun {

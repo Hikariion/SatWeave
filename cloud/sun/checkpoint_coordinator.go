@@ -45,15 +45,16 @@ func (c *CheckpointCoordinator) triggerCheckpoint(jobId string, checkpointId uin
 	return nil
 }
 
-func (c *CheckpointCoordinator) AcknowledgeCheckpoint(request *AcknowledgeCheckpointRequest) bool {
+func (c *CheckpointCoordinator) AcknowledgeCheckpoint(request *AcknowledgeCheckpointRequest) (bool, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
 	jobId := request.JobId
 	if _, exists := c.table[jobId]; !exists {
 		logger.Errorf("Failed to acknowledge checkpoint: jobId %v does not exist", jobId)
-		return false
+		return false, errno.JobNotExist
 	}
+	return c.table[jobId].AcknowledgeCheckpoint(request)
 
 }
 

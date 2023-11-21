@@ -191,11 +191,15 @@ const (
 
 	CodeRegisterJobFail int32 = JobManagerError + iota
 	CodeTriggerCheckpointFail
+	CodeCheckpointIdNotInPending
+	CodeAcknowledgeCheckpointFail
 )
 
 var (
-	RegisterJobFail       = newErr(CodeRegisterJobFail, "register job fail")
-	TriggerCheckpointFail = newErr(CodeTriggerCheckpointFail, "trigger checkpoint fail")
+	RegisterJobFail           = newErr(CodeRegisterJobFail, "register job fail")
+	TriggerCheckpointFail     = newErr(CodeTriggerCheckpointFail, "trigger checkpoint fail")
+	CheckpointIdNotInPending  = newErr(CodeCheckpointIdNotInPending, "checkpoint id not in pending")
+	AcknowledgeCheckpointFail = newErr(CodeCheckpointIdNotInPending, "acknowledge checkpoint fail")
 )
 
 type Errno struct {
