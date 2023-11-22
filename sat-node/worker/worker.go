@@ -5,17 +5,15 @@ package worker
 */
 
 import (
-	"bytes"
 	"context"
-	"encoding/binary"
 	"fmt"
 	"github.com/google/uuid"
-	"os"
 	"path"
 	"satweave/cloud/sun"
 	"satweave/messenger"
 	"satweave/messenger/common"
 	"satweave/sat-node/operators"
+	common2 "satweave/utils/common"
 	"satweave/utils/errno"
 	"satweave/utils/generator"
 	"satweave/utils/logger"
@@ -161,13 +159,14 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 			// input 和 output 的数据类型都是 []byte
 			var inputData []byte
 			var outputData []byte
+
 			if !isSourceOp {
 				// 不是 source op
 				record = <-inputChannel
 				dataType = record.DataType
 				// 注意 这里的 data 是 []byte
 				inputData = record.Data
-				logger.Infof("here input data %s", string(inputData))
+				// logger.Infof("here input data %s", string(inputData))
 				dataId = record.DataId
 				timeStamp = record.Timestamp
 			} else {
@@ -187,105 +186,26 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 
 			logger.Infof("%v recv: %s(type=%v)", w.SubTaskName, string(inputData), dataType)
 
-			if isKeyOp {
-				outputData = inputData
-				if dataType == common.DataType_PICKLE {
-					keyBytes, err := taskInstance.Compute(inputData)
-					if err != nil {
-						logger.Errorf("Compute error: %v", err)
-						return err
-					}
-					buf := bytes.NewBuffer(keyBytes)
-					// 小端存储
-					// TODO：相应的 keyby op 转 bytes 的时候，也要转成小端存储
-					err = binary.Read(buf, binary.LittleEndian, &partitionKey)
-					if err != nil {
-						logger.Errorf("binary.Read error: %v", err)
-						return err
-					}
-				} else if dataType == common.DataType_CHECKPOINT {
-					// TODO 这里还没处理完
-					w.PushCheckpointEventToOutputChannel(inputData, outputChannel)
-					_ = taskInstance.Checkpoint()
-					logger.Infof("%s success save snapshot state", w.SubTaskName)
-
-					tmp := &common.Record_Checkpoint{}
-					err := tmp.Unmarshal(inputData)
-					if err != nil {
-						logger.Errorf("Fail to unmarchal checkpoint data: %v", err)
-						return err
-					}
-
-					err = w.acknowledgeCheckpoint(w.jobId, tmp.Id, 0, "")
-					if err != nil {
-						logger.Errorf("Fail to acknowledge checkpoint: %v", err)
-						return err
-					}
-					if tmp.CancelJob == true {
-						logger.Infof("%s success finish job", w.SubTaskName)
-						break
-					} else {
-						continue
-					}
-				} else if dataType == common.DataType_FINISH {
-					w.PushFinishEventToOutputChannel(outputChannel)
-					logger.Infof("%s finished successfully", w.SubTaskName)
+			if dataType == common.DataType_PICKLE {
+				outputData, partitionKey, _ = w.pickleDataProcess(taskInstance, isKeyOp, inputData)
+			} else if dataType == common.DataType_CHECKPOINT {
+				w.checkpointEventProcess(taskInstance, isSinkOp, inputData)
+				logger.Infof("%s success save checkpoint state", w.SubTaskName)
+				checkpointRecord := &common.Record_Checkpoint{}
+				checkpointRecord.Unmarshal(inputData)
+				cancelJob := checkpointRecord.CancelJob
+				if cancelJob == true {
+					logger.Infof("%s success finish job", w.SubTaskName)
 					break
 				} else {
-					logger.Fatalf("Failed: unknown data type: %v", dataType)
+					continue
 				}
+			} else if dataType == common.DataType_FINISH {
+				w.finishEventProcess(taskInstance, isSinkOp, inputData)
+				logger.Infof("%s finished successfully", w.SubTaskName)
+				break
 			} else {
-				if dataType == common.DataType_PICKLE {
-					data, err := taskInstance.Compute(inputData)
-					if err != nil {
-						if err == errno.JobFinished {
-							// TODO(qiu): 通知后续的算子，处理结束
-							return err
-						}
-						logger.Errorf("subtask: %v Compute failed", w.SubTaskName)
-						return err
-					}
-					outputData = data
-				} else if dataType == common.DataType_CHECKPOINT {
-					if !isSinkOp {
-						w.PushCheckpointEventToOutputChannel(inputData, outputChannel)
-					}
-					// 把 inputData 转成 record    []byte -> checkpoint
-					t := &common.Record_Checkpoint{}
-					err := t.Unmarshal(inputData)
-					if err != nil {
-						logger.Errorf("Fail to unmarchal checkpoint data: %v", err)
-						return err
-					}
-					checkpointState := taskInstance.Checkpoint()
-
-					err = w.saveCheckpointState(checkpointState, t.Id)
-					if err != nil {
-						logger.Errorf("Fail to save checkpoint state: %v", err)
-						return err
-					}
-					logger.Infof("%s success save snapshot state", w.SubTaskName)
-					// TODO: 验证 t.id 是否是 checkpoint id
-					err = w.acknowledgeCheckpoint(w.jobId, t.Id, 0, "")
-					if err != nil {
-						logger.Errorf("Fail to acknowledge checkpoint: %v", err)
-						return err
-					}
-					if t.CancelJob == true {
-						logger.Infof("%s cancel job", w.SubTaskName)
-						break
-					} else {
-						continue
-					}
-				} else if dataType == common.DataType_FINISH {
-					logger.Infof("%s finished successfully", w.SubTaskName)
-					if !isSinkOp {
-						w.PushFinishEventToOutputChannel(outputChannel)
-						break
-					}
-				} else {
-					logger.Fatalf("Failed: unknown data type: %v", dataType)
-				}
+				logger.Fatalf("Failed: unknown data type: %v", dataType)
 			}
 
 			if !isSinkOp {
@@ -302,37 +222,221 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 			} else {
 				logger.Infof("sink word %v", string(inputData))
 			}
+
+			//if isKeyOp {
+			//	outputData = inputData
+			//	if dataType == common.DataType_PICKLE {
+			//		keyBytes, err := taskInstance.Compute(inputData)
+			//		if err != nil {
+			//			logger.Errorf("Compute error: %v", err)
+			//			return err
+			//		}
+			//		buf := bytes.NewBuffer(keyBytes)
+			//		// 小端存储
+			//		// TODO：相应的 keyby op 转 bytes 的时候，也要转成小端存储
+			//		err = binary.Read(buf, binary.LittleEndian, &partitionKey)
+			//		if err != nil {
+			//			logger.Errorf("binary.Read error: %v", err)
+			//			return err
+			//		}
+			//	} else if dataType == common.DataType_CHECKPOINT {
+			//		// TODO 这里还没处理完
+			//		w.PushCheckpointEventToOutputChannel(inputData, outputChannel)
+			//		_ = taskInstance.Checkpoint()
+			//		logger.Infof("%s success save snapshot state", w.SubTaskName)
+			//
+			//		tmp := &common.Record_Checkpoint{}
+			//		err := tmp.Unmarshal(inputData)
+			//		if err != nil {
+			//			logger.Errorf("Fail to unmarchal checkpoint data: %v", err)
+			//			return err
+			//		}
+			//
+			//		err = w.acknowledgeCheckpoint(w.jobId, tmp.Id, 0, "")
+			//		if err != nil {
+			//			logger.Errorf("Fail to acknowledge checkpoint: %v", err)
+			//			return err
+			//		}
+			//		if tmp.CancelJob == true {
+			//			logger.Infof("%s success finish job", w.SubTaskName)
+			//			break
+			//		} else {
+			//			continue
+			//		}
+			//	} else if dataType == common.DataType_FINISH {
+			//		w.PushFinishEventToOutputChannel(outputChannel)
+			//		logger.Infof("%s finished successfully", w.SubTaskName)
+			//		break
+			//	} else {
+			//		logger.Fatalf("Failed: unknown data type: %v", dataType)
+			//	}
+			//} else {
+			//	if dataType == common.DataType_PICKLE {
+			//		data, err := taskInstance.Compute(inputData)
+			//		if err != nil {
+			//			if err == errno.JobFinished {
+			//				// TODO(qiu): 通知后续的算子，处理结束
+			//				return err
+			//			}
+			//			logger.Errorf("subtask: %v Compute failed", w.SubTaskName)
+			//			return err
+			//		}
+			//		outputData = data
+			//	} else if dataType == common.DataType_CHECKPOINT {
+			//		if !isSinkOp {
+			//			w.PushCheckpointEventToOutputChannel(inputData, outputChannel)
+			//		}
+			//		// 把 inputData 转成 record    []byte -> checkpoint
+			//		t := &common.Record_Checkpoint{}
+			//		err := t.Unmarshal(inputData)
+			//		if err != nil {
+			//			logger.Errorf("Fail to unmarchal checkpoint data: %v", err)
+			//			return err
+			//		}
+			//		checkpointState := taskInstance.Checkpoint()
+			//
+			//		err = w.saveCheckpointState(checkpointState, t.Id)
+			//		if err != nil {
+			//			logger.Errorf("Fail to save checkpoint state: %v", err)
+			//			return err
+			//		}
+			//		logger.Infof("%s success save snapshot state", w.SubTaskName)
+			//		// TODO: 验证 t.id 是否是 checkpoint id
+			//		err = w.acknowledgeCheckpoint(w.jobId, t.Id, 0, "")
+			//		if err != nil {
+			//			logger.Errorf("Fail to acknowledge checkpoint: %v", err)
+			//			return err
+			//		}
+			//		if t.CancelJob == true {
+			//			logger.Infof("%s cancel job", w.SubTaskName)
+			//			break
+			//		} else {
+			//			continue
+			//		}
+			//	} else if dataType == common.DataType_FINISH {
+			//		logger.Infof("%s finished successfully", w.SubTaskName)
+			//		if !isSinkOp {
+			//			w.PushFinishEventToOutputChannel(outputChannel)
+			//			break
+			//		}
+			//	} else {
+			//		logger.Fatalf("Failed: unknown data type: %v", dataType)
+			//	}
+			//}
 		}
 	}
 }
 
-func (w *Worker) pickleDataProcess(taskInstance operators.OperatorBase, isKeyOp bool, inputData []byte) ([]byte, int64) {
+func (w *Worker) pickleDataProcess(taskInstance operators.OperatorBase, isKeyOp bool, inputData []byte) ([]byte, int64, error) {
 	var outputData []byte
 	var partitionKey int64
 	partitionKey = -1
 	if isKeyOp {
 		outputData = inputData
-		partitionKeyBytes, _ := taskInstance.Compute(inputData)
+		partitionKeyBytes, err := taskInstance.Compute(inputData)
+		if err != nil {
+			logger.Errorf("Compute error: %v", err)
+			return nil, 0, err
+		}
 		// TODO 把 partitionKeyBytes 转成 int64
+		partitionKey = common2.BytesToInt64(partitionKeyBytes)
 	} else {
 		outputData, _ = taskInstance.Compute(inputData)
 	}
-	return outputData, partitionKey
+	return outputData, partitionKey, nil
 }
 
-func (w *Worker) checkpointEventProcess(taskInstance operators.OperatorBase, isSinkOp bool, inputData []byte) {
+func (w *Worker) checkpointEventProcess(taskInstance operators.OperatorBase, isSinkOp bool, inputData []byte) error {
 	if !isSinkOp {
 		w.PushCheckpointEventToOutputChannel(inputData, w.outputChannel)
 	}
-	w.checkpoint()
+	// 把 inputData 转成 checkpointRecord    []byte -> checkpoint
+	checkpointRecord := &common.Record_Checkpoint{}
+	err := checkpointRecord.Unmarshal(inputData)
+	if err != nil {
+		logger.Errorf("Fail to unmarchal checkpoint data: %v", err)
+		return err
+	}
+	err = w.checkpoint(taskInstance, w.CheckpointDir, checkpointRecord.Id, w.jobManagerHost, w.jobManagerPort, w.SubTaskName, w.jobId)
+	if err != nil {
+		logger.Errorf("Fail to checkpoint: %v", err)
+		return err
+	}
+	return err
 }
 
-func (w *Worker) finishEventProcess(taskInstance operators.OperatorBase, isSinkOp bool, inputData []byte) {
-
+func (w *Worker) finishEventProcess(taskInstance operators.OperatorBase, isSinkOp bool, inputData []byte) error {
+	// TODO 没写完
+	if isSinkOp {
+		return nil
+	}
+	w.PushFinishEventToOutputChannel(w.outputChannel)
+	return nil
 }
 
-func (w *Worker) checkpoint() {
+func (w *Worker) checkpoint(taskInstance operators.OperatorBase, checkpointDir string, checkpointId uint64, jobManagerHost string,
+	jobManagerPort uint64, subtaskName string, jobId string) error {
+	checkpointState := taskInstance.Checkpoint()
+	err := w.saveCheckpointState(checkpointState, checkpointId)
+	if err != nil {
+		logger.Errorf("Fail to save checkpoint state: %v", err)
+		return err
+	}
+	err = w.acknowledgeCheckpoint(jobId, checkpointId, 0, "")
+	if err != nil {
+		logger.Errorf("Fail to acknowledge checkpoint: %v", err)
+		return err
+	}
+	return nil
+}
 
+func getCheckpointPath(checkpointDir string, checkpointId uint64) string {
+	return path.Join(checkpointDir, fmt.Sprintf("chk_%d", checkpointId))
+}
+
+func getInputData(inputChannel chan *common.Record, taskInstance operators.OperatorBase, isSourceOp bool) (common.DataType,
+	[]byte, string, uint64) {
+	// 不是 SourceOp
+	if !isSourceOp {
+		record := <-inputChannel
+		return record.DataType, record.Data, record.DataId, record.Timestamp
+	}
+
+	// 是SourceOp
+	select {
+	case record := <-inputChannel:
+		// SourceOp 异常，停止处理
+		return record.DataType, record.Data, -1, -1
+	default:
+		// SourceOp 没有 event，继续处理
+		dataId := generator.GetDataIdGeneratorInstance().Next()
+		dataType := common.DataType_PICKLE
+		timeStamp := timestampUtil.GetTimeStamp()
+		// TODO: 为啥是 nil
+		return dataType, nil, dataId, timeStamp
+	}
+}
+
+func (w *Worker) pushOutputData(isSinkOp bool, outputData []byte, dataType common.DataType, dataId string, timestamp uint64, partitionKey int64) {
+	if isSinkOp {
+		return
+	}
+	record := &common.Record{
+		DataId:       dataId,
+		DataType:     dataType,
+		Data:         outputData,
+		Timestamp:    timestamp,
+		PartitionKey: partitionKey,
+	}
+	// TODO 看看这个 output 有没写错
+	w.outputChannel <- record
+}
+
+// 1. checkpoint 的时候，需要将 checkpoint 的数据写入到文件中
+// TODO 2. checkpoint 的时候，存储到卫星的相邻节点上
+func (w *Worker) saveCheckpointState(checkpointState []byte, checkpointId uint64) error {
+	filePath := getCheckpointPath(w.CheckpointDir, checkpointId)
+	return common2.SaveBytesToFile(checkpointState, filePath)
 }
 
 func (w *Worker) initOutputDispenser(outputEndpoints []*common.OutputEndpoints) chan *common.Record {
@@ -406,20 +510,6 @@ func (w *Worker) Stop() {
 	w.cancel()
 }
 
-// 1. checkpoint 的时候，需要将 checkpoint 的数据写入到文件中
-// TODO 2. checkpoint 的时候，存储到卫星的相邻节点上
-func (w *Worker) saveCheckpointState(checkpointState []byte, checkpointId uint64) error {
-	filePath := path.Join(w.CheckpointDir, fmt.Sprintf("chk_%d", checkpointId))
-
-	err := os.WriteFile(filePath, checkpointState, 0644)
-	if err != nil {
-		logger.Errorf("os.WriteFile error: %v", err)
-		return err
-	}
-
-	return nil
-}
-
 func (w *Worker) TriggerCheckpoint(checkpoint *common.Record_Checkpoint) error {
 	// 只有 SourceOp 才会被调用该函数
 	checkpointData, err := checkpoint.Marshal()
@@ -439,7 +529,7 @@ func (w *Worker) TriggerCheckpoint(checkpoint *common.Record_Checkpoint) error {
 }
 
 // errCode 默认值为0， ErrMsg 默认值为 ""
-func (w *Worker) acknowledgeCheckpoint(jobId string, checkpointId uint64, errCode int32, errMsg string) error {
+func (w *Worker) acknowledgeCheckpoint(jobId string, checkpointId uint64, checkpointState []byte, errCode int32, errMsg string) error {
 	conn, err := messenger.GetRpcConn(w.jobManagerHost, w.jobManagerPort)
 	if err != nil {
 		logger.Errorf("GetRpcConn error: %v", err)
@@ -452,6 +542,10 @@ func (w *Worker) acknowledgeCheckpoint(jobId string, checkpointId uint64, errCod
 		SubtaskName:  w.SubTaskName,
 		JobId:        jobId,
 		CheckpointId: checkpointId,
+		State: &common.File{
+			Name:    getCheckpointPath(w.CheckpointDir, checkpointId),
+			Content: checkpointState,
+		},
 		Status: &common.Status{
 			ErrCode: errCode,
 			Message: errMsg,
