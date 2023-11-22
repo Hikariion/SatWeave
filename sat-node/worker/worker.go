@@ -208,20 +208,22 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 				logger.Fatalf("Failed: unknown data type: %v", dataType)
 			}
 
-			if !isSinkOp {
-				// TODO(qiu) 将 output_data 转成 record
-				output := &common.Record{
-					DataId:       dataId,
-					DataType:     dataType,
-					Data:         outputData,
-					Timestamp:    timeStamp,
-					PartitionKey: partitionKey,
-				}
-				logger.Infof("output channel %v", output)
-				outputChannel <- output
-			} else {
-				logger.Infof("sink word %v", string(inputData))
-			}
+			// TODO 看看 outputchannel 对不对
+			w.pushOutputData(isSinkOp, outputData, dataType, dataId, timeStamp, partitionKey)
+			//if !isSinkOp {
+			//	// TODO(qiu) 将 output_data 转成 record
+			//	output := &common.Record{
+			//		DataId:       dataId,
+			//		DataType:     dataType,
+			//		Data:         outputData,
+			//		Timestamp:    timeStamp,
+			//		PartitionKey: partitionKey,
+			//	}
+			//	logger.Infof("output channel %v", output)
+			//	outputChannel <- output
+			//} else {
+			//	logger.Infof("sink word %v", string(inputData))
+			//}
 
 			//if isKeyOp {
 			//	outputData = inputData
