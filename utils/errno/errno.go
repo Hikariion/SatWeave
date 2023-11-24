@@ -177,6 +177,7 @@ const (
 	CodeSlotCapacityNotEnough
 	CodeWorkerNotFound
 	CodeJobFinished
+	CodeUnknownDataType
 )
 
 var (
@@ -184,6 +185,7 @@ var (
 	SlotCapacityNotEnough = newErr(CodeSlotCapacityNotEnough, "slot capacity not enough")
 	WorkerNotFound        = newErr(CodeWorkerNotFound, "worker not found")
 	JobFinished           = newErr(CodeJobFinished, "job finished")
+	UnknownDataType       = newErr(CodeUnknownDataType, "unknown data type")
 )
 
 const (

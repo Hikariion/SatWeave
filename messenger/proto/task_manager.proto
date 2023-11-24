@@ -8,8 +8,9 @@ service TaskManagerService {
   // Deploy a task to the task manager.
   rpc DeployTask(DeployTaskRequest) returns (NilResponse) {}
   rpc StartTask(StartTaskRequest) returns (NilResponse) {}
-  rpc ProcessOperator(OperatorRequest) returns (NilResponse) {}
   rpc RequestSlot(RequiredSlotRequest) returns (RequiredSlotResponse) {}
+
+
   // From other subtask
   rpc PushRecord(PushRecordRequest) returns (NilResponse) {}
   // From job manager
@@ -19,6 +20,7 @@ service TaskManagerService {
 message DeployTaskRequest {
   ExecuteTask exec_task = 1;
   string job_id = 2;
+  File state = 3;
 }
 
 message TriggerCheckpointRequest {

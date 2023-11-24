@@ -102,7 +102,7 @@ func (c *sunClient) TriggerCheckpoint(ctx context.Context, in *TriggerCheckpoint
 
 func (c *sunClient) RestoreFromCheckpoint(ctx context.Context, in *RestoreFromCheckpointRequest, opts ...grpc.CallOption) (*RestoreFromCheckpointResponse, error) {
 	out := new(RestoreFromCheckpointResponse)
-	err := c.cc.Invoke(ctx, "/messenger.Sun/restoreFromCheckpoint", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/messenger.Sun/RestoreFromCheckpoint", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +308,7 @@ func _Sun_RestoreFromCheckpoint_Handler(srv interface{}, ctx context.Context, de
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/messenger.Sun/restoreFromCheckpoint",
+		FullMethod: "/messenger.Sun/RestoreFromCheckpoint",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SunServer).RestoreFromCheckpoint(ctx, req.(*RestoreFromCheckpointRequest))
@@ -384,7 +384,7 @@ var Sun_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Sun_TriggerCheckpoint_Handler,
 		},
 		{
-			MethodName: "restoreFromCheckpoint",
+			MethodName: "RestoreFromCheckpoint",
 			Handler:    _Sun_RestoreFromCheckpoint_Handler,
 		},
 		{

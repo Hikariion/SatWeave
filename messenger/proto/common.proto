@@ -41,6 +41,7 @@ message TaskManagerDescription {
   uint64 port = 4;
 }
 
+// physical Task
 message ExecuteTask {
   string cls_name = 1;
   repeated InputEndpoints input_endpoints = 2;
@@ -102,7 +103,7 @@ enum DataType {
 }
 
 message Record {
-  string data_id = 1; // for filter
+  int64 data_id = 1; // for filter
   DataType data_type = 2;
   bytes data = 3;
   uint64 timestamp = 4;

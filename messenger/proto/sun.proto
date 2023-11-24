@@ -15,7 +15,7 @@ service Sun {
   // from user front client
   rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse) {}
   rpc TriggerCheckpoint(TriggerCheckpointRequest) returns (TriggerCheckpointResponse) {}
-  rpc restoreFromCheckpoint(RestoreFromCheckpointRequest) returns (RestoreFromCheckpointResponse) {}
+  rpc RestoreFromCheckpoint(RestoreFromCheckpointRequest) returns (RestoreFromCheckpointResponse) {}
 
   // from task manager
   rpc RegisterTaskManager(TaskManagerDescription) returns (NilResponse) {}
@@ -35,7 +35,8 @@ message TriggerCheckpointResponse {
 }
 
 message RestoreFromCheckpointRequest {
-  uint64 checkpoint_id = 1;
+  string job_id = 1;
+  uint64 checkpoint_id = 2;
 }
 
 message RestoreFromCheckpointResponse {

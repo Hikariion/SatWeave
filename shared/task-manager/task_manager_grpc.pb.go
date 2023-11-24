@@ -26,7 +26,6 @@ type TaskManagerServiceClient interface {
 	// Deploy a task to the task manager.
 	DeployTask(ctx context.Context, in *DeployTaskRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 	StartTask(ctx context.Context, in *StartTaskRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
-	ProcessOperator(ctx context.Context, in *OperatorRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
 	RequestSlot(ctx context.Context, in *RequiredSlotRequest, opts ...grpc.CallOption) (*RequiredSlotResponse, error)
 	// From other subtask
 	PushRecord(ctx context.Context, in *PushRecordRequest, opts ...grpc.CallOption) (*common.NilResponse, error)
@@ -54,15 +53,6 @@ func (c *taskManagerServiceClient) DeployTask(ctx context.Context, in *DeployTas
 func (c *taskManagerServiceClient) StartTask(ctx context.Context, in *StartTaskRequest, opts ...grpc.CallOption) (*common.NilResponse, error) {
 	out := new(common.NilResponse)
 	err := c.cc.Invoke(ctx, "/messenger.TaskManagerService/StartTask", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *taskManagerServiceClient) ProcessOperator(ctx context.Context, in *OperatorRequest, opts ...grpc.CallOption) (*common.NilResponse, error) {
-	out := new(common.NilResponse)
-	err := c.cc.Invoke(ctx, "/messenger.TaskManagerService/ProcessOperator", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +93,6 @@ type TaskManagerServiceServer interface {
 	// Deploy a task to the task manager.
 	DeployTask(context.Context, *DeployTaskRequest) (*common.NilResponse, error)
 	StartTask(context.Context, *StartTaskRequest) (*common.NilResponse, error)
-	ProcessOperator(context.Context, *OperatorRequest) (*common.NilResponse, error)
 	RequestSlot(context.Context, *RequiredSlotRequest) (*RequiredSlotResponse, error)
 	// From other subtask
 	PushRecord(context.Context, *PushRecordRequest) (*common.NilResponse, error)
@@ -121,9 +110,6 @@ func (UnimplementedTaskManagerServiceServer) DeployTask(context.Context, *Deploy
 }
 func (UnimplementedTaskManagerServiceServer) StartTask(context.Context, *StartTaskRequest) (*common.NilResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartTask not implemented")
-}
-func (UnimplementedTaskManagerServiceServer) ProcessOperator(context.Context, *OperatorRequest) (*common.NilResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ProcessOperator not implemented")
 }
 func (UnimplementedTaskManagerServiceServer) RequestSlot(context.Context, *RequiredSlotRequest) (*RequiredSlotResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestSlot not implemented")
@@ -179,24 +165,6 @@ func _TaskManagerService_StartTask_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TaskManagerServiceServer).StartTask(ctx, req.(*StartTaskRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _TaskManagerService_ProcessOperator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(OperatorRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TaskManagerServiceServer).ProcessOperator(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/messenger.TaskManagerService/ProcessOperator",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskManagerServiceServer).ProcessOperator(ctx, req.(*OperatorRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -269,10 +237,6 @@ var TaskManagerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StartTask",
 			Handler:    _TaskManagerService_StartTask_Handler,
-		},
-		{
-			MethodName: "ProcessOperator",
-			Handler:    _TaskManagerService_ProcessOperator_Handler,
 		},
 		{
 			MethodName: "RequestSlot",
