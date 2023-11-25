@@ -23,7 +23,10 @@ import (
 
 type specialDataId int64
 
-const ()
+const (
+	lastFinishDataId specialDataId = -5000 + iota
+	checkpointDataId
+)
 
 type Worker struct {
 	// raftID
