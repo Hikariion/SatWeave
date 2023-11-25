@@ -14,6 +14,8 @@ type InputReceiver struct {
 	   PartitionDispenser   -    subtask   ->   InputReceiver   ->   channel
 	   PartitionDispenser   /            (遇到 event 阻塞，类似 Gate)
 	*/
+
+	// channel = inputChannel 与 worker 共用
 	channel    chan *common.Record
 	partitions []*InputPartitionReceiver
 	// TODO(qiu): barrier 需要 new 并且初始化，大小 = partition 数量
@@ -66,13 +68,12 @@ func (ipr *InputPartitionReceiver) innerPraseDataAndCarryToChannel(inputQueue ch
 	for {
 		select {
 		case <-ipr.ctx.Done():
+			logger.Infof("context done, close input partition receiver")
 			return nil
 		default:
-			logger.Infof("block here")
-			data := <-inputQueue
-			logger.Infof("do not reach here")
-			if ContainType(needBarrierDataType, data.DataType) {
-				// TODO(qiu): 需要在某个地方初始化 wg
+			// 从 inputQueue 中读取数据
+			record := <-inputQueue
+			if ContainType(needBarrierDataType, record.DataType) {
 				barrier.Done()
 				logger.Infof("Receive Barrier wg --, begin to wait ... ")
 				barrier.Wait()
@@ -83,15 +84,14 @@ func (ipr *InputPartitionReceiver) innerPraseDataAndCarryToChannel(inputQueue ch
 				select {
 				case <-allowOne:
 					logger.Infof("Be the allowOne, transfer checkpoint signal")
-					outputChannel <- data
-					// 休眠 1s
+					outputChannel <- record
+					// TODO 一秒会不会有点久
 					time.Sleep(1 * time.Second)
 					allowOne <- struct{}{}
 				default:
-					logger.Infof("Do not be the allowOne, do not transfer checkpoint signal")
 				}
 			} else {
-				outputChannel <- data
+				outputChannel <- record
 			}
 		}
 	}
@@ -120,6 +120,13 @@ func NewInputReceiver(ctx context.Context, inputChannel chan *common.Record, inp
 		partitions: make([]*InputPartitionReceiver, 0),
 		allowOne:   make(chan struct{}, 1),
 	}
+	// 在这里初始化 barrier
+	for i := 0; i < len(inputEndpoints); i++ {
+		inputReceiver.barrier.Add(1)
+	}
+	// 初始化 allowOne
+	inputReceiver.allowOne <- struct{}{}
+
 	for i := 0; i < len(inputEndpoints); i++ {
 		inputPartitionReceiver := inputReceiver.NewInputPartitionReceiver(inputReceiver.channel, inputReceiver.barrier, inputReceiver.allowOne)
 		inputReceiver.partitions = append(inputReceiver.partitions, inputPartitionReceiver)

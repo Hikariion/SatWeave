@@ -18,7 +18,7 @@ OutputDispenser
 type OutputDispenser struct {
 	ctx                      context.Context
 	channel                  chan *common.Record
-	outPutEndPoints          []*common.OutputEndpoints
+	outPutEndPoints          []*common.OutputEndpoints // 只有 KeyByInput 算子会有多个 outPutEndpoints
 	subtaskName              string
 	partitionIdx             int64
 	outputPartitionDispenser []*OutputPartitionDispenser
@@ -31,8 +31,11 @@ func (o *OutputDispenser) pushData(record *common.Record) {
 func (o *OutputDispenser) partitioningDataAndCarryToNextSubtask(inputChannel chan *common.Record, outputEndPoints []*common.OutputEndpoints,
 	subtaskName string, partitionIdx int64) error {
 
-	// TODO(qiu): 这里需要捕获err来停止线程
-	go o.innerPartitioningDataAndCarryToNextSubtask(inputChannel, outputEndPoints, subtaskName, partitionIdx)
+	err := o.innerPartitioningDataAndCarryToNextSubtask(inputChannel, outputEndPoints, subtaskName, partitionIdx)
+	if err != nil {
+		logger.Errorf("inner partitioning data and carry to next subtask failed: %v", err)
+		return err
+	}
 
 	return nil
 }
@@ -48,7 +51,10 @@ func (o *OutputDispenser) innerPartitioningDataAndCarryToNextSubtask(inputChanne
 
 	partitionNum := len(partitions)
 
-	needBroadCastDataType := []common.DataType{common.DataType_CHECKPOINT, common.DataType_FINISH}
+	needBroadCastDataType := []common.DataType{
+		common.DataType_CHECKPOINT,
+		common.DataType_FINISH,
+	}
 
 	// TODO(qiu): 利用 error break？
 	for {
@@ -69,8 +75,7 @@ func (o *OutputDispenser) innerPartitioningDataAndCarryToNextSubtask(inputChanne
 				}
 			} else {
 				// Partitioning
-				var partitionIdx int64
-				partitionIdx = -1
+				var partitionIdx int64 = -1
 				if record.PartitionKey != -1 {
 					keyPartitioner := &KeyPartitioner{}
 					idx, err := keyPartitioner.Partitioning(record, int64(partitionNum))
@@ -99,11 +104,12 @@ func (o *OutputDispenser) innerPartitioningDataAndCarryToNextSubtask(inputChanne
 }
 
 func (o *OutputDispenser) Run() {
-	err := o.partitioningDataAndCarryToNextSubtask(o.channel, o.outPutEndPoints, o.subtaskName, o.partitionIdx)
-	if err != nil {
-		logger.Errorf("partitioning data and carry to next subtask failed: %v", err)
-		return
-	}
+	go func() {
+		err := o.partitioningDataAndCarryToNextSubtask(o.channel, o.outPutEndPoints, o.subtaskName, o.partitionIdx)
+		if err != nil {
+			logger.Errorf("partitioning data and carry to next subtask failed: %v", err)
+		}
+	}()
 }
 
 func NewOutputDispenser(ctx context.Context, outputChannel chan *common.Record, outputEndpoints []*common.OutputEndpoints, subtaskName string, partitionIdx int64) *OutputDispenser {
@@ -127,7 +133,6 @@ type OutputPartitionDispenser struct {
 
 // 把 record 发送到下一个节点
 func (opd *OutputPartitionDispenser) pushData(record *common.Record) error {
-	// TODO： use rpc to push data need get
 	// 获得 endpoint 对应的 taskManager 的 rpc client
 	taskManagerHost := opd.endPoint.Host
 	taskManagerPort := opd.endPoint.Port

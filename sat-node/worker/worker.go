@@ -21,6 +21,10 @@ import (
 	"sync"
 )
 
+type specialDataId int64
+
+const ()
+
 type Worker struct {
 	// raftID
 	raftId uint64
@@ -53,10 +57,13 @@ type Worker struct {
 	jobManagerHost string
 	jobManagerPort uint64
 	jobId          string
+
+	// 初始化时的 state
+	state *common.File
 }
 
 func (w *Worker) startComputeOnStandletonProcess() error {
-	err := w.ComputeCore(w.clsName, w.inputChannel, w.outputChannel)
+	err := w.ComputeCore(w.inputChannel, w.outputChannel, w.state)
 	if err != nil {
 		return err
 	}
@@ -113,7 +120,7 @@ func (w *Worker) isKeyOp() bool {
 
 // --------------------------- Compute Core ----------------------------
 
-func (w *Worker) ComputeCore(inputChannel, outputChannel chan *common.Record, state *common.File) {
+func (w *Worker) ComputeCore(inputChannel, outputChannel chan *common.Record, state *common.File) error {
 	// TODO(qiu):SourceOp 中通过 StopIteration 异常（迭代器终止）来表示
 	// 用 error 代替？
 	//errChan := make(chan error, 1)
@@ -146,9 +153,9 @@ func (w *Worker) ComputeCore(inputChannel, outputChannel chan *common.Record, st
 		w.PushFinishEventToOutputChannel(outputChannel)
 	} else {
 		logger.Errorf("run %s task failed, err %v", w.SubTaskName, err)
-		return
+		return err
 	}
-	return
+	return nil
 }
 
 func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Record, state *common.File) error {
@@ -396,7 +403,7 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 }
 
 // -------------------- get input --------------------
-func (w *Worker) getInputData(isSourceOp bool) (common.DataType, []byte, uint64, uint64) {
+func (w *Worker) getInputData(isSourceOp bool) (common.DataType, []byte, int64, uint64) {
 	// 不是 SourceOp, 从 inputChannel 正常获取数据
 	if !isSourceOp {
 		record := <-w.inputChannel
@@ -407,6 +414,7 @@ func (w *Worker) getInputData(isSourceOp bool) (common.DataType, []byte, uint64,
 	select {
 	case record := <-w.inputChannel:
 		// 获取到 event 处理，event
+		// TODO 这里的 -1 -1 不好，需要改
 		return record.DataType, record.Data, -1, -1
 	default:
 		// SourceOp 没有 event，继续处理
@@ -498,7 +506,7 @@ func getCheckpointPath(checkpointDir string, checkpointId uint64) string {
 }
 
 // -------------------- push output --------------------
-func (w *Worker) pushOutputData(isSinkOp bool, outputData []byte, dataType common.DataType, dataId string, timestamp uint64, partitionKey int64) {
+func (w *Worker) pushOutputData(isSinkOp bool, outputData []byte, dataType common.DataType, dataId int64, timestamp uint64, partitionKey int64) {
 	if isSinkOp {
 		return
 	}
