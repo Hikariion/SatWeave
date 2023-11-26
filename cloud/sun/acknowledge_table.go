@@ -10,17 +10,17 @@ import (
 type AcknowledgeTable struct {
 	// checkpointId -> pending_checkpoint
 	executeTaskMap     map[uint64][]*common.ExecuteTask
-	pendingCheckpoints map[uint64]*strset.Set // checkpointId -> subtaskName bool
+	pendingCheckpoints map[int64]*strset.Set // checkpointId -> subtaskName bool
 }
 
-func (a *AcknowledgeTable) hasCheckpoint(checkpointId uint64) bool {
+func (a *AcknowledgeTable) hasCheckpoint(checkpointId int64) bool {
 	if _, exists := a.pendingCheckpoints[checkpointId]; exists {
 		return true
 	}
 	return false
 }
 
-func (a *AcknowledgeTable) registerPendingCheckpoint(checkpointId uint64) {
+func (a *AcknowledgeTable) registerPendingCheckpoint(checkpointId int64) {
 	if _, exists := a.pendingCheckpoints[checkpointId]; exists {
 		logger.Errorf("Failed to register pending checkpoint: checkpointId %v already exists", checkpointId)
 		return
@@ -61,6 +61,6 @@ func (a *AcknowledgeTable) acknowledgeCheckpoint(request *AcknowledgeCheckpointR
 func NewAcknowledgeTable(executeTaskMap map[uint64][]*common.ExecuteTask) *AcknowledgeTable {
 	return &AcknowledgeTable{
 		executeTaskMap:     executeTaskMap,
-		pendingCheckpoints: make(map[uint64]*strset.Set),
+		pendingCheckpoints: make(map[int64]*strset.Set),
 	}
 }

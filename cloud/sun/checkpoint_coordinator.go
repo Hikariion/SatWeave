@@ -27,7 +27,7 @@ func (c *CheckpointCoordinator) registerJob(jobId string, executeTaskMap map[uin
 	return nil
 }
 
-func (c *CheckpointCoordinator) triggerCheckpoint(jobId string, checkpointId uint64, cancelJob bool) error {
+func (c *CheckpointCoordinator) triggerCheckpoint(jobId string, checkpointId int64, cancelJob bool) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 

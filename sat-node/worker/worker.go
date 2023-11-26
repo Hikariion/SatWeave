@@ -21,10 +21,8 @@ import (
 	"sync"
 )
 
-type specialDataId int64
-
 const (
-	lastFinishDataId specialDataId = -5000 + iota
+	lastFinishDataId int64 = -5000 + iota
 	checkpointDataId
 )
 
@@ -180,6 +178,12 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 	if state != nil {
 		// TODO: taskInstance 需要恢复状态
 		// 恢复状态 ack，其实也可不用，状态还没恢复的话，不会处理数据
+		// restore from checkpoint
+		err := taskInstance.RestoreFromCheckpoint(w.state.Content)
+		if err != nil {
+			logger.Errorf("%s restore from checkpoint error: %v", w.subtaskId, err)
+			return errno.RestoreFromCheckpointFail
+		}
 	}
 
 	for {
@@ -405,6 +409,13 @@ func (w *Worker) innerComputeCore(inputChannel, outputChannel chan *common.Recor
 	}
 }
 
+/* record.data
+如果record type 是 pickle，则 data 是 raw bytes
+如果record type 是 checkpoint，则 data 需要转成 checkpoint 结构体
+如果record type 是 finish，则 data 需要转成 finish 结构体
+/
+*/
+
 // -------------------- get input --------------------
 func (w *Worker) getInputData(isSourceOp bool) (common.DataType, []byte, int64, uint64) {
 	// 不是 SourceOp, 从 inputChannel 正常获取数据
@@ -416,18 +427,17 @@ func (w *Worker) getInputData(isSourceOp bool) (common.DataType, []byte, int64, 
 	// 是SourceOp, 从 inputChannel 里获取 event
 	select {
 	case record := <-w.inputChannel:
-		// 获取到 event 处理，event
-		// TODO 这里的 -1 -1 不好，需要改
+		// 获取到 event，处理event
+		// event 可能是 checkpoint 或 finish
+
+		// 这里的 -1 -1, 没什么具体含义
 		return record.DataType, record.Data, -1, -1
 	default:
 		// SourceOp 没有 event，继续处理
 		dataId := generator.GetDataIdGeneratorInstance().Next()
 		dataType := common.DataType_PICKLE
 		timeStamp := timestampUtil.GetTimeStamp()
-		// TODO: 为啥是 nil
-		// TODO: 如果没有数据，需要往后传播吗？
-		// TODO: 这里的data为空，是否需要调用 compute 获取data？
-		// TODO: dataId 为 string 是否合理？
+		// data 为 nil，真实的 data 在 执行source算子 compute 的时候填充
 		return dataType, nil, dataId, timeStamp
 	}
 }
@@ -460,8 +470,7 @@ func (w *Worker) pickleDataProcess(taskInstance operators.OperatorBase, isKeyOp 
 func (w *Worker) checkpointEventProcess(taskInstance operators.OperatorBase, isSinkOp bool, inputData []byte) error {
 	// TODO: 实现无状态算子的 checkpoint 判断
 	if !isSinkOp {
-		// 如果不是 SinkOp，需要把 CheckPoint Event 推到下一个算子
-		// TODO: 看一下 Partition key的作用，是否一个算子只能有一个输出，结合 OutputDispenser 看一下
+		// 如果不是 SinkOp，需要把 CheckPoint Event 发送到后继算子
 		w.PushCheckpointEventToOutputChannel(inputData, w.outputChannel)
 	}
 	// 把 inputData 转成 checkpointRecord    []byte -> checkpoint
@@ -490,13 +499,13 @@ func (w *Worker) finishEventProcess(taskInstance operators.OperatorBase, isSinkO
 func (w *Worker) checkpoint(taskInstance operators.OperatorBase, checkpointId uint64, jobId string) error {
 	// checkpointState 是一个 []byte
 	checkpointState := taskInstance.Checkpoint()
-	// 本地保存 checkpointState 是一个 []byte
+	// 保存 checkpointState 是一个 []byte
 	err := w.saveCheckpointState(checkpointState, checkpointId)
 	if err != nil {
 		logger.Errorf("Fail to save checkpoint state: %v", err)
 		return err
 	}
-	err = w.acknowledgeCheckpoint(jobId, checkpointId, nil, 0, "")
+	err = w.acknowledgeCheckpoint(jobId, checkpointId, checkpointState, 0, "")
 	if err != nil {
 		logger.Errorf("Fail to acknowledge checkpoint: %v", err)
 		return err
@@ -520,8 +529,6 @@ func (w *Worker) pushOutputData(isSinkOp bool, outputData []byte, dataType commo
 		Timestamp:    timestamp,
 		PartitionKey: partitionKey,
 	}
-	// TODO 看看这个 output 有没写错
-	// TODO data 需要再封装一层，结合 output 的逻辑看一下
 	w.outputChannel <- record
 }
 
@@ -539,7 +546,7 @@ func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partition
 	return nil
 }
 
-func (w *Worker) PushEventRecordToOutputChannel(dataId string, dataType common.DataType,
+func (w *Worker) PushEventRecordToOutputChannel(dataId int64, dataType common.DataType,
 	data []byte, outputChannel chan *common.Record) {
 	record := &common.Record{
 		DataId:       dataId,
@@ -552,21 +559,14 @@ func (w *Worker) PushEventRecordToOutputChannel(dataId string, dataType common.D
 }
 
 func (w *Worker) PushFinishEventToOutputChannel(outputChannel chan *common.Record) {
-	record := &common.Record{
-		DataId:    "last_finish_data_id",
-		DataType:  common.DataType_FINISH,
-		Timestamp: timestampUtil.GetTimeStamp(),
-		// TODO(qiu): 这里Data是空的，需要修改
-		Data:         nil,
-		PartitionKey: -1,
-	}
-	outputChannel <- record
+	w.PushEventRecordToOutputChannel(lastFinishDataId, common.DataType_FINISH, nil, outputChannel)
 }
 
-func (w *Worker) PushCheckpointEventToOutputChannel(checkpoint []byte,
+// TODO 在发送第一个 checkpoint event的时候，就应该把checkpointEvent转成bytes
+func (w *Worker) PushCheckpointEventToOutputChannel(checkpointEventBytes []byte,
 	outputChannel chan *common.Record) {
-	w.PushEventRecordToOutputChannel("checkpoint_data_id", common.DataType_CHECKPOINT,
-		checkpoint, outputChannel)
+	w.PushEventRecordToOutputChannel(checkpointDataId, common.DataType_CHECKPOINT,
+		checkpointEventBytes, outputChannel)
 	return
 }
 
@@ -602,7 +602,7 @@ func (w *Worker) TriggerCheckpoint(checkpoint *common.Record_Checkpoint) error {
 		return err
 	}
 	data := &common.Record{
-		DataId:       "checkpoint_data_id",
+		DataId:       checkpointDataId,
 		DataType:     common.DataType_CHECKPOINT,
 		Data:         checkpointData,
 		Timestamp:    timestampUtil.GetTimeStamp(),
@@ -644,7 +644,8 @@ func (w *Worker) acknowledgeCheckpoint(jobId string, checkpointId uint64, checkp
 	return nil
 }
 
-func NewWorker(raftId uint64, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64, jobId string) *Worker {
+func NewWorker(raftId uint64, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64, jobId string,
+	state *common.File) *Worker {
 	// TODO(qiu): 这个 ctx 是否可以继承 task manager
 	workerCtx, cancel := context.WithCancel(context.Background())
 	worker := &Worker{
@@ -666,6 +667,8 @@ func NewWorker(raftId uint64, executeTask *common.ExecuteTask, jobManagerHost st
 		jobManagerHost: jobManagerHost,
 		jobManagerPort: jobManagerPort,
 		jobId:          jobId,
+
+		state: state,
 	}
 
 	// init op

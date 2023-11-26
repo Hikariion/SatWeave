@@ -18,6 +18,11 @@ type Slot struct {
 	workerID uint64
 	subTask  *worker.Worker
 	status   slotState
+	jobId    string
+
+	jobManagerHost string
+	jobManagerPort uint64
+	state          *common.File
 }
 
 func (s *Slot) start() {
@@ -25,11 +30,16 @@ func (s *Slot) start() {
 	s.subTask.Run()
 }
 
-func NewSlot(raftId uint64, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64, jobId string) *Slot {
+func NewSlot(raftId uint64, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64, jobId string,
+	state *common.File) *Slot {
 	return &Slot{
-		raftID:   raftId,
-		subTask:  worker.NewWorker(raftId, executeTask, jobManagerHost, jobManagerPort, jobId),
-		status:   deployed,
-		workerID: executeTask.WorkerId,
+		raftID:         raftId,
+		subTask:        worker.NewWorker(raftId, executeTask, jobManagerHost, jobManagerPort, jobId),
+		status:         deployed,
+		workerID:       executeTask.WorkerId,
+		jobId:          jobId,
+		jobManagerHost: jobManagerHost,
+		jobManagerPort: jobManagerPort,
+		state:          state,
 	}
 }

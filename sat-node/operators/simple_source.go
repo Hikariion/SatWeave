@@ -84,3 +84,7 @@ func (op *SimpleSource) Checkpoint() []byte {
 	}
 	return buf.Bytes()
 }
+
+func (op *SimpleSource) RestoreFromCheckpoint([]byte) error {
+	return nil
+}

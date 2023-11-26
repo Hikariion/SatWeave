@@ -178,14 +178,16 @@ const (
 	CodeWorkerNotFound
 	CodeJobFinished
 	CodeUnknownDataType
+	CodeRestoreFromCheckpointFail
 )
 
 var (
-	RequestSlotFail       = newErr(CodeRequestSlotFail, "request slot fail")
-	SlotCapacityNotEnough = newErr(CodeSlotCapacityNotEnough, "slot capacity not enough")
-	WorkerNotFound        = newErr(CodeWorkerNotFound, "worker not found")
-	JobFinished           = newErr(CodeJobFinished, "job finished")
-	UnknownDataType       = newErr(CodeUnknownDataType, "unknown data type")
+	RequestSlotFail           = newErr(CodeRequestSlotFail, "request slot fail")
+	SlotCapacityNotEnough     = newErr(CodeSlotCapacityNotEnough, "slot capacity not enough")
+	WorkerNotFound            = newErr(CodeWorkerNotFound, "worker not found")
+	JobFinished               = newErr(CodeJobFinished, "job finished")
+	UnknownDataType           = newErr(CodeUnknownDataType, "unknown data type")
+	RestoreFromCheckpointFail = newErr(CodeRestoreFromCheckpointFail, "restore from checkpoint fail")
 )
 
 const (
@@ -201,7 +203,7 @@ var (
 	RegisterJobFail           = newErr(CodeRegisterJobFail, "register job fail")
 	TriggerCheckpointFail     = newErr(CodeTriggerCheckpointFail, "trigger checkpoint fail")
 	CheckpointIdNotInPending  = newErr(CodeCheckpointIdNotInPending, "checkpoint id not in pending")
-	AcknowledgeCheckpointFail = newErr(CodeCheckpointIdNotInPending, "acknowledge checkpoint fail")
+	AcknowledgeCheckpointFail = newErr(CodeAcknowledgeCheckpointFail, "acknowledge checkpoint fail")
 )
 
 type Errno struct {

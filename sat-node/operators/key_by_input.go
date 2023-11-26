@@ -31,3 +31,7 @@ func (op *KeyByInputOp) IsKeyByOp() bool {
 func (op *KeyByInputOp) Checkpoint() []byte {
 	return nil
 }
+
+func (op *KeyByInputOp) RestoreFromCheckpoint([]byte) error {
+	return nil
+}

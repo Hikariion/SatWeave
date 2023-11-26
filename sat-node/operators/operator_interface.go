@@ -10,4 +10,5 @@ type OperatorBase interface {
 	IsSourceOp() bool
 	IsSinkOp() bool
 	IsKeyByOp() bool
+	RestoreFromCheckpoint([]byte) error
 }

@@ -31,7 +31,7 @@ message TriggerCheckpointRequest {
 
 message TriggerCheckpointResponse {
   Status status = 1;
-  uint64 checkpoint_id = 2;
+  int64 checkpoint_id = 2;
 }
 
 message RestoreFromCheckpointRequest {
@@ -72,6 +72,6 @@ message AcknowledgeCheckpointRequest {
   Status status = 1;
   string subtask_name = 2;
   string job_id = 3;
-  uint64 checkpoint_id = 4;
+  int64 checkpoint_id = 4;
   File state = 5;
 }

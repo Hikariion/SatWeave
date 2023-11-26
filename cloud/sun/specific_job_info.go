@@ -42,7 +42,7 @@ func (s *SpecificJobInfo) AcknowledgeCheckpoint(request *AcknowledgeCheckpointRe
 	return s.ackMap.acknowledgeCheckpoint(request)
 }
 
-func (s *SpecificJobInfo) triggerCheckpoint(checkpointId uint64, registeredTaskManagerTable *RegisteredTaskManagerTable,
+func (s *SpecificJobInfo) triggerCheckpoint(checkpointId int64, registeredTaskManagerTable *RegisteredTaskManagerTable,
 	cancelJob bool) error {
 	// 传入 registered task manager table 是为了找到对应  task manager 的endpoint
 	if s.ackMap.hasCheckpoint(checkpointId) {
@@ -65,7 +65,7 @@ func (s *SpecificJobInfo) triggerCheckpoint(checkpointId uint64, registeredTaskM
 }
 
 func (s *SpecificJobInfo) innerTriggerCheckpoint(taskManagerId uint64, subtaskHost string, subtaskPort uint64,
-	workerId uint64, subtaskName string, checkpointId uint64, cancelJob bool) error {
+	workerId uint64, subtaskName string, checkpointId int64, cancelJob bool) error {
 	conn, err := messenger.GetRpcConn(subtaskHost, subtaskPort)
 	if err != nil {
 		return err

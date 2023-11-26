@@ -27,3 +27,7 @@ func (op *SourceOperator) IsKeyByOp() bool {
 func (op *SourceOperator) Checkpoint() []byte {
 	return nil
 }
+
+func (op *SourceOperator) RestoreFromCheckpoint([]byte) error {
+	return nil
+}

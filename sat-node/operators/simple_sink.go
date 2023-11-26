@@ -35,3 +35,7 @@ func (op *SimpleSink) IsKeyByOp() bool {
 func (op *SimpleSink) Checkpoint() []byte {
 	return nil
 }
+
+func (op *SimpleSink) RestoreFromCheckpoint([]byte) error {
+	return nil
+}

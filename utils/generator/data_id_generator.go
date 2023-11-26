@@ -4,7 +4,7 @@ import "sync"
 
 // DataIdGenerator 结构体
 type DataIdGenerator struct {
-	counter uint64
+	counter int64
 }
 
 // 单例实例及其初始化控制
@@ -24,7 +24,7 @@ func GetDataIdGeneratorInstance() *DataIdGenerator {
 }
 
 // Next 返回下一个ID
-func (d *DataIdGenerator) Next() uint64 {
+func (d *DataIdGenerator) Next() int64 {
 	d.counter++
 	return d.counter
 }

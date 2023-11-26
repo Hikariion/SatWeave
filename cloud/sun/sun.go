@@ -6,13 +6,17 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"os"
+	"path"
 	"satweave/messenger"
 	"satweave/messenger/common"
 	"satweave/sat-node/infos"
 	task_manager "satweave/shared/task-manager"
+	common2 "satweave/utils/common"
 	"satweave/utils/errno"
 	"satweave/utils/generator"
 	"satweave/utils/logger"
+	"strings"
 	"sync"
 	"sync/atomic"
 )
@@ -32,6 +36,9 @@ type Sun struct {
 	idGenerator *IdGenerator
 
 	checkpointCoordinator *CheckpointCoordinator
+
+	jobInfoDir  string
+	snapshotDir string
 }
 
 type IdGenerator struct {
@@ -114,6 +121,15 @@ func (s *Sun) ReportClusterInfo(_ context.Context, clusterInfo *infos.ClusterInf
 
 func (s *Sun) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*SubmitJobResponse, error) {
 	jobId := s.idGenerator.Next()
+
+	// 创建存储 jobInfo 的目录
+	jobInfoPath := path.Join(s.jobInfoDir, jobId)
+	err := os.MkdirAll(jobInfoPath, 755)
+	if err != nil {
+		logger.Errorf("mkdir job info path failed: %v", err)
+		return &SubmitJobResponse{}, err
+	}
+
 	executeMap, err := s.innerSubmitJob(ctx, request.Tasks, jobId)
 	if err != nil {
 		return &SubmitJobResponse{}, status.Errorf(codes.Internal, "submit job failed: %v", err)
@@ -162,6 +178,8 @@ func (s *Sun) DeployExecuteTasks(ctx context.Context, jobId string, executeMap m
 		}
 		client := task_manager.NewTaskManagerServiceClient(conn)
 		// 每个 Execute task 都需要 deploy
+		// deploy的过程其实是创建一个worker的过程
+		// TODO deploy的时候，如果有 state 需要把 state 传过去
 		for _, executeTask := range executeTasks {
 			_, err := client.DeployTask(ctx, &task_manager.DeployTaskRequest{
 				ExecTask: executeTask,
@@ -307,6 +325,10 @@ func (s *Sun) getSubTaskName(clsName string, idx, currency int) string {
 	return fmt.Sprintf("%s#(%d/%d)", clsName, idx+1, currency)
 }
 
+func (s *Sun) RestoreFromCheckpoint(_ context.Context, request *RestoreFromCheckpointRequest) (*RestoreFromCheckpointResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RestoreFromCheckpoint not implemented")
+}
+
 func (s *Sun) AcknowledgeCheckpoint(_ context.Context, request *AcknowledgeCheckpointRequest) (*common.NilResponse, error) {
 	if request.Status.ErrCode != 0 {
 		logger.Errorf("Failed to acknowledge checkpoint: Status.ErrCode != 0, %s", request.Status.Message)
@@ -318,7 +340,21 @@ func (s *Sun) AcknowledgeCheckpoint(_ context.Context, request *AcknowledgeCheck
 		return &common.NilResponse{}, errno.AcknowledgeCheckpointFail
 	}
 	if succ {
-		logger.Infof("Successfully acknowledge checkpoint(id=%v) of job(id=%v)", request.CheckpointId, request.JobId)
+		logger.Infof("Successfully acknowledge checkpoint(id=%v) of job(id=%v), begin to save", request.CheckpointId, request.JobId)
+	}
+	// 存储 state
+	stateData := request.State.Content
+	clsName := strings.Split(request.SubtaskName, "#")[0]
+	jobId := request.JobId
+	partitionIdx := strings.Split(request.SubtaskName, "#")[1]
+	partitionIdx = strings.Trim(partitionIdx, "()")
+	partitionIdx = strings.Split(partitionIdx, "/")[0]
+
+	saveFilePath := fmt.Sprintf(s.snapshotDir, jobId, clsName, partitionIdx)
+	err = common2.SaveBytesToFile(stateData, saveFilePath)
+	if err != nil {
+		logger.Errorf("Failed to save state: %v", err)
+		return &common.NilResponse{}, err
 	}
 	return &common.NilResponse{}, nil
 }
@@ -336,6 +372,9 @@ func NewSun(rpc *messenger.RpcServer) *Sun {
 		cachedInfo:                     map[string]*infos.NodeInfo{},
 		taskRegisteredTaskManagerTable: newRegisteredTaskManagerTable(),
 		idGenerator:                    NewIdGenerator(),
+
+		jobInfoDir:  "jm/jobid_%s",
+		snapshotDir: "jm/jobid_%s/snapshot/%s/partition_%s",
 	}
 	sun.checkpointCoordinator = NewCheckpointCoordinator(sun.taskRegisteredTaskManagerTable)
 	sun.Scheduler = newUserDefinedScheduler(sun.taskRegisteredTaskManagerTable)

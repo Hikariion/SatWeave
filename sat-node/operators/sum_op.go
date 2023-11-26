@@ -34,3 +34,7 @@ func (op *SumOp) Checkpoint() []byte {
 	// TODO: checkpoint
 	return nil
 }
+
+func (op *SumOp) RestoreFromCheckpoint([]byte) error {
+	return nil
+}
