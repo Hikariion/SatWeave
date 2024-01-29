@@ -14,11 +14,11 @@ const (
 )
 
 type Slot struct {
-	raftID   uint64
-	workerID uint64
-	subTask  *worker.Worker
-	status   slotState
-	jobId    string
+	satelliteName string
+	workerID      uint64
+	subTask       *worker.Worker
+	status        slotState
+	jobId         string
 
 	jobManagerHost string
 	jobManagerPort uint64
@@ -26,15 +26,15 @@ type Slot struct {
 }
 
 func (s *Slot) start() {
-	logger.Infof("raft id %v subtask %v begin to run...", s.raftID, s.subTask.SubTaskName)
+	logger.Infof("raft id %v subtask %v begin to run...", s.satelliteName, s.subTask.SubTaskName)
 	s.subTask.Run()
 }
 
-func NewSlot(raftId uint64, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64, jobId string,
+func NewSlot(satelliteName string, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64, jobId string,
 	state *common.File) *Slot {
 	return &Slot{
-		raftID:         raftId,
-		subTask:        worker.NewWorker(raftId, executeTask, jobManagerHost, jobManagerPort, jobId),
+		satelliteName:  satelliteName,
+		subTask:        worker.NewWorker(satelliteName, executeTask, jobManagerHost, jobManagerPort, jobId),
 		status:         deployed,
 		workerID:       executeTask.WorkerId,
 		jobId:          jobId,

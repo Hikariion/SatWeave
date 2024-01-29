@@ -134,8 +134,8 @@ type OutputPartitionDispenser struct {
 // 把 record 发送到下一个节点
 func (opd *OutputPartitionDispenser) pushData(record *common.Record) error {
 	// 获得 endpoint 对应的 taskManager 的 rpc client
-	taskManagerHost := opd.endPoint.Host
-	taskManagerPort := opd.endPoint.Port
+	taskManagerHost := opd.endPoint.HostPort.Host
+	taskManagerPort := opd.endPoint.HostPort.Port
 	conn, err := messenger.GetRpcConn(taskManagerHost, taskManagerPort)
 	if err != nil {
 		logger.Errorf("get rpc conn failed: %v", err)

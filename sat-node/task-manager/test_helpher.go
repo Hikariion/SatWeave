@@ -2,6 +2,7 @@ package task_manager
 
 import (
 	"context"
+	"fmt"
 	"satweave/cloud/sun"
 	"satweave/messenger"
 	"satweave/utils/logger"
@@ -10,9 +11,9 @@ import (
 	"time"
 )
 
-const slotNum = 5
+const slotNum = 100
 
-func GenTestTaskManager(ctx context.Context, basePath string, sunAddr string, raftID uint64, slotNum uint64,
+func GenTestTaskManager(ctx context.Context, basePath string, sunAddr string, satelliteName string, slotNum uint64,
 	host string) (*TaskManager, *messenger.RpcServer) {
 	port, nodeRpc := messenger.NewRandomPortRpcServer()
 
@@ -25,7 +26,7 @@ func GenTestTaskManager(ctx context.Context, basePath string, sunAddr string, ra
 	taskManagerConfig.CloudPort = uint64(cloudPort)
 	taskManagerConfig.StoragePath = basePath
 
-	taskManager := NewTaskManager(ctx, &taskManagerConfig, raftID, nodeRpc, slotNum, host, port)
+	taskManager := NewTaskManager(ctx, &taskManagerConfig, satelliteName, nodeRpc, slotNum, host, port)
 
 	return taskManager, nodeRpc
 }
@@ -47,7 +48,7 @@ func GenTestTaskManagerCluster(ctx context.Context, basePath string, num int) ([
 	var taskManagers []*TaskManager
 	var rpcServers []*messenger.RpcServer
 	for i := 0; i < num; i++ {
-		taskManager, rpc := GenTestTaskManager(ctx, basePath, sunAddr, uint64(i+1), slotNum, "127.0.0.1")
+		taskManager, rpc := GenTestTaskManager(ctx, basePath, sunAddr, fmt.Sprintf("satellite#%d", uint64(i+1)), slotNum, "127.0.0.1")
 		taskManagers = append(taskManagers, taskManager)
 		rpcServers = append(rpcServers, rpc)
 	}

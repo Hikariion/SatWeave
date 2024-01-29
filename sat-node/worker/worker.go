@@ -8,9 +8,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/uuid"
-	"path"
-	"satweave/cloud/sun"
-	"satweave/messenger"
 	"satweave/messenger/common"
 	"satweave/sat-node/operators"
 	common2 "satweave/utils/common"
@@ -27,8 +24,8 @@ const (
 )
 
 type Worker struct {
-	// raftID
-	raftId uint64
+	// satellite name
+	satelliteName string
 	// 算子名
 	clsName string
 	// 用 UUID 唯一标识这个 subtask
@@ -431,7 +428,7 @@ func (w *Worker) getInputData(isSourceOp bool) (common.DataType, []byte, int64, 
 		// event 可能是 checkpoint 或 finish
 
 		// 这里的 -1 -1, 没什么具体含义
-		return record.DataType, record.Data, -1, -1
+		return record.DataType, record.Data, -1, 0
 	default:
 		// SourceOp 没有 event，继续处理
 		dataId := generator.GetDataIdGeneratorInstance().Next()
@@ -480,7 +477,7 @@ func (w *Worker) checkpointEventProcess(taskInstance operators.OperatorBase, isS
 		logger.Errorf("Fail to unmarchal checkpoint data: %v", err)
 		return err
 	}
-	err = w.checkpoint(taskInstance, checkpointRecord.Id, w.jobId)
+	//err = w.checkpoint(taskInstance, checkpointRecord.Id, w.jobId)
 	if err != nil {
 		logger.Errorf("Fail to checkpoint: %v", err)
 		return err
@@ -496,26 +493,26 @@ func (w *Worker) finishEventProcess(taskInstance operators.OperatorBase, isSinkO
 	return nil
 }
 
-func (w *Worker) checkpoint(taskInstance operators.OperatorBase, checkpointId uint64, jobId string) error {
-	// checkpointState 是一个 []byte
-	checkpointState := taskInstance.Checkpoint()
-	// 保存 checkpointState 是一个 []byte
-	err := w.saveCheckpointState(checkpointState, checkpointId)
-	if err != nil {
-		logger.Errorf("Fail to save checkpoint state: %v", err)
-		return err
-	}
-	err = w.acknowledgeCheckpoint(jobId, checkpointId, checkpointState, 0, "")
-	if err != nil {
-		logger.Errorf("Fail to acknowledge checkpoint: %v", err)
-		return err
-	}
-	return nil
-}
-
-func getCheckpointPath(checkpointDir string, checkpointId uint64) string {
-	return path.Join(checkpointDir, fmt.Sprintf("chk_%d", checkpointId))
-}
+//func (w *Worker) checkpoint(taskInstance operators.OperatorBase, checkpointId uint64, jobId string) error {
+//	// checkpointState 是一个 []byte
+//	checkpointState := taskInstance.Checkpoint()
+//	// 保存 checkpointState 是一个 []byte
+//	err := w.saveCheckpointState(checkpointState, checkpointId)
+//	if err != nil {
+//		logger.Errorf("Fail to save checkpoint state: %v", err)
+//		return err
+//	}
+//	err = w.acknowledgeCheckpoint(jobId, checkpointId, checkpointState, 0, "")
+//	if err != nil {
+//		logger.Errorf("Fail to acknowledge checkpoint: %v", err)
+//		return err
+//	}
+//	return nil
+//}
+//
+//func getCheckpointPath(checkpointDir string, checkpointId uint64) string {
+//	return path.Join(checkpointDir, fmt.Sprintf("chk_%d", checkpointId))
+//}
 
 // -------------------- push output --------------------
 func (w *Worker) pushOutputData(isSinkOp bool, outputData []byte, dataType common.DataType, dataId int64, timestamp uint64, partitionKey int64) {
@@ -532,12 +529,12 @@ func (w *Worker) pushOutputData(isSinkOp bool, outputData []byte, dataType commo
 	w.outputChannel <- record
 }
 
-// 1. checkpoint 的时候，需要将 checkpoint 的数据写入到文件中
-// TODO 2. checkpoint 的时候，存储到卫星的相邻节点上
-func (w *Worker) saveCheckpointState(checkpointState []byte, checkpointId uint64) error {
-	filePath := getCheckpointPath(w.CheckpointDir, checkpointId)
-	return common2.SaveBytesToFile(checkpointState, filePath)
-}
+//// 1. checkpoint 的时候，需要将 checkpoint 的数据写入到文件中
+//// TODO 2. checkpoint 的时候，存储到卫星的相邻节点上
+//func (w *Worker) saveCheckpointState(checkpointState []byte, checkpointId uint64) error {
+//	filePath := getCheckpointPath(w.CheckpointDir, checkpointId)
+//	return common2.SaveBytesToFile(checkpointState, filePath)
+//}
 
 func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partitionIdx int64) error {
 	preSubTask := fromSubTask
@@ -612,44 +609,44 @@ func (w *Worker) TriggerCheckpoint(checkpoint *common.Record_Checkpoint) error {
 	return nil
 }
 
-// errCode 默认值为0， ErrMsg 默认值为 ""
-func (w *Worker) acknowledgeCheckpoint(jobId string, checkpointId uint64, checkpointState []byte, errCode int32, errMsg string) error {
-	conn, err := messenger.GetRpcConn(w.jobManagerHost, w.jobManagerPort)
-	if err != nil {
-		logger.Errorf("GetRpcConn error: %v", err)
-		return err
-	}
-	defer conn.Close()
+//// errCode 默认值为0， ErrMsg 默认值为 ""
+//func (w *Worker) acknowledgeCheckpoint(jobId string, checkpointId uint64, checkpointState []byte, errCode int32, errMsg string) error {
+//	conn, err := messenger.GetRpcConn(w.jobManagerHost, w.jobManagerPort)
+//	if err != nil {
+//		logger.Errorf("GetRpcConn error: %v", err)
+//		return err
+//	}
+//	defer conn.Close()
+//
+//	client := sun.NewSunClient(conn)
+//	_, err = client.AcknowledgeCheckpoint(context.Background(), &sun.AcknowledgeCheckpointRequest{
+//		SubtaskName: w.SubTaskName,
+//		JobId:       jobId,
+//		//CheckpointId: checkpointId,
+//		State: &common.File{
+//			Name:    getCheckpointPath(w.CheckpointDir, checkpointId),
+//			Content: checkpointState,
+//		},
+//		Status: &common.Status{
+//			ErrCode: errCode,
+//			Message: errMsg,
+//		},
+//	})
+//
+//	if err != nil {
+//		logger.Errorf("AcknowledgeCheckpoint error: %v", err)
+//		return err
+//	}
+//
+//	return nil
+//}
 
-	client := sun.NewSunClient(conn)
-	_, err = client.AcknowledgeCheckpoint(context.Background(), &sun.AcknowledgeCheckpointRequest{
-		SubtaskName:  w.SubTaskName,
-		JobId:        jobId,
-		CheckpointId: checkpointId,
-		State: &common.File{
-			Name:    getCheckpointPath(w.CheckpointDir, checkpointId),
-			Content: checkpointState,
-		},
-		Status: &common.Status{
-			ErrCode: errCode,
-			Message: errMsg,
-		},
-	})
-
-	if err != nil {
-		logger.Errorf("AcknowledgeCheckpoint error: %v", err)
-		return err
-	}
-
-	return nil
-}
-
-func NewWorker(raftId uint64, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64, jobId string,
-	state *common.File) *Worker {
+func NewWorker(satelliteName string, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64, jobId string,
+) *Worker {
 	// TODO(qiu): 这个 ctx 是否可以继承 task manager
 	workerCtx, cancel := context.WithCancel(context.Background())
 	worker := &Worker{
-		raftId:          raftId,
+		satelliteName:   satelliteName,
 		subtaskId:       uuid.New().String(),
 		clsName:         executeTask.ClsName,
 		inputEndpoints:  executeTask.InputEndpoints,
@@ -667,8 +664,6 @@ func NewWorker(raftId uint64, executeTask *common.ExecuteTask, jobManagerHost st
 		jobManagerHost: jobManagerHost,
 		jobManagerPort: jobManagerPort,
 		jobId:          jobId,
-
-		state: state,
 	}
 
 	// init op
@@ -677,6 +672,6 @@ func NewWorker(raftId uint64, executeTask *common.ExecuteTask, jobManagerHost st
 
 	// worker 初始化
 	worker.initForStartService()
-	worker.CheckpointDir = fmt.Sprintf("tmp/tm/%d/%s/%d/checkpoint", worker.raftId, worker.SubTaskName, worker.partitionIdx)
+	worker.CheckpointDir = fmt.Sprintf("tmp/tm/%d/%s/%d/checkpoint", worker.satelliteName, worker.SubTaskName, worker.partitionIdx)
 	return worker
 }

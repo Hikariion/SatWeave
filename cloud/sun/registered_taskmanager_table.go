@@ -9,43 +9,40 @@ import (
 
 type RegisteredTaskManagerTable struct {
 	mutex sync.Mutex
-	table map[uint64]*common.TaskManagerDescription
+	table map[string]*common.TaskManagerDescription
 }
 
 func (r *RegisteredTaskManagerTable) register(description *common.TaskManagerDescription) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	if _, exists := r.table[description.RaftId]; exists {
-		logger.Errorf("TaskManager %v already exists", description.RaftId)
-		return errors.New("TaskManager  already exists")
+	if t, exists := r.table[description.SatelliteName]; exists {
+		if t.HostPort.GetHost() == description.HostPort.GetHost() &&
+			t.HostPort.GetPort() == description.HostPort.GetPort() {
+			logger.Errorf("TaskManager %v already exists", description.SatelliteName)
+			return errors.New("TaskManager  already exists")
+		}
 	}
-	r.table[description.RaftId] = description
-	logger.Infof("Register TaskManager %v success", description.RaftId)
+	r.table[description.SatelliteName] = description
+	logger.Infof("Register TaskManager %v success", description.SatelliteName)
 	return nil
 }
 
-func (r *RegisteredTaskManagerTable) hasTaskManager(raftId uint64) bool {
+func (r *RegisteredTaskManagerTable) hasTaskManager(SatelliteName string) bool {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	_, exists := r.table[raftId]
+	_, exists := r.table[SatelliteName]
 	return exists
 }
 
-func (r *RegisteredTaskManagerTable) getHost(raftId uint64) string {
+func (r *RegisteredTaskManagerTable) getHostPort(SatelliteName string) *common.HostPort {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	return r.table[raftId].Host
-}
-
-func (r *RegisteredTaskManagerTable) getPort(raftId uint64) uint64 {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	return r.table[raftId].Port
+	return r.table[SatelliteName].HostPort
 }
 
 func newRegisteredTaskManagerTable() *RegisteredTaskManagerTable {
 	return &RegisteredTaskManagerTable{
-		table: make(map[uint64]*common.TaskManagerDescription),
+		table: make(map[string]*common.TaskManagerDescription),
 		mutex: sync.Mutex{},
 	}
 }

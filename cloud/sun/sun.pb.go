@@ -24,6 +24,100 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
+type RegisterTaskManagerResponse struct {
+	Success              bool     `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *RegisterTaskManagerResponse) Reset()         { *m = RegisterTaskManagerResponse{} }
+func (m *RegisterTaskManagerResponse) String() string { return proto.CompactTextString(m) }
+func (*RegisterTaskManagerResponse) ProtoMessage()    {}
+func (*RegisterTaskManagerResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_df5d86f47d451473, []int{0}
+}
+func (m *RegisterTaskManagerResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RegisterTaskManagerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RegisterTaskManagerResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RegisterTaskManagerResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RegisterTaskManagerResponse.Merge(m, src)
+}
+func (m *RegisterTaskManagerResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *RegisterTaskManagerResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_RegisterTaskManagerResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RegisterTaskManagerResponse proto.InternalMessageInfo
+
+func (m *RegisterTaskManagerResponse) GetSuccess() bool {
+	if m != nil {
+		return m.Success
+	}
+	return false
+}
+
+type RegisterTaskManagerRequest struct {
+	TaskManagerDesc      *common.TaskManagerDescription `protobuf:"bytes,1,opt,name=task_manager_desc,json=taskManagerDesc,proto3" json:"task_manager_desc,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                       `json:"-"`
+	XXX_unrecognized     []byte                         `json:"-"`
+	XXX_sizecache        int32                          `json:"-"`
+}
+
+func (m *RegisterTaskManagerRequest) Reset()         { *m = RegisterTaskManagerRequest{} }
+func (m *RegisterTaskManagerRequest) String() string { return proto.CompactTextString(m) }
+func (*RegisterTaskManagerRequest) ProtoMessage()    {}
+func (*RegisterTaskManagerRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_df5d86f47d451473, []int{1}
+}
+func (m *RegisterTaskManagerRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RegisterTaskManagerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RegisterTaskManagerRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RegisterTaskManagerRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RegisterTaskManagerRequest.Merge(m, src)
+}
+func (m *RegisterTaskManagerRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *RegisterTaskManagerRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RegisterTaskManagerRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RegisterTaskManagerRequest proto.InternalMessageInfo
+
+func (m *RegisterTaskManagerRequest) GetTaskManagerDesc() *common.TaskManagerDescription {
+	if m != nil {
+		return m.TaskManagerDesc
+	}
+	return nil
+}
+
 type TriggerCheckpointRequest struct {
 	JobId                string   `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
 	CancelJob            bool     `protobuf:"varint,2,opt,name=cancel_job,json=cancelJob,proto3" json:"cancel_job,omitempty"`
@@ -36,7 +130,7 @@ func (m *TriggerCheckpointRequest) Reset()         { *m = TriggerCheckpointReque
 func (m *TriggerCheckpointRequest) String() string { return proto.CompactTextString(m) }
 func (*TriggerCheckpointRequest) ProtoMessage()    {}
 func (*TriggerCheckpointRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_df5d86f47d451473, []int{0}
+	return fileDescriptor_df5d86f47d451473, []int{2}
 }
 func (m *TriggerCheckpointRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -79,184 +173,19 @@ func (m *TriggerCheckpointRequest) GetCancelJob() bool {
 	return false
 }
 
-type TriggerCheckpointResponse struct {
-	Status               *common.Status `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
-	CheckpointId         int64          `protobuf:"varint,2,opt,name=checkpoint_id,json=checkpointId,proto3" json:"checkpoint_id,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
-}
-
-func (m *TriggerCheckpointResponse) Reset()         { *m = TriggerCheckpointResponse{} }
-func (m *TriggerCheckpointResponse) String() string { return proto.CompactTextString(m) }
-func (*TriggerCheckpointResponse) ProtoMessage()    {}
-func (*TriggerCheckpointResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_df5d86f47d451473, []int{1}
-}
-func (m *TriggerCheckpointResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *TriggerCheckpointResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_TriggerCheckpointResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *TriggerCheckpointResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TriggerCheckpointResponse.Merge(m, src)
-}
-func (m *TriggerCheckpointResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *TriggerCheckpointResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_TriggerCheckpointResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_TriggerCheckpointResponse proto.InternalMessageInfo
-
-func (m *TriggerCheckpointResponse) GetStatus() *common.Status {
-	if m != nil {
-		return m.Status
-	}
-	return nil
-}
-
-func (m *TriggerCheckpointResponse) GetCheckpointId() int64 {
-	if m != nil {
-		return m.CheckpointId
-	}
-	return 0
-}
-
-type RestoreFromCheckpointRequest struct {
-	JobId                string   `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
-	CheckpointId         uint64   `protobuf:"varint,2,opt,name=checkpoint_id,json=checkpointId,proto3" json:"checkpoint_id,omitempty"`
+type SubmitJobResponse struct {
+	Success              bool     `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	JobId                string   `protobuf:"bytes,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *RestoreFromCheckpointRequest) Reset()         { *m = RestoreFromCheckpointRequest{} }
-func (m *RestoreFromCheckpointRequest) String() string { return proto.CompactTextString(m) }
-func (*RestoreFromCheckpointRequest) ProtoMessage()    {}
-func (*RestoreFromCheckpointRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_df5d86f47d451473, []int{2}
-}
-func (m *RestoreFromCheckpointRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *RestoreFromCheckpointRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_RestoreFromCheckpointRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *RestoreFromCheckpointRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RestoreFromCheckpointRequest.Merge(m, src)
-}
-func (m *RestoreFromCheckpointRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *RestoreFromCheckpointRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_RestoreFromCheckpointRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RestoreFromCheckpointRequest proto.InternalMessageInfo
-
-func (m *RestoreFromCheckpointRequest) GetJobId() string {
-	if m != nil {
-		return m.JobId
-	}
-	return ""
-}
-
-func (m *RestoreFromCheckpointRequest) GetCheckpointId() uint64 {
-	if m != nil {
-		return m.CheckpointId
-	}
-	return 0
-}
-
-type RestoreFromCheckpointResponse struct {
-	Status               *common.Status `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
-	JobId                string         `protobuf:"bytes,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
-}
-
-func (m *RestoreFromCheckpointResponse) Reset()         { *m = RestoreFromCheckpointResponse{} }
-func (m *RestoreFromCheckpointResponse) String() string { return proto.CompactTextString(m) }
-func (*RestoreFromCheckpointResponse) ProtoMessage()    {}
-func (*RestoreFromCheckpointResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_df5d86f47d451473, []int{3}
-}
-func (m *RestoreFromCheckpointResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *RestoreFromCheckpointResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_RestoreFromCheckpointResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *RestoreFromCheckpointResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RestoreFromCheckpointResponse.Merge(m, src)
-}
-func (m *RestoreFromCheckpointResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *RestoreFromCheckpointResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_RestoreFromCheckpointResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RestoreFromCheckpointResponse proto.InternalMessageInfo
-
-func (m *RestoreFromCheckpointResponse) GetStatus() *common.Status {
-	if m != nil {
-		return m.Status
-	}
-	return nil
-}
-
-func (m *RestoreFromCheckpointResponse) GetJobId() string {
-	if m != nil {
-		return m.JobId
-	}
-	return ""
-}
-
-type SubmitJobResponse struct {
-	Status               *common.Status `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
-	JobId                string         `protobuf:"bytes,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
 }
 
 func (m *SubmitJobResponse) Reset()         { *m = SubmitJobResponse{} }
 func (m *SubmitJobResponse) String() string { return proto.CompactTextString(m) }
 func (*SubmitJobResponse) ProtoMessage()    {}
 func (*SubmitJobResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_df5d86f47d451473, []int{4}
+	return fileDescriptor_df5d86f47d451473, []int{3}
 }
 func (m *SubmitJobResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -285,11 +214,11 @@ func (m *SubmitJobResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SubmitJobResponse proto.InternalMessageInfo
 
-func (m *SubmitJobResponse) GetStatus() *common.Status {
+func (m *SubmitJobResponse) GetSuccess() bool {
 	if m != nil {
-		return m.Status
+		return m.Success
 	}
-	return nil
+	return false
 }
 
 func (m *SubmitJobResponse) GetJobId() string {
@@ -310,7 +239,7 @@ func (m *SubmitJobRequest) Reset()         { *m = SubmitJobRequest{} }
 func (m *SubmitJobRequest) String() string { return proto.CompactTextString(m) }
 func (*SubmitJobRequest) ProtoMessage()    {}
 func (*SubmitJobRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_df5d86f47d451473, []int{5}
+	return fileDescriptor_df5d86f47d451473, []int{4}
 }
 func (m *SubmitJobRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -357,7 +286,7 @@ func (m *TaskManagerResult) Reset()         { *m = TaskManagerResult{} }
 func (m *TaskManagerResult) String() string { return proto.CompactTextString(m) }
 func (*TaskManagerResult) ProtoMessage()    {}
 func (*TaskManagerResult) Descriptor() ([]byte, []int) {
-	return fileDescriptor_df5d86f47d451473, []int{6}
+	return fileDescriptor_df5d86f47d451473, []int{5}
 }
 func (m *TaskManagerResult) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -407,7 +336,7 @@ func (m *RegisterResult) Reset()         { *m = RegisterResult{} }
 func (m *RegisterResult) String() string { return proto.CompactTextString(m) }
 func (*RegisterResult) ProtoMessage()    {}
 func (*RegisterResult) Descriptor() ([]byte, []int) {
-	return fileDescriptor_df5d86f47d451473, []int{7}
+	return fileDescriptor_df5d86f47d451473, []int{6}
 }
 func (m *RegisterResult) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -464,53 +393,6 @@ func (m *RegisterResult) GetClusterInfo() *infos.ClusterInfo {
 	return nil
 }
 
-type RegisterTaskManagerRequest struct {
-	TaskManagerDesc      *common.TaskManagerDescription `protobuf:"bytes,1,opt,name=task_manager_desc,json=taskManagerDesc,proto3" json:"task_manager_desc,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                       `json:"-"`
-	XXX_unrecognized     []byte                         `json:"-"`
-	XXX_sizecache        int32                          `json:"-"`
-}
-
-func (m *RegisterTaskManagerRequest) Reset()         { *m = RegisterTaskManagerRequest{} }
-func (m *RegisterTaskManagerRequest) String() string { return proto.CompactTextString(m) }
-func (*RegisterTaskManagerRequest) ProtoMessage()    {}
-func (*RegisterTaskManagerRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_df5d86f47d451473, []int{8}
-}
-func (m *RegisterTaskManagerRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *RegisterTaskManagerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_RegisterTaskManagerRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *RegisterTaskManagerRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RegisterTaskManagerRequest.Merge(m, src)
-}
-func (m *RegisterTaskManagerRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *RegisterTaskManagerRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_RegisterTaskManagerRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RegisterTaskManagerRequest proto.InternalMessageInfo
-
-func (m *RegisterTaskManagerRequest) GetTaskManagerDesc() *common.TaskManagerDescription {
-	if m != nil {
-		return m.TaskManagerDesc
-	}
-	return nil
-}
-
 type AcknowledgeCheckpointRequest struct {
 	Status               *common.Status `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
 	SubtaskName          string         `protobuf:"bytes,2,opt,name=subtask_name,json=subtaskName,proto3" json:"subtask_name,omitempty"`
@@ -526,7 +408,7 @@ func (m *AcknowledgeCheckpointRequest) Reset()         { *m = AcknowledgeCheckpo
 func (m *AcknowledgeCheckpointRequest) String() string { return proto.CompactTextString(m) }
 func (*AcknowledgeCheckpointRequest) ProtoMessage()    {}
 func (*AcknowledgeCheckpointRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_df5d86f47d451473, []int{9}
+	return fileDescriptor_df5d86f47d451473, []int{7}
 }
 func (m *AcknowledgeCheckpointRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -591,71 +473,139 @@ func (m *AcknowledgeCheckpointRequest) GetState() *common.File {
 }
 
 func init() {
+	proto.RegisterType((*RegisterTaskManagerResponse)(nil), "messenger.RegisterTaskManagerResponse")
+	proto.RegisterType((*RegisterTaskManagerRequest)(nil), "messenger.RegisterTaskManagerRequest")
 	proto.RegisterType((*TriggerCheckpointRequest)(nil), "messenger.TriggerCheckpointRequest")
-	proto.RegisterType((*TriggerCheckpointResponse)(nil), "messenger.TriggerCheckpointResponse")
-	proto.RegisterType((*RestoreFromCheckpointRequest)(nil), "messenger.RestoreFromCheckpointRequest")
-	proto.RegisterType((*RestoreFromCheckpointResponse)(nil), "messenger.RestoreFromCheckpointResponse")
 	proto.RegisterType((*SubmitJobResponse)(nil), "messenger.SubmitJobResponse")
 	proto.RegisterType((*SubmitJobRequest)(nil), "messenger.SubmitJobRequest")
 	proto.RegisterType((*TaskManagerResult)(nil), "messenger.TaskManagerResult")
 	proto.RegisterMapType((map[uint64]*common.TaskManagerDescription)(nil), "messenger.TaskManagerResult.TaskManagerTableEntry")
 	proto.RegisterType((*RegisterResult)(nil), "messenger.RegisterResult")
-	proto.RegisterType((*RegisterTaskManagerRequest)(nil), "messenger.RegisterTaskManagerRequest")
 	proto.RegisterType((*AcknowledgeCheckpointRequest)(nil), "messenger.AcknowledgeCheckpointRequest")
 }
 
 func init() { proto.RegisterFile("sun.proto", fileDescriptor_df5d86f47d451473) }
 
 var fileDescriptor_df5d86f47d451473 = []byte{
-	// 763 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0xdd, 0x4e, 0xe3, 0x46,
-	0x14, 0x8e, 0xc9, 0x4f, 0x9b, 0x93, 0x50, 0xc8, 0xa0, 0xd0, 0x60, 0x20, 0x02, 0x43, 0xd5, 0x70,
-	0x03, 0x52, 0x7a, 0xd1, 0xd2, 0xde, 0xd0, 0xd2, 0x42, 0x41, 0x05, 0x55, 0x43, 0x7a, 0xc3, 0x4d,
-	0x18, 0xdb, 0x27, 0xc1, 0xc4, 0xf6, 0xa4, 0x9e, 0x31, 0x88, 0x37, 0xe9, 0x53, 0xf4, 0x39, 0xf6,
-	0x6e, 0xf7, 0x05, 0x56, 0x5a, 0xb1, 0xd2, 0x3e, 0xc7, 0xca, 0x3f, 0x04, 0x3b, 0x71, 0x02, 0x48,
-	0x7b, 0xe7, 0x39, 0x73, 0xfc, 0x7d, 0xe7, 0xef, 0x3b, 0x03, 0x65, 0xe1, 0xbb, 0xbb, 0x43, 0x8f,
-	0x4b, 0x4e, 0xca, 0x0e, 0x0a, 0x81, 0x6e, 0x1f, 0x3d, 0xb5, 0x62, 0xb9, 0x3d, 0x2e, 0x22, 0xbb,
-	0x5a, 0x35, 0xb8, 0xe3, 0xf0, 0xd8, 0x4b, 0xfb, 0x1b, 0x1a, 0x1d, 0xcf, 0xea, 0xf7, 0xd1, 0x3b,
-	0xbc, 0x46, 0x63, 0x30, 0xe4, 0x96, 0x2b, 0x29, 0xfe, 0xeb, 0xa3, 0x90, 0xa4, 0x0e, 0xa5, 0x1b,
-	0xae, 0x77, 0x2d, 0xb3, 0xa1, 0x6c, 0x28, 0xad, 0x32, 0x2d, 0xde, 0x70, 0xfd, 0xc4, 0x24, 0xeb,
-	0x00, 0x06, 0x73, 0x0d, 0xb4, 0xbb, 0x37, 0x5c, 0x6f, 0xcc, 0x6d, 0x28, 0xad, 0xaf, 0x69, 0x39,
-	0xb2, 0x9c, 0x72, 0x5d, 0x1b, 0xc0, 0x4a, 0x06, 0xa2, 0x18, 0x72, 0x57, 0x20, 0xd9, 0x81, 0x92,
-	0x90, 0x4c, 0xfa, 0x22, 0x84, 0xac, 0xb4, 0x6b, 0xbb, 0xa3, 0x28, 0x77, 0x2f, 0xc2, 0x0b, 0x1a,
-	0x3b, 0x90, 0x2d, 0x98, 0x37, 0x46, 0x00, 0x41, 0x10, 0x01, 0x53, 0x9e, 0x56, 0x9f, 0x8c, 0x27,
-	0xa6, 0x76, 0x09, 0x6b, 0x14, 0x85, 0xe4, 0x1e, 0x1e, 0x79, 0xdc, 0x79, 0x71, 0x0a, 0x99, 0xd8,
-	0x85, 0x31, 0x6c, 0x06, 0xeb, 0x53, 0xb0, 0x5f, 0x9f, 0xcc, 0x53, 0x1c, 0x73, 0x89, 0x38, 0xb4,
-	0x7f, 0xa0, 0x76, 0xe1, 0xeb, 0x8e, 0x25, 0x4f, 0xb9, 0xfe, 0x05, 0x61, 0xf7, 0x61, 0x31, 0x01,
-	0x1b, 0x55, 0xe2, 0x3b, 0x28, 0x4a, 0x26, 0x06, 0x01, 0x68, 0xbe, 0x55, 0x69, 0x2f, 0x24, 0x40,
-	0x3b, 0x4c, 0x0c, 0x68, 0x74, 0xab, 0xbd, 0x57, 0xa0, 0x16, 0x9c, 0xcf, 0x98, 0xcb, 0xfa, 0xe8,
-	0x51, 0x14, 0xbe, 0x2d, 0xc9, 0x15, 0x90, 0xe0, 0xba, 0xeb, 0x44, 0xd6, 0xae, 0x64, 0xba, 0x8d,
-	0x31, 0x52, 0x7b, 0x0c, 0x29, 0xf5, 0x67, 0xd2, 0xd2, 0x09, 0x7e, 0xfa, 0xc3, 0x95, 0xde, 0x3d,
-	0x5d, 0x94, 0x63, 0x66, 0xb5, 0x07, 0xf5, 0x4c, 0x57, 0xb2, 0x08, 0xf9, 0x01, 0xde, 0x87, 0xa5,
-	0x28, 0xd0, 0xe0, 0x93, 0xfc, 0x08, 0xc5, 0x5b, 0x66, 0xfb, 0x18, 0xe6, 0x5c, 0x69, 0x6f, 0x66,
-	0xf3, 0xff, 0x8e, 0xc2, 0xf0, 0xac, 0xa1, 0xb4, 0xb8, 0x4b, 0x23, 0xff, 0x9f, 0xe7, 0x7e, 0x52,
-	0xb4, 0xff, 0x15, 0xf8, 0x86, 0x62, 0xdf, 0x12, 0x72, 0x94, 0xdc, 0x0e, 0x94, 0xbc, 0xf0, 0x2b,
-	0xa3, 0xde, 0x91, 0x0b, 0x8d, 0x1d, 0xc8, 0xb7, 0xf0, 0x95, 0xc7, 0x7a, 0x89, 0x89, 0x29, 0x05,
-	0xc7, 0x48, 0x13, 0xd7, 0x4c, 0x74, 0x6d, 0x64, 0x26, 0x7a, 0x8d, 0x7c, 0xa4, 0x89, 0x6b, 0x26,
-	0xfe, 0x0a, 0x0d, 0x64, 0x1f, 0xaa, 0x86, 0xed, 0x07, 0x9c, 0xdd, 0x40, 0x8a, 0x8d, 0x42, 0x48,
-	0xb4, 0x9c, 0x20, 0x3a, 0x8c, 0xae, 0x4f, 0xdc, 0x1e, 0xa7, 0x15, 0xe3, 0xe9, 0xa0, 0x0d, 0x40,
-	0x7d, 0x8c, 0x37, 0x55, 0xdd, 0xa8, 0xab, 0x67, 0x50, 0x4b, 0x35, 0xc6, 0x44, 0x61, 0xc4, 0x69,
-	0xbc, 0xa0, 0x2e, 0x0b, 0x32, 0x6d, 0xd7, 0xde, 0x2a, 0xb0, 0xf6, 0xab, 0x31, 0x70, 0xf9, 0x9d,
-	0x8d, 0x66, 0x1f, 0x27, 0xf5, 0xf4, 0x8a, 0xd9, 0xdc, 0x84, 0xaa, 0xf0, 0xf5, 0x30, 0x3a, 0x97,
-	0x39, 0x18, 0x4f, 0x68, 0x25, 0xb6, 0x9d, 0x33, 0x07, 0x13, 0xe3, 0x9b, 0x9f, 0xa9, 0xce, 0xc2,
-	0xa4, 0xf2, 0x83, 0x79, 0x0e, 0x88, 0xb0, 0x51, 0x0c, 0x03, 0x49, 0xce, 0xf3, 0x91, 0x65, 0x23,
-	0x8d, 0x6e, 0xdb, 0x9f, 0x8a, 0x90, 0xbf, 0xf0, 0x5d, 0x72, 0x00, 0xd5, 0x33, 0xce, 0xdd, 0xc7,
-	0x52, 0x92, 0xa5, 0x84, 0xff, 0x39, 0x37, 0x31, 0xa8, 0xb5, 0xba, 0x92, 0xea, 0x7c, 0x72, 0x48,
-	0xb4, 0x1c, 0xf9, 0x05, 0xe6, 0x8f, 0x51, 0x46, 0x0d, 0x0d, 0xbc, 0xb3, 0x21, 0xb2, 0x8c, 0x5a,
-	0x8e, 0x1c, 0x40, 0x8d, 0xe2, 0x90, 0x7b, 0x32, 0xd1, 0x67, 0x32, 0xa5, 0xff, 0xea, 0xe4, 0x00,
-	0x6a, 0x39, 0xd2, 0x81, 0xd5, 0x63, 0x94, 0x19, 0xa3, 0x10, 0x6a, 0x85, 0xd4, 0x93, 0xbc, 0x96,
-	0x1d, 0xf7, 0x4b, 0x5d, 0x9b, 0x25, 0x4e, 0x2d, 0x47, 0xfe, 0x84, 0xf2, 0x68, 0x53, 0x90, 0xd5,
-	0x64, 0x33, 0xc7, 0xf6, 0x47, 0x0a, 0x69, 0x62, 0x67, 0x69, 0x39, 0x72, 0x05, 0xb5, 0x89, 0xb5,
-	0x4f, 0xb6, 0x92, 0xf4, 0x53, 0x9e, 0x19, 0x75, 0x7b, 0xb6, 0xd3, 0x88, 0xc1, 0x86, 0x7a, 0xe6,
-	0x3e, 0x26, 0xdf, 0xa7, 0xeb, 0x35, 0xf5, 0x35, 0x50, 0x5b, 0xcf, 0x3b, 0x8e, 0xd8, 0x28, 0x2c,
-	0x65, 0x14, 0x9b, 0x3c, 0xaf, 0x2a, 0x75, 0x79, 0xbc, 0x15, 0x23, 0xcc, 0x4b, 0xa8, 0x67, 0xaa,
-	0x2b, 0x95, 0xc1, 0x2c, 0xfd, 0x4d, 0xc7, 0xfe, 0x6d, 0xfb, 0xcd, 0x43, 0x53, 0x79, 0xf7, 0xd0,
-	0x54, 0x3e, 0x3c, 0x34, 0x95, 0xff, 0x3e, 0x36, 0x73, 0x97, 0x44, 0x30, 0x79, 0x87, 0xec, 0x16,
-	0xf7, 0x0c, 0x9b, 0xfb, 0xe6, 0x9e, 0xf0, 0x5d, 0xbd, 0x14, 0xbe, 0xfa, 0x3f, 0x7c, 0x0e, 0x00,
-	0x00, 0xff, 0xff, 0x70, 0xdf, 0x77, 0x5c, 0x28, 0x08, 0x00, 0x00,
+	// 671 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x54, 0xcd, 0x4e, 0xdb, 0x4a,
+	0x14, 0x8e, 0x13, 0x12, 0x6e, 0x4e, 0xc2, 0x85, 0x0c, 0xe2, 0xde, 0x5c, 0xc3, 0x8d, 0x8a, 0x5b,
+	0x2a, 0xd8, 0x80, 0x94, 0x2e, 0x28, 0xed, 0x86, 0x16, 0xfa, 0x03, 0x2a, 0xa8, 0x1a, 0x58, 0x75,
+	0x93, 0x8e, 0xed, 0x93, 0x60, 0x62, 0xcf, 0xa4, 0x9e, 0x31, 0x88, 0x37, 0xe9, 0x53, 0xf4, 0x39,
+	0xba, 0x6b, 0x5f, 0xa0, 0x52, 0x45, 0x5f, 0xa2, 0xcb, 0xca, 0x1e, 0x07, 0x26, 0xe0, 0x8a, 0xee,
+	0xec, 0xef, 0x7c, 0x73, 0xbe, 0xf3, 0xf3, 0xcd, 0x40, 0x5d, 0x26, 0x7c, 0x7d, 0x14, 0x0b, 0x25,
+	0x48, 0x3d, 0x42, 0x29, 0x91, 0x0f, 0x30, 0xb6, 0x1b, 0x01, 0xef, 0x0b, 0xa9, 0x71, 0xbb, 0xe9,
+	0x89, 0x28, 0x12, 0x39, 0xcb, 0xd9, 0x84, 0x45, 0x8a, 0x83, 0x40, 0x2a, 0x8c, 0x8f, 0x99, 0x1c,
+	0x1e, 0x30, 0xce, 0x06, 0x18, 0x53, 0x94, 0x23, 0xc1, 0x25, 0x92, 0x36, 0x4c, 0xcb, 0xc4, 0xf3,
+	0x50, 0xca, 0xb6, 0x75, 0xcf, 0x5a, 0xfd, 0x8b, 0x8e, 0x7f, 0x9d, 0x21, 0xd8, 0x85, 0x07, 0x3f,
+	0x24, 0x28, 0x15, 0x39, 0x80, 0x96, 0x62, 0x72, 0xd8, 0x8b, 0x34, 0xdc, 0xf3, 0x51, 0x7a, 0x59,
+	0x86, 0x46, 0x77, 0x79, 0xfd, 0xaa, 0xb0, 0x75, 0xe3, 0xe4, 0x2e, 0x4a, 0x2f, 0x0e, 0x46, 0x2a,
+	0x10, 0x9c, 0xce, 0xaa, 0x49, 0xdc, 0x79, 0x0b, 0xed, 0xe3, 0x38, 0x18, 0x0c, 0x30, 0xde, 0x39,
+	0x41, 0x6f, 0x38, 0x12, 0x01, 0x57, 0x63, 0xa9, 0x05, 0xa8, 0x9d, 0x0a, 0xb7, 0x17, 0xf8, 0x59,
+	0xfe, 0x3a, 0xad, 0x9e, 0x0a, 0x77, 0xcf, 0x27, 0xff, 0x03, 0x78, 0x8c, 0x7b, 0x18, 0xf6, 0x4e,
+	0x85, 0xdb, 0x2e, 0x67, 0xc5, 0xd7, 0x35, 0xb2, 0x2f, 0x5c, 0x67, 0x17, 0x5a, 0x47, 0x89, 0x1b,
+	0x05, 0x6a, 0x5f, 0xb8, 0x77, 0x77, 0x6b, 0x88, 0x94, 0x0d, 0x11, 0x67, 0x0b, 0xe6, 0x8c, 0x2c,
+	0xba, 0x9e, 0x15, 0xa8, 0xa6, 0xe5, 0xa7, 0x29, 0x2a, 0xab, 0x8d, 0xee, 0xec, 0x8d, 0x76, 0xa9,
+	0x8e, 0x3a, 0xdf, 0x2c, 0x68, 0x4d, 0x4e, 0x3c, 0x09, 0x15, 0x79, 0x0f, 0x64, 0x62, 0x6e, 0x8a,
+	0xb9, 0x21, 0xe6, 0x99, 0xba, 0xc5, 0x83, 0xd3, 0x27, 0x4d, 0xe4, 0x38, 0x3d, 0xf4, 0x82, 0xab,
+	0xf8, 0x82, 0xce, 0xa9, 0x1b, 0xb0, 0xdd, 0x87, 0x85, 0x42, 0x2a, 0x99, 0x83, 0xca, 0x10, 0x2f,
+	0xb2, 0xc6, 0xa7, 0x68, 0xfa, 0x49, 0x36, 0xa1, 0x7a, 0xc6, 0xc2, 0x04, 0xb3, 0x9e, 0xff, 0x68,
+	0x71, 0x9a, 0xff, 0xa4, 0xfc, 0xd8, 0x72, 0x3e, 0x59, 0xf0, 0xf7, 0xd8, 0x20, 0x79, 0x73, 0x6b,
+	0x50, 0x8b, 0xb3, 0xaf, 0xdc, 0x09, 0x2d, 0x23, 0xa1, 0xa6, 0xd0, 0x9c, 0x40, 0xfe, 0x85, 0xe9,
+	0x98, 0xf5, 0xd5, 0x78, 0xe0, 0x53, 0xb4, 0x96, 0xfe, 0xea, 0xb5, 0x9e, 0x30, 0xd9, 0x0b, 0x91,
+	0xf9, 0x18, 0xb7, 0x2b, 0x7a, 0xad, 0x27, 0x4c, 0xbe, 0xc9, 0x00, 0xb2, 0x05, 0x4d, 0x2f, 0x4c,
+	0x52, 0xcd, 0x5e, 0xea, 0xf9, 0xf6, 0x54, 0x26, 0xf4, 0x8f, 0x21, 0xb4, 0xa3, 0xc3, 0x7b, 0xbc,
+	0x2f, 0x68, 0xc3, 0xbb, 0xfe, 0x71, 0xbe, 0x58, 0xb0, 0xf4, 0xcc, 0x1b, 0x72, 0x71, 0x1e, 0xa2,
+	0x3f, 0xc0, 0xdb, 0x46, 0x5b, 0x83, 0x9a, 0x54, 0x4c, 0x25, 0xb2, 0xa0, 0xfc, 0xa3, 0x2c, 0x40,
+	0x73, 0x02, 0x59, 0x86, 0xa6, 0x4c, 0xdc, 0x6c, 0x93, 0x9c, 0x45, 0x98, 0x9b, 0xa6, 0x91, 0x63,
+	0x87, 0x2c, 0x42, 0xc3, 0x51, 0x15, 0xd3, 0xb6, 0xf7, 0x61, 0xc6, 0xbb, 0x52, 0x4e, 0xa3, 0x69,
+	0x07, 0x15, 0xda, 0xbc, 0x06, 0xf7, 0xfc, 0xd4, 0x62, 0xa9, 0x10, 0xb6, 0xab, 0x59, 0x21, 0xa6,
+	0xc5, 0x5e, 0x06, 0x21, 0x52, 0x1d, 0xed, 0xfe, 0x2c, 0x43, 0xe5, 0x28, 0xe1, 0x64, 0x1b, 0x9a,
+	0x07, 0x42, 0xf0, 0xf1, 0x36, 0xc8, 0xbc, 0xc1, 0x3f, 0x14, 0x3e, 0xa6, 0xed, 0xdb, 0xff, 0x4d,
+	0x2c, 0xc3, 0xdc, 0x9b, 0x53, 0x22, 0x4f, 0x61, 0xe6, 0x15, 0x2a, 0x3d, 0xe3, 0x94, 0x5d, 0x9c,
+	0xa2, 0x08, 0x74, 0x4a, 0x64, 0x1b, 0x5a, 0x14, 0x47, 0x22, 0x56, 0xc6, 0xe8, 0xc9, 0x6f, 0x56,
+	0x62, 0xdf, 0xf6, 0x84, 0x53, 0x22, 0xaf, 0xa1, 0x7e, 0x75, 0xcd, 0xc8, 0xa2, 0x39, 0xf6, 0x1b,
+	0x97, 0xcf, 0x5e, 0x2a, 0x0e, 0xea, 0xfb, 0xed, 0x94, 0x48, 0x1f, 0xe6, 0x0b, 0x5e, 0x2d, 0xb2,
+	0x52, 0xd0, 0xfc, 0xed, 0x57, 0xcd, 0x7e, 0x78, 0x17, 0x6d, 0xac, 0xf3, 0xfc, 0xc1, 0xe7, 0xcb,
+	0x8e, 0xf5, 0xf5, 0xb2, 0x63, 0x7d, 0xbf, 0xec, 0x58, 0x1f, 0x7f, 0x74, 0x4a, 0xef, 0x88, 0x64,
+	0xea, 0x1c, 0xd9, 0x19, 0x6e, 0x78, 0xa1, 0x48, 0xfc, 0x0d, 0x99, 0x70, 0xb7, 0x96, 0xbd, 0xc1,
+	0x8f, 0x7e, 0x05, 0x00, 0x00, 0xff, 0xff, 0xc0, 0x8f, 0xe8, 0x9f, 0xb6, 0x05, 0x00, 0x00,
+}
+
+func (m *RegisterTaskManagerResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RegisterTaskManagerResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RegisterTaskManagerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.Success {
+		i--
+		if m.Success {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RegisterTaskManagerRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RegisterTaskManagerRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RegisterTaskManagerRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.TaskManagerDesc != nil {
+		{
+			size, err := m.TaskManagerDesc.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSun(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *TriggerCheckpointRequest) Marshal() (dAtA []byte, err error) {
@@ -702,135 +652,6 @@ func (m *TriggerCheckpointRequest) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 
-func (m *TriggerCheckpointResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *TriggerCheckpointResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *TriggerCheckpointResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.CheckpointId != 0 {
-		i = encodeVarintSun(dAtA, i, uint64(m.CheckpointId))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.Status != nil {
-		{
-			size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintSun(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *RestoreFromCheckpointRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *RestoreFromCheckpointRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *RestoreFromCheckpointRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.CheckpointId != 0 {
-		i = encodeVarintSun(dAtA, i, uint64(m.CheckpointId))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.JobId) > 0 {
-		i -= len(m.JobId)
-		copy(dAtA[i:], m.JobId)
-		i = encodeVarintSun(dAtA, i, uint64(len(m.JobId)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *RestoreFromCheckpointResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *RestoreFromCheckpointResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *RestoreFromCheckpointResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if len(m.JobId) > 0 {
-		i -= len(m.JobId)
-		copy(dAtA[i:], m.JobId)
-		i = encodeVarintSun(dAtA, i, uint64(len(m.JobId)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Status != nil {
-		{
-			size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintSun(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
 func (m *SubmitJobResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -862,17 +683,15 @@ func (m *SubmitJobResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if m.Status != nil {
-		{
-			size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintSun(dAtA, i, uint64(size))
+	if m.Success {
+		i--
+		if m.Success {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
 		}
 		i--
-		dAtA[i] = 0xa
+		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -1035,45 +854,6 @@ func (m *RegisterResult) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *RegisterTaskManagerRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *RegisterTaskManagerRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *RegisterTaskManagerRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.TaskManagerDesc != nil {
-		{
-			size, err := m.TaskManagerDesc.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintSun(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
 func (m *AcknowledgeCheckpointRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1155,6 +935,37 @@ func encodeVarintSun(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *RegisterTaskManagerResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Success {
+		n += 2
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RegisterTaskManagerRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.TaskManagerDesc != nil {
+		l = m.TaskManagerDesc.Size()
+		n += 1 + l + sovSun(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *TriggerCheckpointRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -1174,73 +985,14 @@ func (m *TriggerCheckpointRequest) Size() (n int) {
 	return n
 }
 
-func (m *TriggerCheckpointResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Status != nil {
-		l = m.Status.Size()
-		n += 1 + l + sovSun(uint64(l))
-	}
-	if m.CheckpointId != 0 {
-		n += 1 + sovSun(uint64(m.CheckpointId))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *RestoreFromCheckpointRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.JobId)
-	if l > 0 {
-		n += 1 + l + sovSun(uint64(l))
-	}
-	if m.CheckpointId != 0 {
-		n += 1 + sovSun(uint64(m.CheckpointId))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *RestoreFromCheckpointResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Status != nil {
-		l = m.Status.Size()
-		n += 1 + l + sovSun(uint64(l))
-	}
-	l = len(m.JobId)
-	if l > 0 {
-		n += 1 + l + sovSun(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
 func (m *SubmitJobResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.Status != nil {
-		l = m.Status.Size()
-		n += 1 + l + sovSun(uint64(l))
+	if m.Success {
+		n += 2
 	}
 	l = len(m.JobId)
 	if l > 0 {
@@ -1321,22 +1073,6 @@ func (m *RegisterResult) Size() (n int) {
 	return n
 }
 
-func (m *RegisterTaskManagerRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.TaskManagerDesc != nil {
-		l = m.TaskManagerDesc.Size()
-		n += 1 + l + sovSun(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
 func (m *AcknowledgeCheckpointRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -1373,6 +1109,164 @@ func sovSun(x uint64) (n int) {
 }
 func sozSun(x uint64) (n int) {
 	return sovSun(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *RegisterTaskManagerResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSun
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RegisterTaskManagerResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RegisterTaskManagerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSun
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Success = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSun(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthSun
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RegisterTaskManagerRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSun
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RegisterTaskManagerRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RegisterTaskManagerRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TaskManagerDesc", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSun
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSun
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSun
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.TaskManagerDesc == nil {
+				m.TaskManagerDesc = &common.TaskManagerDescription{}
+			}
+			if err := m.TaskManagerDesc.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSun(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthSun
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *TriggerCheckpointRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -1477,333 +1371,6 @@ func (m *TriggerCheckpointRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *TriggerCheckpointResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSun
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: TriggerCheckpointResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: TriggerCheckpointResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSun
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSun
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthSun
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Status == nil {
-				m.Status = &common.Status{}
-			}
-			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CheckpointId", wireType)
-			}
-			m.CheckpointId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSun
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.CheckpointId |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSun(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthSun
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *RestoreFromCheckpointRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSun
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: RestoreFromCheckpointRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RestoreFromCheckpointRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field JobId", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSun
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSun
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthSun
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.JobId = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CheckpointId", wireType)
-			}
-			m.CheckpointId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSun
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.CheckpointId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSun(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthSun
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *RestoreFromCheckpointResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSun
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: RestoreFromCheckpointResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RestoreFromCheckpointResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSun
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSun
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthSun
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Status == nil {
-				m.Status = &common.Status{}
-			}
-			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field JobId", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSun
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSun
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthSun
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.JobId = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSun(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthSun
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *SubmitJobResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -1834,10 +1401,10 @@ func (m *SubmitJobResponse) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
 			}
-			var msglen int
+			var v int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowSun
@@ -1847,28 +1414,12 @@ func (m *SubmitJobResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
-				return ErrInvalidLengthSun
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthSun
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Status == nil {
-				m.Status = &common.Status{}
-			}
-			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
+			m.Success = bool(v != 0)
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field JobId", wireType)
@@ -2311,93 +1862,6 @@ func (m *RegisterResult) Unmarshal(dAtA []byte) error {
 				m.ClusterInfo = &infos.ClusterInfo{}
 			}
 			if err := m.ClusterInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSun(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthSun
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *RegisterTaskManagerRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSun
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: RegisterTaskManagerRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RegisterTaskManagerRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TaskManagerDesc", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSun
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSun
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthSun
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.TaskManagerDesc == nil {
-				m.TaskManagerDesc = &common.TaskManagerDescription{}
-			}
-			if err := m.TaskManagerDesc.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

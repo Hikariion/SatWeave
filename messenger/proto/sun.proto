@@ -10,42 +10,58 @@ service Sun {
   rpc MoonRegister(NodeInfo) returns (RegisterResult) {}
   rpc GetLeaderInfo(NodeInfo) returns (NodeInfo) {}
   rpc ReportClusterInfo(ClusterInfo) returns (Result) {}
-  rpc GetRegisterTaskManagerTable(NilRequest) returns (TaskManagerResult) {}
 
   // from user front client
   rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse) {}
-  rpc TriggerCheckpoint(TriggerCheckpointRequest) returns (TriggerCheckpointResponse) {}
-  rpc RestoreFromCheckpoint(RestoreFromCheckpointRequest) returns (RestoreFromCheckpointResponse) {}
 
   // from task manager
-  rpc RegisterTaskManager(TaskManagerDescription) returns (NilResponse) {}
+  rpc RegisterTaskManager(RegisterTaskManagerRequest) returns (RegisterTaskManagerResponse) {}
+
+//  rpc GetRegisterTaskManagerTable(NilRequest) returns (TaskManagerResult) {}
+
+
+//  rpc TriggerCheckpoint(TriggerCheckpointRequest) returns (TriggerCheckpointResponse) {}
+//  rpc RestoreFromCheckpoint(RestoreFromCheckpointRequest) returns (RestoreFromCheckpointResponse) {}
+
+
 
   // from subtask
-  rpc AcknowledgeCheckpoint(AcknowledgeCheckpointRequest) returns (NilResponse) {}
+//  rpc AcknowledgeCheckpoint(AcknowledgeCheckpointRequest) returns (NilResponse) {}
 }
+
+
+message RegisterTaskManagerResponse {
+  bool success = 1;
+}
+
+message RegisterTaskManagerRequest {
+  TaskManagerDescription task_manager_desc = 1;
+}
+
+
 
 message TriggerCheckpointRequest {
   string job_id = 1;
   bool cancel_job = 2;
 }
 
-message TriggerCheckpointResponse {
-  Status status = 1;
-  int64 checkpoint_id = 2;
-}
-
-message RestoreFromCheckpointRequest {
-  string job_id = 1;
-  uint64 checkpoint_id = 2;
-}
-
-message RestoreFromCheckpointResponse {
-  Status status = 1;
-  string job_id = 2;
-}
+//message TriggerCheckpointResponse {
+//  Status status = 1;
+//  int64 checkpoint_id = 2;
+//}
+//
+//message RestoreFromCheckpointRequest {
+//  string job_id = 1;
+//  uint64 checkpoint_id = 2;
+//}
+//
+//message RestoreFromCheckpointResponse {
+//  Status status = 1;
+//  string job_id = 2;
+//}
 
 message SubmitJobResponse {
-  Status status = 1;
+  bool success = 1;
   string job_id = 2;
 }
 
@@ -64,9 +80,7 @@ message RegisterResult {
   ClusterInfo cluster_info = 4;
 }
 
-message RegisterTaskManagerRequest {
-  TaskManagerDescription task_manager_desc = 1;
-}
+
 
 message AcknowledgeCheckpointRequest {
   Status status = 1;

@@ -383,13 +383,12 @@ func (m *MachineResource) GetSlotNumber() int64 {
 }
 
 type TaskManagerDescription struct {
-	RaftId               uint64   `protobuf:"varint,1,opt,name=raft_id,json=raftId,proto3" json:"raft_id,omitempty"`
-	SlotNumber           uint64   `protobuf:"varint,2,opt,name=slot_number,json=slotNumber,proto3" json:"slot_number,omitempty"`
-	Host                 string   `protobuf:"bytes,3,opt,name=host,proto3" json:"host,omitempty"`
-	Port                 uint64   `protobuf:"varint,4,opt,name=port,proto3" json:"port,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	SatelliteName        string    `protobuf:"bytes,1,opt,name=satellite_name,json=satelliteName,proto3" json:"satellite_name,omitempty"`
+	SlotNumber           uint64    `protobuf:"varint,2,opt,name=slot_number,json=slotNumber,proto3" json:"slot_number,omitempty"`
+	HostPort             *HostPort `protobuf:"bytes,3,opt,name=host_port,json=hostPort,proto3" json:"host_port,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
 }
 
 func (m *TaskManagerDescription) Reset()         { *m = TaskManagerDescription{} }
@@ -425,11 +424,11 @@ func (m *TaskManagerDescription) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_TaskManagerDescription proto.InternalMessageInfo
 
-func (m *TaskManagerDescription) GetRaftId() uint64 {
+func (m *TaskManagerDescription) GetSatelliteName() string {
 	if m != nil {
-		return m.RaftId
+		return m.SatelliteName
 	}
-	return 0
+	return ""
 }
 
 func (m *TaskManagerDescription) GetSlotNumber() uint64 {
@@ -439,14 +438,62 @@ func (m *TaskManagerDescription) GetSlotNumber() uint64 {
 	return 0
 }
 
-func (m *TaskManagerDescription) GetHost() string {
+func (m *TaskManagerDescription) GetHostPort() *HostPort {
+	if m != nil {
+		return m.HostPort
+	}
+	return nil
+}
+
+type HostPort struct {
+	Host                 string   `protobuf:"bytes,3,opt,name=host,proto3" json:"host,omitempty"`
+	Port                 uint64   `protobuf:"varint,4,opt,name=port,proto3" json:"port,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *HostPort) Reset()         { *m = HostPort{} }
+func (m *HostPort) String() string { return proto.CompactTextString(m) }
+func (*HostPort) ProtoMessage()    {}
+func (*HostPort) Descriptor() ([]byte, []int) {
+	return fileDescriptor_555bd8c177793206, []int{7}
+}
+func (m *HostPort) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *HostPort) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_HostPort.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *HostPort) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HostPort.Merge(m, src)
+}
+func (m *HostPort) XXX_Size() int {
+	return m.Size()
+}
+func (m *HostPort) XXX_DiscardUnknown() {
+	xxx_messageInfo_HostPort.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_HostPort proto.InternalMessageInfo
+
+func (m *HostPort) GetHost() string {
 	if m != nil {
 		return m.Host
 	}
 	return ""
 }
 
-func (m *TaskManagerDescription) GetPort() uint64 {
+func (m *HostPort) GetPort() uint64 {
 	if m != nil {
 		return m.Port
 	}
@@ -455,22 +502,17 @@ func (m *TaskManagerDescription) GetPort() uint64 {
 
 // physical Task
 type ExecuteTask struct {
+	// 用到的算子
 	ClsName         string             `protobuf:"bytes,1,opt,name=cls_name,json=clsName,proto3" json:"cls_name,omitempty"`
 	InputEndpoints  []*InputEndpoints  `protobuf:"bytes,2,rep,name=input_endpoints,json=inputEndpoints,proto3" json:"input_endpoints,omitempty"`
 	OutputEndpoints []*OutputEndpoints `protobuf:"bytes,3,rep,name=output_endpoints,json=outputEndpoints,proto3" json:"output_endpoints,omitempty"`
-	Resources       []*File            `protobuf:"bytes,4,rep,name=resources,proto3" json:"resources,omitempty"`
-	TaskFile        *File              `protobuf:"bytes,5,opt,name=task_file,json=taskFile,proto3" json:"task_file,omitempty"`
-	SubtaskName     string             `protobuf:"bytes,6,opt,name=subtask_name,json=subtaskName,proto3" json:"subtask_name,omitempty"`
-	PartitionIdx    int64              `protobuf:"varint,7,opt,name=partition_idx,json=partitionIdx,proto3" json:"partition_idx,omitempty"`
-	// 所处节点，用 raft_id 表示
-	Locate uint64 `protobuf:"varint,8,opt,name=locate,proto3" json:"locate,omitempty"`
-	// IP
-	Host string `protobuf:"bytes,9,opt,name=host,proto3" json:"host,omitempty"`
-	// Port
-	Port uint64 `protobuf:"varint,10,opt,name=port,proto3" json:"port,omitempty"`
-	// 使用的worker
-	WorkerId             uint64   `protobuf:"varint,11,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
-	TaskManagerId        uint64   `protobuf:"varint,12,opt,name=task_manager_id,json=taskManagerId,proto3" json:"task_manager_id,omitempty"`
+	SubtaskName     string             `protobuf:"bytes,4,opt,name=subtask_name,json=subtaskName,proto3" json:"subtask_name,omitempty"`
+	PartitionIdx    int64              `protobuf:"varint,5,opt,name=partition_idx,json=partitionIdx,proto3" json:"partition_idx,omitempty"`
+	// 所处节点，用 string 表示 satellite_name
+	Locate   string    `protobuf:"bytes,6,opt,name=locate,proto3" json:"locate,omitempty"`
+	HostPort *HostPort `protobuf:"bytes,7,opt,name=host_port,json=hostPort,proto3" json:"host_port,omitempty"`
+	// 使用的worker的id
+	WorkerId             uint64   `protobuf:"varint,8,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -480,7 +522,7 @@ func (m *ExecuteTask) Reset()         { *m = ExecuteTask{} }
 func (m *ExecuteTask) String() string { return proto.CompactTextString(m) }
 func (*ExecuteTask) ProtoMessage()    {}
 func (*ExecuteTask) Descriptor() ([]byte, []int) {
-	return fileDescriptor_555bd8c177793206, []int{7}
+	return fileDescriptor_555bd8c177793206, []int{8}
 }
 func (m *ExecuteTask) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -530,20 +572,6 @@ func (m *ExecuteTask) GetOutputEndpoints() []*OutputEndpoints {
 	return nil
 }
 
-func (m *ExecuteTask) GetResources() []*File {
-	if m != nil {
-		return m.Resources
-	}
-	return nil
-}
-
-func (m *ExecuteTask) GetTaskFile() *File {
-	if m != nil {
-		return m.TaskFile
-	}
-	return nil
-}
-
 func (m *ExecuteTask) GetSubtaskName() string {
 	if m != nil {
 		return m.SubtaskName
@@ -558,25 +586,18 @@ func (m *ExecuteTask) GetPartitionIdx() int64 {
 	return 0
 }
 
-func (m *ExecuteTask) GetLocate() uint64 {
+func (m *ExecuteTask) GetLocate() string {
 	if m != nil {
 		return m.Locate
-	}
-	return 0
-}
-
-func (m *ExecuteTask) GetHost() string {
-	if m != nil {
-		return m.Host
 	}
 	return ""
 }
 
-func (m *ExecuteTask) GetPort() uint64 {
+func (m *ExecuteTask) GetHostPort() *HostPort {
 	if m != nil {
-		return m.Port
+		return m.HostPort
 	}
-	return 0
+	return nil
 }
 
 func (m *ExecuteTask) GetWorkerId() uint64 {
@@ -586,28 +607,20 @@ func (m *ExecuteTask) GetWorkerId() uint64 {
 	return 0
 }
 
-func (m *ExecuteTask) GetTaskManagerId() uint64 {
-	if m != nil {
-		return m.TaskManagerId
-	}
-	return 0
-}
-
 type InputEndpoints struct {
-	Host                 string   `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
-	Port                 uint64   `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
-	TaskManagerId        uint64   `protobuf:"varint,3,opt,name=task_manager_id,json=taskManagerId,proto3" json:"task_manager_id,omitempty"`
-	WorkerId             uint64   `protobuf:"varint,4,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	HostPort             *HostPort `protobuf:"bytes,1,opt,name=host_port,json=hostPort,proto3" json:"host_port,omitempty"`
+	SatelliteName        string    `protobuf:"bytes,2,opt,name=satellite_name,json=satelliteName,proto3" json:"satellite_name,omitempty"`
+	WorkerId             uint64    `protobuf:"varint,3,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
 }
 
 func (m *InputEndpoints) Reset()         { *m = InputEndpoints{} }
 func (m *InputEndpoints) String() string { return proto.CompactTextString(m) }
 func (*InputEndpoints) ProtoMessage()    {}
 func (*InputEndpoints) Descriptor() ([]byte, []int) {
-	return fileDescriptor_555bd8c177793206, []int{8}
+	return fileDescriptor_555bd8c177793206, []int{9}
 }
 func (m *InputEndpoints) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -636,25 +649,18 @@ func (m *InputEndpoints) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_InputEndpoints proto.InternalMessageInfo
 
-func (m *InputEndpoints) GetHost() string {
+func (m *InputEndpoints) GetHostPort() *HostPort {
 	if m != nil {
-		return m.Host
+		return m.HostPort
+	}
+	return nil
+}
+
+func (m *InputEndpoints) GetSatelliteName() string {
+	if m != nil {
+		return m.SatelliteName
 	}
 	return ""
-}
-
-func (m *InputEndpoints) GetPort() uint64 {
-	if m != nil {
-		return m.Port
-	}
-	return 0
-}
-
-func (m *InputEndpoints) GetTaskManagerId() uint64 {
-	if m != nil {
-		return m.TaskManagerId
-	}
-	return 0
 }
 
 func (m *InputEndpoints) GetWorkerId() uint64 {
@@ -665,20 +671,19 @@ func (m *InputEndpoints) GetWorkerId() uint64 {
 }
 
 type OutputEndpoints struct {
-	Host                 string   `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
-	Port                 uint64   `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
-	TaskManagerId        uint64   `protobuf:"varint,3,opt,name=task_manager_id,json=taskManagerId,proto3" json:"task_manager_id,omitempty"`
-	WorkerId             uint64   `protobuf:"varint,4,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	HostPort             *HostPort `protobuf:"bytes,1,opt,name=host_port,json=hostPort,proto3" json:"host_port,omitempty"`
+	SatelliteName        string    `protobuf:"bytes,2,opt,name=satellite_name,json=satelliteName,proto3" json:"satellite_name,omitempty"`
+	WorkerId             uint64    `protobuf:"varint,3,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
 }
 
 func (m *OutputEndpoints) Reset()         { *m = OutputEndpoints{} }
 func (m *OutputEndpoints) String() string { return proto.CompactTextString(m) }
 func (*OutputEndpoints) ProtoMessage()    {}
 func (*OutputEndpoints) Descriptor() ([]byte, []int) {
-	return fileDescriptor_555bd8c177793206, []int{9}
+	return fileDescriptor_555bd8c177793206, []int{10}
 }
 func (m *OutputEndpoints) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -707,25 +712,18 @@ func (m *OutputEndpoints) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_OutputEndpoints proto.InternalMessageInfo
 
-func (m *OutputEndpoints) GetHost() string {
+func (m *OutputEndpoints) GetHostPort() *HostPort {
 	if m != nil {
-		return m.Host
+		return m.HostPort
+	}
+	return nil
+}
+
+func (m *OutputEndpoints) GetSatelliteName() string {
+	if m != nil {
+		return m.SatelliteName
 	}
 	return ""
-}
-
-func (m *OutputEndpoints) GetPort() uint64 {
-	if m != nil {
-		return m.Port
-	}
-	return 0
-}
-
-func (m *OutputEndpoints) GetTaskManagerId() uint64 {
-	if m != nil {
-		return m.TaskManagerId
-	}
-	return 0
 }
 
 func (m *OutputEndpoints) GetWorkerId() uint64 {
@@ -740,11 +738,9 @@ type Task struct {
 	ClsName    string   `protobuf:"bytes,1,opt,name=cls_name,json=clsName,proto3" json:"cls_name,omitempty"`
 	Currency   int64    `protobuf:"varint,2,opt,name=currency,proto3" json:"currency,omitempty"`
 	InputTasks []string `protobuf:"bytes,3,rep,name=input_tasks,json=inputTasks,proto3" json:"input_tasks,omitempty"`
-	Resources  []*File  `protobuf:"bytes,4,rep,name=resources,proto3" json:"resources,omitempty"`
-	TaskFile   *File    `protobuf:"bytes,5,opt,name=task_file,json=taskFile,proto3" json:"task_file,omitempty"`
-	// 所处节点，用 raft_id 表示
-	Locate               uint64   `protobuf:"varint,6,opt,name=locate,proto3" json:"locate,omitempty"`
-	SlotId               int64    `protobuf:"varint,7,opt,name=slot_id,json=slotId,proto3" json:"slot_id,omitempty"`
+	// 所处节点，用 satellite_name 表示
+	Locate               string   `protobuf:"bytes,4,opt,name=locate,proto3" json:"locate,omitempty"`
+	SlotId               int64    `protobuf:"varint,5,opt,name=slot_id,json=slotId,proto3" json:"slot_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -754,7 +750,7 @@ func (m *Task) Reset()         { *m = Task{} }
 func (m *Task) String() string { return proto.CompactTextString(m) }
 func (*Task) ProtoMessage()    {}
 func (*Task) Descriptor() ([]byte, []int) {
-	return fileDescriptor_555bd8c177793206, []int{10}
+	return fileDescriptor_555bd8c177793206, []int{11}
 }
 func (m *Task) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -804,25 +800,11 @@ func (m *Task) GetInputTasks() []string {
 	return nil
 }
 
-func (m *Task) GetResources() []*File {
-	if m != nil {
-		return m.Resources
-	}
-	return nil
-}
-
-func (m *Task) GetTaskFile() *File {
-	if m != nil {
-		return m.TaskFile
-	}
-	return nil
-}
-
-func (m *Task) GetLocate() uint64 {
+func (m *Task) GetLocate() string {
 	if m != nil {
 		return m.Locate
 	}
-	return 0
+	return ""
 }
 
 func (m *Task) GetSlotId() int64 {
@@ -844,7 +826,7 @@ func (m *File) Reset()         { *m = File{} }
 func (m *File) String() string { return proto.CompactTextString(m) }
 func (*File) ProtoMessage()    {}
 func (*File) Descriptor() ([]byte, []int) {
-	return fileDescriptor_555bd8c177793206, []int{11}
+	return fileDescriptor_555bd8c177793206, []int{12}
 }
 func (m *File) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -897,7 +879,7 @@ func (m *RequiredSlotDescription) Reset()         { *m = RequiredSlotDescription
 func (m *RequiredSlotDescription) String() string { return proto.CompactTextString(m) }
 func (*RequiredSlotDescription) ProtoMessage()    {}
 func (*RequiredSlotDescription) Descriptor() ([]byte, []int) {
-	return fileDescriptor_555bd8c177793206, []int{12}
+	return fileDescriptor_555bd8c177793206, []int{13}
 }
 func (m *RequiredSlotDescription) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -941,7 +923,7 @@ func (m *Record) Reset()         { *m = Record{} }
 func (m *Record) String() string { return proto.CompactTextString(m) }
 func (*Record) ProtoMessage()    {}
 func (*Record) Descriptor() ([]byte, []int) {
-	return fileDescriptor_555bd8c177793206, []int{13}
+	return fileDescriptor_555bd8c177793206, []int{14}
 }
 func (m *Record) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1017,7 +999,7 @@ func (m *Record_KeyValue) Reset()         { *m = Record_KeyValue{} }
 func (m *Record_KeyValue) String() string { return proto.CompactTextString(m) }
 func (*Record_KeyValue) ProtoMessage()    {}
 func (*Record_KeyValue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_555bd8c177793206, []int{13, 0}
+	return fileDescriptor_555bd8c177793206, []int{14, 0}
 }
 func (m *Record_KeyValue) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1061,7 +1043,7 @@ func (m *Record_KeyValue) GetValues() []string {
 }
 
 type Record_Checkpoint struct {
-	Id                   int64    `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id                   uint64   `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	CancelJob            bool     `protobuf:"varint,2,opt,name=cancel_job,json=cancelJob,proto3" json:"cancel_job,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -1072,7 +1054,7 @@ func (m *Record_Checkpoint) Reset()         { *m = Record_Checkpoint{} }
 func (m *Record_Checkpoint) String() string { return proto.CompactTextString(m) }
 func (*Record_Checkpoint) ProtoMessage()    {}
 func (*Record_Checkpoint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_555bd8c177793206, []int{13, 1}
+	return fileDescriptor_555bd8c177793206, []int{14, 1}
 }
 func (m *Record_Checkpoint) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1101,7 +1083,7 @@ func (m *Record_Checkpoint) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Record_Checkpoint proto.InternalMessageInfo
 
-func (m *Record_Checkpoint) GetId() int64 {
+func (m *Record_Checkpoint) GetId() uint64 {
 	if m != nil {
 		return m.Id
 	}
@@ -1125,7 +1107,7 @@ func (m *Record_Finish) Reset()         { *m = Record_Finish{} }
 func (m *Record_Finish) String() string { return proto.CompactTextString(m) }
 func (*Record_Finish) ProtoMessage()    {}
 func (*Record_Finish) Descriptor() ([]byte, []int) {
-	return fileDescriptor_555bd8c177793206, []int{13, 2}
+	return fileDescriptor_555bd8c177793206, []int{14, 2}
 }
 func (m *Record_Finish) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1164,6 +1146,7 @@ func init() {
 	proto.RegisterType((*Status)(nil), "messenger.Status")
 	proto.RegisterType((*MachineResource)(nil), "messenger.MachineResource")
 	proto.RegisterType((*TaskManagerDescription)(nil), "messenger.TaskManagerDescription")
+	proto.RegisterType((*HostPort)(nil), "messenger.HostPort")
 	proto.RegisterType((*ExecuteTask)(nil), "messenger.ExecuteTask")
 	proto.RegisterType((*InputEndpoints)(nil), "messenger.InputEndpoints")
 	proto.RegisterType((*OutputEndpoints)(nil), "messenger.OutputEndpoints")
@@ -1179,66 +1162,64 @@ func init() {
 func init() { proto.RegisterFile("common.proto", fileDescriptor_555bd8c177793206) }
 
 var fileDescriptor_555bd8c177793206 = []byte{
-	// 938 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x55, 0xdd, 0x6e, 0xe3, 0x44,
-	0x14, 0x5e, 0x27, 0x5e, 0xc7, 0x3e, 0xc9, 0x26, 0x61, 0x40, 0x5b, 0x37, 0x40, 0x29, 0x46, 0x42,
-	0xe5, 0xaf, 0xbb, 0x0a, 0x08, 0x21, 0x21, 0x2e, 0xd8, 0x6e, 0xab, 0x9a, 0xee, 0xa6, 0xab, 0x69,
-	0xc5, 0x05, 0x37, 0xd1, 0xc4, 0x3e, 0xdb, 0x9a, 0xd8, 0x1e, 0x33, 0x33, 0xde, 0x6d, 0x90, 0xe0,
-	0x8a, 0x87, 0xe0, 0x15, 0x78, 0x13, 0x2e, 0x79, 0x01, 0x24, 0x54, 0x6e, 0x79, 0x08, 0x34, 0xe3,
-	0xfc, 0xd8, 0xa5, 0x12, 0x57, 0x70, 0x77, 0xfe, 0xff, 0xbe, 0x33, 0x67, 0xa0, 0x17, 0xf1, 0x2c,
-	0xe3, 0xf9, 0x7e, 0x21, 0xb8, 0xe2, 0xc4, 0xcb, 0x50, 0x4a, 0xcc, 0x2f, 0x50, 0x8c, 0x06, 0x2a,
-	0xc9, 0x50, 0x2a, 0x96, 0x15, 0x95, 0x2e, 0xf8, 0xc9, 0x02, 0x87, 0xa2, 0x2c, 0x53, 0x45, 0x1e,
-	0x82, 0x23, 0x15, 0x53, 0xa5, 0xf4, 0xad, 0x5d, 0x6b, 0xaf, 0x3f, 0xf6, 0xf7, 0xd7, 0x7e, 0xfb,
-	0x95, 0xc9, 0xfe, 0x99, 0xd1, 0xd3, 0xa5, 0x1d, 0x21, 0x60, 0x47, 0x3c, 0x46, 0xbf, 0xb5, 0x6b,
-	0xed, 0xdd, 0xa5, 0x86, 0x26, 0x3e, 0x74, 0xb4, 0x1b, 0xbb, 0x40, 0xbf, 0xbd, 0x6b, 0xed, 0x79,
-	0x74, 0xc5, 0x06, 0x23, 0x70, 0x2a, 0x7f, 0xe2, 0x40, 0xeb, 0xf4, 0x64, 0x78, 0x87, 0xb8, 0x60,
-	0x1f, 0x7d, 0x19, 0x3e, 0x19, 0x5a, 0xc1, 0x04, 0xec, 0x63, 0x64, 0x31, 0x19, 0x83, 0xb7, 0xae,
-	0xd0, 0x94, 0xd1, 0x1d, 0xbf, 0x56, 0x2b, 0xe3, 0x7c, 0xa5, 0xa3, 0x1b, 0x33, 0x5d, 0x85, 0x42,
-	0x91, 0x99, 0x2a, 0x6c, 0x6a, 0xe8, 0xa0, 0x07, 0x30, 0x49, 0x52, 0x8a, 0xdf, 0x95, 0x28, 0x55,
-	0xf0, 0x19, 0x74, 0x0d, 0x27, 0x0b, 0x9e, 0x4b, 0x24, 0xef, 0x35, 0x1a, 0xed, 0x8e, 0x5f, 0xa9,
-	0x65, 0x68, 0x76, 0x18, 0x7c, 0xb1, 0xae, 0x79, 0x1b, 0x5c, 0x14, 0x62, 0x6a, 0xfa, 0xb5, 0x4c,
-	0xbf, 0x1d, 0x14, 0xe2, 0xe0, 0x46, 0xcb, 0xad, 0x66, 0xcb, 0x63, 0x18, 0x3c, 0x65, 0xd1, 0x65,
-	0x92, 0x23, 0x45, 0xc9, 0x4b, 0x11, 0x21, 0x79, 0x0b, 0xba, 0x32, 0xe5, 0x6a, 0x9a, 0x97, 0xd9,
-	0x0c, 0x85, 0x09, 0xd5, 0xa6, 0xa0, 0x45, 0x13, 0x23, 0x09, 0xbe, 0x87, 0xfb, 0xe7, 0x4c, 0xce,
-	0x9f, 0xb2, 0x9c, 0x5d, 0xa0, 0x78, 0x8c, 0x32, 0x12, 0x49, 0xa1, 0x12, 0x9e, 0x93, 0x2d, 0xe8,
-	0x08, 0xf6, 0x5c, 0x4d, 0x93, 0xd8, 0xb8, 0xd9, 0xd4, 0xd1, 0x6c, 0x18, 0xdf, 0x8c, 0x59, 0x0d,
-	0xa2, 0x16, 0x53, 0x8f, 0xe8, 0x92, 0x4b, 0xb5, 0x44, 0xc4, 0xd0, 0x5a, 0x56, 0x70, 0xa1, 0x7c,
-	0xbb, 0x1a, 0x9b, 0xa6, 0x83, 0xdf, 0xdb, 0xd0, 0x3d, 0xbc, 0xc2, 0xa8, 0x54, 0xa8, 0x6b, 0xd0,
-	0x4d, 0x47, 0xa9, 0x9c, 0xe6, 0x2c, 0xab, 0x9a, 0xf6, 0x68, 0x27, 0x4a, 0xe5, 0x84, 0x65, 0x48,
-	0x1e, 0xc1, 0x20, 0xc9, 0x8b, 0x52, 0x4d, 0x31, 0x8f, 0x0b, 0x9e, 0xe4, 0x4a, 0xfa, 0xad, 0xdd,
-	0xf6, 0x5e, 0x77, 0xbc, 0x5d, 0x9b, 0x66, 0xa8, 0x2d, 0x0e, 0x57, 0x06, 0xb4, 0x9f, 0x34, 0x78,
-	0x72, 0x08, 0x43, 0x5e, 0xaa, 0x66, 0x90, 0xb6, 0x09, 0x32, 0xaa, 0x05, 0x39, 0x35, 0x26, 0x9b,
-	0x28, 0x03, 0xde, 0x14, 0x90, 0x8f, 0xc0, 0x13, 0xcb, 0xf1, 0x4a, 0xdf, 0x36, 0xfe, 0x83, 0x9a,
-	0xff, 0x51, 0x92, 0x22, 0xdd, 0x58, 0x90, 0x0f, 0xc1, 0x53, 0x4c, 0xce, 0xa7, 0xcf, 0x93, 0x14,
-	0xfd, 0xbb, 0x66, 0x03, 0xfe, 0x61, 0xee, 0x6a, 0x0b, 0x4d, 0x91, 0xb7, 0xa1, 0x27, 0xcb, 0x99,
-	0x71, 0x30, 0x63, 0x70, 0xcc, 0x18, 0xba, 0x4b, 0x99, 0x19, 0xc5, 0x3b, 0x70, 0xaf, 0x60, 0x42,
-	0x25, 0x1a, 0xa4, 0x69, 0x12, 0x5f, 0xf9, 0x1d, 0x03, 0x6a, 0x6f, 0x2d, 0x0c, 0xe3, 0x2b, 0x72,
-	0x1f, 0x9c, 0x94, 0x47, 0x4c, 0xa1, 0xef, 0x56, 0xd8, 0x55, 0xdc, 0x1a, 0x1a, 0xef, 0x16, 0x68,
-	0x60, 0x03, 0x0d, 0x79, 0x1d, 0xbc, 0x97, 0x5c, 0xcc, 0x51, 0x68, 0xf8, 0xbb, 0x46, 0xe1, 0x56,
-	0x82, 0x30, 0x26, 0xef, 0xc2, 0xc0, 0x54, 0x98, 0x55, 0x4b, 0xa3, 0x4d, 0x7a, 0xc6, 0xe4, 0x9e,
-	0xda, 0xac, 0x52, 0x18, 0x07, 0x3f, 0x40, 0xbf, 0x09, 0xc9, 0x3a, 0xbd, 0x75, 0x4b, 0xfa, 0x56,
-	0x2d, 0xfd, 0x2d, 0x19, 0xda, 0xb7, 0x64, 0x68, 0x96, 0x69, 0x37, 0xcb, 0x0c, 0x7e, 0x84, 0xc1,
-	0x0d, 0x30, 0xff, 0xdf, 0xfc, 0x7f, 0x59, 0x60, 0xff, 0xdb, 0x5e, 0x8f, 0xc0, 0x8d, 0x4a, 0x21,
-	0x30, 0x8f, 0x16, 0xa6, 0x80, 0x36, 0x5d, 0xf3, 0xfa, 0x9d, 0x55, 0x3b, 0xaf, 0x73, 0x56, 0xab,
-	0xea, 0x51, 0x30, 0x22, 0x1d, 0xf6, 0x3f, 0xde, 0xc4, 0xcd, 0x06, 0x39, 0x8d, 0x0d, 0xda, 0x82,
-	0x8e, 0x79, 0xfd, 0x49, 0xbc, 0x5c, 0x3c, 0x47, 0xb3, 0x61, 0x1c, 0x7c, 0x02, 0xb6, 0x71, 0x24,
-	0x60, 0xd7, 0x3a, 0x35, 0xb4, 0xbe, 0x59, 0x11, 0xcf, 0x15, 0xe6, 0xd5, 0x98, 0x7b, 0x74, 0xc5,
-	0x06, 0xdb, 0xb0, 0xa5, 0xef, 0x66, 0x22, 0x30, 0x3e, 0x4b, 0xb9, 0xaa, 0x1d, 0xa0, 0xe0, 0x97,
-	0x96, 0xfe, 0x2c, 0x22, 0x2e, 0x62, 0x9d, 0x34, 0x66, 0x8a, 0xad, 0x6e, 0x51, 0x9b, 0x3a, 0x9a,
-	0x0d, 0x63, 0xf2, 0x10, 0x3c, 0xa3, 0x50, 0x8b, 0xa2, 0x3a, 0x87, 0xfd, 0xf1, 0xab, 0xb5, 0x9e,
-	0x1e, 0x33, 0xc5, 0xce, 0x17, 0x05, 0x52, 0x37, 0x5e, 0x52, 0xba, 0x3c, 0x4d, 0x1b, 0x3c, 0x7b,
-	0xd4, 0xd0, 0xe4, 0x8d, 0xfa, 0x3f, 0x50, 0xc1, 0x58, 0xbb, 0xf8, 0x8d, 0x07, 0x37, 0xc7, 0x85,
-	0x99, 0x5d, 0xfd, 0xc1, 0x9d, 0xe0, 0x62, 0xf4, 0x29, 0xb8, 0x27, 0xb8, 0xf8, 0x9a, 0xa5, 0xa5,
-	0x49, 0x31, 0xc7, 0x85, 0xbe, 0xf7, 0x1a, 0x31, 0x43, 0xeb, 0x71, 0xbe, 0xd0, 0xca, 0xea, 0x6e,
-	0x79, 0x74, 0xc9, 0x8d, 0x3e, 0x07, 0x38, 0xb8, 0xc4, 0x68, 0x6e, 0x16, 0x94, 0xf4, 0xa1, 0xb5,
-	0x6e, 0xb1, 0x95, 0xc4, 0xe4, 0x4d, 0x80, 0x88, 0xe5, 0x11, 0xa6, 0xd3, 0x6f, 0xf9, 0xcc, 0xf4,
-	0xe7, 0x52, 0xaf, 0x92, 0x7c, 0xc5, 0x67, 0x23, 0x17, 0x9c, 0xa3, 0x24, 0x4f, 0xe4, 0xe5, 0xfb,
-	0x63, 0x70, 0x57, 0xbd, 0x12, 0x00, 0xe7, 0x59, 0x78, 0x70, 0xf2, 0xe4, 0x70, 0x78, 0x87, 0xf4,
-	0x01, 0x0e, 0x8e, 0x0f, 0x0f, 0x4e, 0x9e, 0x9d, 0x86, 0x93, 0xf3, 0xa1, 0xa5, 0x75, 0x47, 0xe1,
-	0x24, 0x3c, 0x3b, 0x1e, 0xb6, 0x1e, 0x7d, 0xf0, 0xeb, 0xf5, 0x8e, 0xf5, 0xdb, 0xf5, 0x8e, 0xf5,
-	0xc7, 0xf5, 0x8e, 0xf5, 0xf3, 0x9f, 0x3b, 0x77, 0xbe, 0xd9, 0x96, 0x4c, 0xbd, 0x44, 0xf6, 0x02,
-	0x1f, 0xac, 0x47, 0xf8, 0xa0, 0xfa, 0xdb, 0x67, 0x8e, 0xf9, 0xc0, 0x3f, 0xfe, 0x3b, 0x00, 0x00,
-	0xff, 0xff, 0x06, 0xb7, 0x2b, 0x8f, 0xec, 0x07, 0x00, 0x00,
+	// 905 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x55, 0x5f, 0x6f, 0xe3, 0x44,
+	0x10, 0xaf, 0x1d, 0x9f, 0xe3, 0x4c, 0x72, 0x49, 0x58, 0xd0, 0x5d, 0x1a, 0xa0, 0x14, 0x23, 0xa4,
+	0x02, 0x52, 0xef, 0x14, 0x10, 0x42, 0x42, 0x3c, 0x70, 0xb9, 0x54, 0x35, 0xb9, 0x4b, 0xab, 0x6d,
+	0xc5, 0x03, 0x2f, 0xd1, 0xc6, 0x1e, 0x35, 0x26, 0x8e, 0xd7, 0xec, 0xae, 0xef, 0x9a, 0x77, 0x04,
+	0x8f, 0x48, 0x3c, 0xf1, 0x15, 0xf8, 0x26, 0x3c, 0xf2, 0x11, 0x50, 0xf9, 0x22, 0x68, 0xd7, 0x4e,
+	0xce, 0x6e, 0x91, 0xb8, 0x37, 0xde, 0x66, 0x66, 0xc7, 0x33, 0xbf, 0xf9, 0xcd, 0x1f, 0x43, 0x27,
+	0xe4, 0xeb, 0x35, 0x4f, 0x8f, 0x33, 0xc1, 0x15, 0x27, 0xad, 0x35, 0x4a, 0x89, 0xe9, 0x15, 0x8a,
+	0x61, 0x4f, 0xc5, 0x6b, 0x94, 0x8a, 0xad, 0xb3, 0xe2, 0xcd, 0xff, 0xd1, 0x02, 0x97, 0xa2, 0xcc,
+	0x13, 0x45, 0x1e, 0x83, 0x2b, 0x15, 0x53, 0xb9, 0x1c, 0x58, 0x87, 0xd6, 0x51, 0x77, 0x34, 0x38,
+	0xde, 0x7d, 0x77, 0x5c, 0xb8, 0x1c, 0x5f, 0x98, 0x77, 0x5a, 0xfa, 0x11, 0x02, 0x4e, 0xc8, 0x23,
+	0x1c, 0xd8, 0x87, 0xd6, 0xd1, 0x3d, 0x6a, 0x64, 0x32, 0x80, 0xa6, 0xfe, 0x8c, 0x5d, 0xe1, 0xa0,
+	0x71, 0x68, 0x1d, 0xb5, 0xe8, 0x56, 0xf5, 0x87, 0xe0, 0x16, 0xdf, 0x13, 0x17, 0xec, 0xb3, 0x69,
+	0x7f, 0x8f, 0x78, 0xe0, 0x9c, 0x7c, 0x1d, 0x3c, 0xeb, 0x5b, 0xfe, 0x0c, 0x9c, 0x53, 0x64, 0x11,
+	0x19, 0x41, 0x6b, 0x87, 0xd0, 0xc0, 0x68, 0x8f, 0xde, 0xaa, 0xc0, 0xb8, 0xdc, 0xbe, 0xd1, 0x57,
+	0x6e, 0x1a, 0x85, 0x42, 0xb1, 0x36, 0x28, 0x1c, 0x6a, 0x64, 0xbf, 0x03, 0x30, 0x8b, 0x13, 0x8a,
+	0x3f, 0xe4, 0x28, 0x95, 0xff, 0x05, 0xb4, 0x8d, 0x26, 0x33, 0x9e, 0x4a, 0x24, 0x1f, 0xd5, 0x0a,
+	0x6d, 0x8f, 0xde, 0xa8, 0x64, 0xa8, 0x57, 0xe8, 0x7f, 0xb5, 0xc3, 0xbc, 0x0f, 0x1e, 0x0a, 0x31,
+	0x37, 0xf5, 0x5a, 0xa6, 0xde, 0x26, 0x0a, 0x31, 0xbe, 0x55, 0xb2, 0x5d, 0x2f, 0x79, 0x04, 0xbd,
+	0xe7, 0x2c, 0x5c, 0xc6, 0x29, 0x52, 0x94, 0x3c, 0x17, 0x21, 0x92, 0xf7, 0xa0, 0x2d, 0x13, 0xae,
+	0xe6, 0x69, 0xbe, 0x5e, 0xa0, 0x30, 0xa1, 0x1a, 0x14, 0xb4, 0x69, 0x66, 0x2c, 0xfe, 0xaf, 0x16,
+	0x3c, 0xb8, 0x64, 0x72, 0xf5, 0x9c, 0xa5, 0xec, 0x0a, 0xc5, 0x53, 0x94, 0xa1, 0x88, 0x33, 0x15,
+	0xf3, 0x94, 0x7c, 0x08, 0x5d, 0xc9, 0x14, 0x26, 0x49, 0xac, 0x70, 0x9e, 0xb2, 0x75, 0x81, 0xa4,
+	0x45, 0xef, 0xef, 0xac, 0x33, 0xb6, 0xbe, 0x93, 0xa2, 0xe0, 0xa5, 0x92, 0x82, 0x3c, 0x86, 0xd6,
+	0x92, 0x4b, 0x35, 0xcf, 0xb8, 0x50, 0xa6, 0x4b, 0xed, 0xd1, 0x9b, 0x15, 0x0e, 0x4e, 0xb9, 0x54,
+	0xe7, 0x5c, 0x28, 0xea, 0x2d, 0x4b, 0xc9, 0x1f, 0x81, 0xb7, 0xb5, 0x6a, 0xbe, 0xb5, 0xbd, 0x6c,
+	0xaf, 0x91, 0xb5, 0xcd, 0x04, 0x73, 0x8a, 0x1e, 0x68, 0xd9, 0xbf, 0xb1, 0xa1, 0x3d, 0xb9, 0xc6,
+	0x30, 0x57, 0xa8, 0xeb, 0xd1, 0x0c, 0x86, 0x89, 0xac, 0xe2, 0x6e, 0x86, 0x89, 0x34, 0x88, 0x9f,
+	0x40, 0x2f, 0x4e, 0xb3, 0x5c, 0xcd, 0x31, 0x8d, 0x32, 0x1e, 0xa7, 0x4a, 0x0e, 0xec, 0xc3, 0xc6,
+	0x51, 0x7b, 0xb4, 0x5f, 0x81, 0x15, 0x68, 0x8f, 0xc9, 0xd6, 0x81, 0x76, 0xe3, 0x9a, 0x4e, 0x26,
+	0xd0, 0xe7, 0xb9, 0xaa, 0x07, 0x69, 0x98, 0x20, 0xc3, 0x4a, 0x90, 0x33, 0xe3, 0xf2, 0x2a, 0x4a,
+	0x8f, 0xd7, 0x0d, 0xe4, 0x7d, 0xe8, 0xc8, 0x7c, 0xa1, 0x98, 0x5c, 0x15, 0x48, 0x1d, 0x83, 0xb4,
+	0x5d, 0xda, 0x0c, 0xda, 0x0f, 0xe0, 0x7e, 0xc6, 0x84, 0x8a, 0x75, 0x4f, 0xe6, 0x71, 0x74, 0x3d,
+	0xb8, 0x67, 0x9a, 0xd8, 0xd9, 0x19, 0x83, 0xe8, 0x9a, 0x3c, 0x00, 0x37, 0xe1, 0x21, 0x53, 0x38,
+	0x70, 0x4d, 0x84, 0x52, 0xab, 0x73, 0xdf, 0x7c, 0x0d, 0xee, 0xc9, 0xdb, 0xd0, 0x7a, 0xc9, 0xc5,
+	0x0a, 0xc5, 0x3c, 0x8e, 0x06, 0x9e, 0x21, 0xd8, 0x2b, 0x0c, 0x41, 0xe4, 0xff, 0x64, 0x41, 0xb7,
+	0x4e, 0x4c, 0x3d, 0x83, 0xf5, 0x3a, 0x19, 0xee, 0xce, 0x95, 0xfd, 0x6f, 0x73, 0x55, 0x03, 0xd2,
+	0xb8, 0x05, 0xe4, 0x67, 0x0b, 0x7a, 0xb7, 0xc8, 0xfd, 0x9f, 0x90, 0xfc, 0x62, 0x81, 0xf3, 0x5f,
+	0x03, 0x37, 0x04, 0x2f, 0xcc, 0x85, 0xc0, 0x34, 0xdc, 0x98, 0x0c, 0x0d, 0xba, 0xd3, 0xf5, 0xfa,
+	0x14, 0xc3, 0xa8, 0x1b, 0x5e, 0xcc, 0x50, 0x8b, 0x82, 0x31, 0xe9, 0xb0, 0xb2, 0xd2, 0x5a, 0xa7,
+	0xd6, 0xda, 0x87, 0xd0, 0x34, 0x7b, 0x17, 0x47, 0xe5, 0x44, 0xb8, 0x5a, 0x0d, 0x22, 0xff, 0x33,
+	0x70, 0x4e, 0xe2, 0x04, 0xf5, 0x96, 0x54, 0xc0, 0x18, 0x59, 0x1f, 0x8f, 0x90, 0xa7, 0x0a, 0x53,
+	0x65, 0x80, 0x74, 0xe8, 0x56, 0xf5, 0xf7, 0xe1, 0xa1, 0x3e, 0x60, 0xb1, 0xc0, 0xe8, 0x22, 0xe1,
+	0xaa, 0x72, 0x08, 0xfc, 0xdf, 0x6d, 0x7d, 0xb5, 0x43, 0x2e, 0x22, 0x9d, 0x34, 0x62, 0x8a, 0xe9,
+	0xa4, 0xc5, 0x2d, 0x71, 0xb5, 0x1a, 0x44, 0x9a, 0x7c, 0xf3, 0xa0, 0x36, 0x59, 0xc1, 0x62, 0xb7,
+	0x46, 0xfe, 0x53, 0xa6, 0xd8, 0xe5, 0x26, 0x43, 0xea, 0x45, 0xa5, 0xa4, 0xe1, 0x69, 0xd9, 0x10,
+	0xda, 0xa1, 0x46, 0x26, 0xef, 0x54, 0x0f, 0x72, 0xb1, 0xdd, 0x95, 0xd3, 0x5b, 0xdb, 0x84, 0x15,
+	0x6e, 0xee, 0x6c, 0xc2, 0x14, 0x37, 0xc3, 0xcf, 0xc1, 0x9b, 0xe2, 0xe6, 0x5b, 0x96, 0xe4, 0x26,
+	0xc5, 0x0a, 0x37, 0xfa, 0xf0, 0x6a, 0x52, 0x8d, 0xac, 0xe9, 0x7c, 0xa1, 0x1f, 0x8b, 0x9d, 0x6f,
+	0xd1, 0x52, 0x1b, 0x7e, 0x09, 0x30, 0x5e, 0x62, 0xb8, 0x32, 0xc3, 0x44, 0xba, 0x60, 0x97, 0x25,
+	0x3a, 0xd4, 0x8e, 0x23, 0xf2, 0x2e, 0x40, 0xc8, 0xd2, 0x10, 0x93, 0xf9, 0xf7, 0x7c, 0x61, 0xea,
+	0xf3, 0x68, 0xab, 0xb0, 0x7c, 0xc3, 0x17, 0x43, 0x0f, 0xdc, 0x93, 0x38, 0x8d, 0xe5, 0xf2, 0xe3,
+	0x11, 0x78, 0xdb, 0x5a, 0x09, 0x80, 0x7b, 0x1e, 0x8c, 0xa7, 0xcf, 0x26, 0xfd, 0x3d, 0xd2, 0x05,
+	0x18, 0x9f, 0x4e, 0xc6, 0xd3, 0xf3, 0xb3, 0x60, 0x76, 0xd9, 0xb7, 0xf4, 0xdb, 0x49, 0x30, 0x0b,
+	0x2e, 0x4e, 0xfb, 0xf6, 0x93, 0x4f, 0xfe, 0xb8, 0x39, 0xb0, 0xfe, 0xbc, 0x39, 0xb0, 0xfe, 0xba,
+	0x39, 0xb0, 0x7e, 0xfb, 0xfb, 0x60, 0xef, 0xbb, 0x7d, 0xc9, 0xd4, 0x4b, 0x64, 0x2f, 0xf0, 0xd1,
+	0x8e, 0xc2, 0x47, 0xc5, 0x4f, 0x76, 0xe1, 0x9a, 0x3f, 0xe9, 0xa7, 0xff, 0x04, 0x00, 0x00, 0xff,
+	0xff, 0x71, 0xe6, 0xef, 0x08, 0x75, 0x07, 0x00, 0x00,
 }
 
 func (m *Result) Marshal() (dAtA []byte, err error) {
@@ -1490,6 +1471,57 @@ func (m *TaskManagerDescription) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
+	if m.HostPort != nil {
+		{
+			size, err := m.HostPort.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCommon(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.SlotNumber != 0 {
+		i = encodeVarintCommon(dAtA, i, uint64(m.SlotNumber))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.SatelliteName) > 0 {
+		i -= len(m.SatelliteName)
+		copy(dAtA[i:], m.SatelliteName)
+		i = encodeVarintCommon(dAtA, i, uint64(len(m.SatelliteName)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *HostPort) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *HostPort) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HostPort) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
 	if m.Port != 0 {
 		i = encodeVarintCommon(dAtA, i, uint64(m.Port))
 		i--
@@ -1501,16 +1533,6 @@ func (m *TaskManagerDescription) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 		i = encodeVarintCommon(dAtA, i, uint64(len(m.Host)))
 		i--
 		dAtA[i] = 0x1a
-	}
-	if m.SlotNumber != 0 {
-		i = encodeVarintCommon(dAtA, i, uint64(m.SlotNumber))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.RaftId != 0 {
-		i = encodeVarintCommon(dAtA, i, uint64(m.RaftId))
-		i--
-		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -1539,48 +1561,14 @@ func (m *ExecuteTask) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if m.TaskManagerId != 0 {
-		i = encodeVarintCommon(dAtA, i, uint64(m.TaskManagerId))
-		i--
-		dAtA[i] = 0x60
-	}
 	if m.WorkerId != 0 {
 		i = encodeVarintCommon(dAtA, i, uint64(m.WorkerId))
 		i--
-		dAtA[i] = 0x58
-	}
-	if m.Port != 0 {
-		i = encodeVarintCommon(dAtA, i, uint64(m.Port))
-		i--
-		dAtA[i] = 0x50
-	}
-	if len(m.Host) > 0 {
-		i -= len(m.Host)
-		copy(dAtA[i:], m.Host)
-		i = encodeVarintCommon(dAtA, i, uint64(len(m.Host)))
-		i--
-		dAtA[i] = 0x4a
-	}
-	if m.Locate != 0 {
-		i = encodeVarintCommon(dAtA, i, uint64(m.Locate))
-		i--
 		dAtA[i] = 0x40
 	}
-	if m.PartitionIdx != 0 {
-		i = encodeVarintCommon(dAtA, i, uint64(m.PartitionIdx))
-		i--
-		dAtA[i] = 0x38
-	}
-	if len(m.SubtaskName) > 0 {
-		i -= len(m.SubtaskName)
-		copy(dAtA[i:], m.SubtaskName)
-		i = encodeVarintCommon(dAtA, i, uint64(len(m.SubtaskName)))
-		i--
-		dAtA[i] = 0x32
-	}
-	if m.TaskFile != nil {
+	if m.HostPort != nil {
 		{
-			size, err := m.TaskFile.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.HostPort.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -1588,21 +1576,26 @@ func (m *ExecuteTask) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintCommon(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x2a
+		dAtA[i] = 0x3a
 	}
-	if len(m.Resources) > 0 {
-		for iNdEx := len(m.Resources) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Resources[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintCommon(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x22
-		}
+	if len(m.Locate) > 0 {
+		i -= len(m.Locate)
+		copy(dAtA[i:], m.Locate)
+		i = encodeVarintCommon(dAtA, i, uint64(len(m.Locate)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if m.PartitionIdx != 0 {
+		i = encodeVarintCommon(dAtA, i, uint64(m.PartitionIdx))
+		i--
+		dAtA[i] = 0x28
+	}
+	if len(m.SubtaskName) > 0 {
+		i -= len(m.SubtaskName)
+		copy(dAtA[i:], m.SubtaskName)
+		i = encodeVarintCommon(dAtA, i, uint64(len(m.SubtaskName)))
+		i--
+		dAtA[i] = 0x22
 	}
 	if len(m.OutputEndpoints) > 0 {
 		for iNdEx := len(m.OutputEndpoints) - 1; iNdEx >= 0; iNdEx-- {
@@ -1669,22 +1662,24 @@ func (m *InputEndpoints) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	if m.WorkerId != 0 {
 		i = encodeVarintCommon(dAtA, i, uint64(m.WorkerId))
 		i--
-		dAtA[i] = 0x20
-	}
-	if m.TaskManagerId != 0 {
-		i = encodeVarintCommon(dAtA, i, uint64(m.TaskManagerId))
-		i--
 		dAtA[i] = 0x18
 	}
-	if m.Port != 0 {
-		i = encodeVarintCommon(dAtA, i, uint64(m.Port))
+	if len(m.SatelliteName) > 0 {
+		i -= len(m.SatelliteName)
+		copy(dAtA[i:], m.SatelliteName)
+		i = encodeVarintCommon(dAtA, i, uint64(len(m.SatelliteName)))
 		i--
-		dAtA[i] = 0x10
+		dAtA[i] = 0x12
 	}
-	if len(m.Host) > 0 {
-		i -= len(m.Host)
-		copy(dAtA[i:], m.Host)
-		i = encodeVarintCommon(dAtA, i, uint64(len(m.Host)))
+	if m.HostPort != nil {
+		{
+			size, err := m.HostPort.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCommon(dAtA, i, uint64(size))
+		}
 		i--
 		dAtA[i] = 0xa
 	}
@@ -1718,22 +1713,24 @@ func (m *OutputEndpoints) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	if m.WorkerId != 0 {
 		i = encodeVarintCommon(dAtA, i, uint64(m.WorkerId))
 		i--
-		dAtA[i] = 0x20
-	}
-	if m.TaskManagerId != 0 {
-		i = encodeVarintCommon(dAtA, i, uint64(m.TaskManagerId))
-		i--
 		dAtA[i] = 0x18
 	}
-	if m.Port != 0 {
-		i = encodeVarintCommon(dAtA, i, uint64(m.Port))
+	if len(m.SatelliteName) > 0 {
+		i -= len(m.SatelliteName)
+		copy(dAtA[i:], m.SatelliteName)
+		i = encodeVarintCommon(dAtA, i, uint64(len(m.SatelliteName)))
 		i--
-		dAtA[i] = 0x10
+		dAtA[i] = 0x12
 	}
-	if len(m.Host) > 0 {
-		i -= len(m.Host)
-		copy(dAtA[i:], m.Host)
-		i = encodeVarintCommon(dAtA, i, uint64(len(m.Host)))
+	if m.HostPort != nil {
+		{
+			size, err := m.HostPort.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCommon(dAtA, i, uint64(size))
+		}
 		i--
 		dAtA[i] = 0xa
 	}
@@ -1767,38 +1764,14 @@ func (m *Task) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	if m.SlotId != 0 {
 		i = encodeVarintCommon(dAtA, i, uint64(m.SlotId))
 		i--
-		dAtA[i] = 0x38
+		dAtA[i] = 0x28
 	}
-	if m.Locate != 0 {
-		i = encodeVarintCommon(dAtA, i, uint64(m.Locate))
+	if len(m.Locate) > 0 {
+		i -= len(m.Locate)
+		copy(dAtA[i:], m.Locate)
+		i = encodeVarintCommon(dAtA, i, uint64(len(m.Locate)))
 		i--
-		dAtA[i] = 0x30
-	}
-	if m.TaskFile != nil {
-		{
-			size, err := m.TaskFile.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintCommon(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.Resources) > 0 {
-		for iNdEx := len(m.Resources) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Resources[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintCommon(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x22
-		}
+		dAtA[i] = 0x22
 	}
 	if len(m.InputTasks) > 0 {
 		for iNdEx := len(m.InputTasks) - 1; iNdEx >= 0; iNdEx-- {
@@ -2180,12 +2153,29 @@ func (m *TaskManagerDescription) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.RaftId != 0 {
-		n += 1 + sovCommon(uint64(m.RaftId))
+	l = len(m.SatelliteName)
+	if l > 0 {
+		n += 1 + l + sovCommon(uint64(l))
 	}
 	if m.SlotNumber != 0 {
 		n += 1 + sovCommon(uint64(m.SlotNumber))
 	}
+	if m.HostPort != nil {
+		l = m.HostPort.Size()
+		n += 1 + l + sovCommon(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *HostPort) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
 	l = len(m.Host)
 	if l > 0 {
 		n += 1 + l + sovCommon(uint64(l))
@@ -2221,16 +2211,6 @@ func (m *ExecuteTask) Size() (n int) {
 			n += 1 + l + sovCommon(uint64(l))
 		}
 	}
-	if len(m.Resources) > 0 {
-		for _, e := range m.Resources {
-			l = e.Size()
-			n += 1 + l + sovCommon(uint64(l))
-		}
-	}
-	if m.TaskFile != nil {
-		l = m.TaskFile.Size()
-		n += 1 + l + sovCommon(uint64(l))
-	}
 	l = len(m.SubtaskName)
 	if l > 0 {
 		n += 1 + l + sovCommon(uint64(l))
@@ -2238,21 +2218,16 @@ func (m *ExecuteTask) Size() (n int) {
 	if m.PartitionIdx != 0 {
 		n += 1 + sovCommon(uint64(m.PartitionIdx))
 	}
-	if m.Locate != 0 {
-		n += 1 + sovCommon(uint64(m.Locate))
-	}
-	l = len(m.Host)
+	l = len(m.Locate)
 	if l > 0 {
 		n += 1 + l + sovCommon(uint64(l))
 	}
-	if m.Port != 0 {
-		n += 1 + sovCommon(uint64(m.Port))
+	if m.HostPort != nil {
+		l = m.HostPort.Size()
+		n += 1 + l + sovCommon(uint64(l))
 	}
 	if m.WorkerId != 0 {
 		n += 1 + sovCommon(uint64(m.WorkerId))
-	}
-	if m.TaskManagerId != 0 {
-		n += 1 + sovCommon(uint64(m.TaskManagerId))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -2266,15 +2241,13 @@ func (m *InputEndpoints) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Host)
-	if l > 0 {
+	if m.HostPort != nil {
+		l = m.HostPort.Size()
 		n += 1 + l + sovCommon(uint64(l))
 	}
-	if m.Port != 0 {
-		n += 1 + sovCommon(uint64(m.Port))
-	}
-	if m.TaskManagerId != 0 {
-		n += 1 + sovCommon(uint64(m.TaskManagerId))
+	l = len(m.SatelliteName)
+	if l > 0 {
+		n += 1 + l + sovCommon(uint64(l))
 	}
 	if m.WorkerId != 0 {
 		n += 1 + sovCommon(uint64(m.WorkerId))
@@ -2291,15 +2264,13 @@ func (m *OutputEndpoints) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Host)
-	if l > 0 {
+	if m.HostPort != nil {
+		l = m.HostPort.Size()
 		n += 1 + l + sovCommon(uint64(l))
 	}
-	if m.Port != 0 {
-		n += 1 + sovCommon(uint64(m.Port))
-	}
-	if m.TaskManagerId != 0 {
-		n += 1 + sovCommon(uint64(m.TaskManagerId))
+	l = len(m.SatelliteName)
+	if l > 0 {
+		n += 1 + l + sovCommon(uint64(l))
 	}
 	if m.WorkerId != 0 {
 		n += 1 + sovCommon(uint64(m.WorkerId))
@@ -2329,18 +2300,9 @@ func (m *Task) Size() (n int) {
 			n += 1 + l + sovCommon(uint64(l))
 		}
 	}
-	if len(m.Resources) > 0 {
-		for _, e := range m.Resources {
-			l = e.Size()
-			n += 1 + l + sovCommon(uint64(l))
-		}
-	}
-	if m.TaskFile != nil {
-		l = m.TaskFile.Size()
+	l = len(m.Locate)
+	if l > 0 {
 		n += 1 + l + sovCommon(uint64(l))
-	}
-	if m.Locate != 0 {
-		n += 1 + sovCommon(uint64(m.Locate))
 	}
 	if m.SlotId != 0 {
 		n += 1 + sovCommon(uint64(m.SlotId))
@@ -3038,10 +3000,10 @@ func (m *TaskManagerDescription) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RaftId", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SatelliteName", wireType)
 			}
-			m.RaftId = 0
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowCommon
@@ -3051,11 +3013,24 @@ func (m *TaskManagerDescription) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RaftId |= uint64(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCommon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCommon
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SatelliteName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SlotNumber", wireType)
@@ -3075,6 +3050,93 @@ func (m *TaskManagerDescription) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HostPort", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCommon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCommon
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.HostPort == nil {
+				m.HostPort = &HostPort{}
+			}
+			if err := m.HostPort.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCommon(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthCommon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *HostPort) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCommon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: HostPort: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: HostPort: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Host", wireType)
@@ -3279,76 +3341,6 @@ func (m *ExecuteTask) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Resources", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCommon
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthCommon
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthCommon
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Resources = append(m.Resources, &File{})
-			if err := m.Resources[len(m.Resources)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TaskFile", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCommon
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthCommon
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthCommon
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.TaskFile == nil {
-				m.TaskFile = &File{}
-			}
-			if err := m.TaskFile.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SubtaskName", wireType)
 			}
 			var stringLen uint64
@@ -3379,7 +3371,7 @@ func (m *ExecuteTask) Unmarshal(dAtA []byte) error {
 			}
 			m.SubtaskName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 7:
+		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field PartitionIdx", wireType)
 			}
@@ -3398,28 +3390,9 @@ func (m *ExecuteTask) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 8:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Locate", wireType)
-			}
-			m.Locate = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCommon
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Locate |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 9:
+		case 6:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Host", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Locate", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -3447,13 +3420,13 @@ func (m *ExecuteTask) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Host = string(dAtA[iNdEx:postIndex])
+			m.Locate = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 10:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Port", wireType)
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HostPort", wireType)
 			}
-			m.Port = 0
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowCommon
@@ -3463,12 +3436,29 @@ func (m *ExecuteTask) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Port |= uint64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-		case 11:
+			if msglen < 0 {
+				return ErrInvalidLengthCommon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCommon
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.HostPort == nil {
+				m.HostPort = &HostPort{}
+			}
+			if err := m.HostPort.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field WorkerId", wireType)
 			}
@@ -3483,25 +3473,6 @@ func (m *ExecuteTask) Unmarshal(dAtA []byte) error {
 				b := dAtA[iNdEx]
 				iNdEx++
 				m.WorkerId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 12:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TaskManagerId", wireType)
-			}
-			m.TaskManagerId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCommon
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.TaskManagerId |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3559,7 +3530,43 @@ func (m *InputEndpoints) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Host", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field HostPort", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCommon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCommon
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.HostPort == nil {
+				m.HostPort = &HostPort{}
+			}
+			if err := m.HostPort.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SatelliteName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -3587,47 +3594,9 @@ func (m *InputEndpoints) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Host = string(dAtA[iNdEx:postIndex])
+			m.SatelliteName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Port", wireType)
-			}
-			m.Port = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCommon
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Port |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TaskManagerId", wireType)
-			}
-			m.TaskManagerId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCommon
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.TaskManagerId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field WorkerId", wireType)
 			}
@@ -3699,7 +3668,43 @@ func (m *OutputEndpoints) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Host", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field HostPort", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCommon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCommon
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.HostPort == nil {
+				m.HostPort = &HostPort{}
+			}
+			if err := m.HostPort.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SatelliteName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -3727,47 +3732,9 @@ func (m *OutputEndpoints) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Host = string(dAtA[iNdEx:postIndex])
+			m.SatelliteName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Port", wireType)
-			}
-			m.Port = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCommon
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Port |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TaskManagerId", wireType)
-			}
-			m.TaskManagerId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCommon
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.TaskManagerId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field WorkerId", wireType)
 			}
@@ -3922,79 +3889,9 @@ func (m *Task) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Resources", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCommon
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthCommon
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthCommon
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Resources = append(m.Resources, &File{})
-			if err := m.Resources[len(m.Resources)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TaskFile", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCommon
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthCommon
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthCommon
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.TaskFile == nil {
-				m.TaskFile = &File{}
-			}
-			if err := m.TaskFile.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 6:
-			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Locate", wireType)
 			}
-			m.Locate = 0
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowCommon
@@ -4004,12 +3901,25 @@ func (m *Task) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Locate |= uint64(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-		case 7:
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCommon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCommon
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Locate = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SlotId", wireType)
 			}
@@ -4537,7 +4447,7 @@ func (m *Record_Checkpoint) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Id |= int64(b&0x7F) << shift
+				m.Id |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}

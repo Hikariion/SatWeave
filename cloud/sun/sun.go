@@ -2,21 +2,10 @@ package sun
 
 import (
 	"context"
-	"fmt"
-	"github.com/google/uuid"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"os"
-	"path"
 	"satweave/messenger"
 	"satweave/messenger/common"
 	"satweave/sat-node/infos"
-	task_manager "satweave/shared/task-manager"
-	common2 "satweave/utils/common"
-	"satweave/utils/errno"
-	"satweave/utils/generator"
 	"satweave/utils/logger"
-	"strings"
 	"sync"
 	"sync/atomic"
 )
@@ -25,37 +14,13 @@ import (
 type Sun struct {
 	rpc *messenger.RpcServer
 	Server
-	leaderInfo                     *infos.NodeInfo
-	clusterInfo                    *infos.ClusterInfo
-	lastRaftID                     uint64
-	mu                             sync.Mutex
-	cachedInfo                     map[string]*infos.NodeInfo //cache node info by uuid
-	taskRegisteredTaskManagerTable *RegisteredTaskManagerTable
-	Scheduler                      *UserDefinedScheduler
+	leaderInfo  *infos.NodeInfo
+	clusterInfo *infos.ClusterInfo
+	lastRaftID  uint64
+	mu          sync.Mutex
+	cachedInfo  map[string]*infos.NodeInfo //cache node info by uuid
 
-	idGenerator *IdGenerator
-
-	checkpointCoordinator *CheckpointCoordinator
-
-	jobInfoDir  string
-	snapshotDir string
-}
-
-type IdGenerator struct {
-}
-
-type TaskTuple struct {
-	TaskManagerId uint64
-	ExecuteTask   *common.ExecuteTask
-}
-
-func NewIdGenerator() *IdGenerator {
-	return &IdGenerator{}
-}
-
-func (gen *IdGenerator) Next() string {
-	uid := uuid.New()
-	return uid.String()
+	StreamHelper *StreamHelper
 }
 
 type Server struct {
@@ -119,244 +84,93 @@ func (s *Sun) ReportClusterInfo(_ context.Context, clusterInfo *infos.ClusterInf
 	return &result, nil
 }
 
-func (s *Sun) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*SubmitJobResponse, error) {
-	jobId := s.idGenerator.Next()
-
-	// 创建存储 jobInfo 的目录
-	jobInfoPath := path.Join(s.jobInfoDir, jobId)
-	err := os.MkdirAll(jobInfoPath, 755)
-	if err != nil {
-		logger.Errorf("mkdir job info path failed: %v", err)
-		return &SubmitJobResponse{}, err
-	}
-
-	executeMap, err := s.innerSubmitJob(ctx, request.Tasks, jobId)
-	if err != nil {
-		return &SubmitJobResponse{}, status.Errorf(codes.Internal, "submit job failed: %v", err)
-	}
-
-	// 把所有 Op 信息注册到 CheckpointCoordinator 里
-	err = s.checkpointCoordinator.registerJob(jobId, executeMap)
-	if err != nil {
-		return &SubmitJobResponse{}, errno.RegisterJobFail
-	}
-
-	return &SubmitJobResponse{
-		JobId: jobId,
-	}, nil
+// --------------------------- for stream task --------------------------------
+func (s *Sun) RegisterTaskManager(ctx context.Context, request *RegisterTaskManagerRequest) (*RegisterTaskManagerResponse, error) {
+	return s.StreamHelper.RegisterTaskManager(ctx, request)
 }
 
-func (s *Sun) innerSubmitJob(ctx context.Context, tasks []*common.Task, jobId string) (map[uint64][]*common.ExecuteTask, error) {
-	// scheduler
-	_, executeMap, err := s.Scheduler.Schedule(0, tasks)
-	if err != nil {
-		logger.Errorf("schedule failed: %v", err)
-		return nil, err
-	}
+//func (s *Sun) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*SubmitJobResponse, error) {
+//	jobId := s.idGenerator.Next()
+//
+//	// 创建存储 jobInfo 的目录
+//	jobInfoPath := path.Join(s.jobInfoDir, jobId)
+//	err := os.MkdirAll(jobInfoPath, 755)
+//	if err != nil {
+//		logger.Errorf("mkdir job info path failed: %v", err)
+//		return &SubmitJobResponse{}, err
+//	}
+//
+//	executeMap, err := s.innerSubmitJob(ctx, request.Tasks, jobId)
+//	if err != nil {
+//		return &SubmitJobResponse{}, status.Errorf(codes.Internal, "submit job failed: %v", err)
+//	}
+//
+//	// 把所有 Op 信息注册到 CheckpointCoordinator 里
+//	err = s.checkpointCoordinator.registerJob(jobId, executeMap)
+//	if err != nil {
+//		return &SubmitJobResponse{}, errno.RegisterJobFail
+//	}
+//
+//	return &SubmitJobResponse{
+//		JobId: jobId,
+//	}, nil
+//}
 
-	// deploy 创建对应的 worker
-	err = s.DeployExecuteTasks(ctx, jobId, executeMap)
-	if err != nil {
-		logger.Errorf("deploy execute tasks failed: %v", err)
-		return nil, err
-	}
-	logger.Infof("deploy execute tasks success")
+//func (s *Sun) TriggerCheckpoint(_ context.Context, request *TriggerCheckpointRequest) (*TriggerCheckpointResponse, error) {
+//	checkpointId := generator.GetDataIdGeneratorInstance().Next()
+//	err := s.checkpointCoordinator.triggerCheckpoint(request.JobId, checkpointId, request.CancelJob)
+//	if err != nil {
+//		logger.Errorf("trigger checkpoint failed: %v", err)
+//		return &TriggerCheckpointResponse{
+//			Status: &common.Status{
+//				ErrCode: 1,
+//				Message: err.Error(),
+//			},
+//		}, errno.TriggerCheckpointFail
+//	}
+//	return &TriggerCheckpointResponse{
+//		Status:       &common.Status{},
+//		CheckpointId: checkpointId,
+//	}, nil
+//}
 
-	// TODO start 让 worker run起来
+//func (s *Sun) RestoreFromCheckpoint(_ context.Context, request *RestoreFromCheckpointRequest) (*RestoreFromCheckpointResponse, error) {
+//	return nil, status.Errorf(codes.Unimplemented, "method RestoreFromCheckpoint not implemented")
+//}
+//
+//func (s *Sun) AcknowledgeCheckpoint(_ context.Context, request *AcknowledgeCheckpointRequest) (*common.NilResponse, error) {
+//	if request.Status.ErrCode != 0 {
+//		logger.Errorf("Failed to acknowledge checkpoint: Status.ErrCode != 0, %s", request.Status.Message)
+//		return &common.NilResponse{}, errno.AcknowledgeCheckpointFail
+//	}
+//	succ, err := s.checkpointCoordinator.AcknowledgeCheckpoint(request)
+//	if err != nil {
+//		logger.Errorf("Failed to acknowledge checkpoint: %v", err)
+//		return &common.NilResponse{}, errno.AcknowledgeCheckpointFail
+//	}
+//	if succ {
+//		logger.Infof("Successfully acknowledge checkpoint(id=%v) of job(id=%v), begin to save", request.CheckpointId, request.JobId)
+//	}
+//	// 存储 state
+//	stateData := request.State.Content
+//	clsName := strings.Split(request.SubtaskName, "#")[0]
+//	jobId := request.JobId
+//	partitionIdx := strings.Split(request.SubtaskName, "#")[1]
+//	partitionIdx = strings.Trim(partitionIdx, "()")
+//	partitionIdx = strings.Split(partitionIdx, "/")[0]
+//
+//	saveFilePath := fmt.Sprintf(s.snapshotDir, jobId, clsName, partitionIdx)
+//	err = common2.SaveBytesToFile(stateData, saveFilePath)
+//	if err != nil {
+//		logger.Errorf("Failed to save state: %v", err)
+//		return &common.NilResponse{}, err
+//	}
+//	return &common.NilResponse{}, nil
+//}
 
-	return executeMap, nil
-}
-
-func (s *Sun) DeployExecuteTasks(ctx context.Context, jobId string, executeMap map[uint64][]*common.ExecuteTask) error {
-	for taskManagerId, executeTasks := range executeMap {
-		host := s.taskRegisteredTaskManagerTable.table[taskManagerId].Host
-		port := s.taskRegisteredTaskManagerTable.table[taskManagerId].Port
-		conn, err := messenger.GetRpcConn(host, port)
-		if err != nil {
-			logger.Errorf("get rpc conn failed: %v", err)
-			return err
-		}
-		client := task_manager.NewTaskManagerServiceClient(conn)
-		// 每个 Execute task 都需要 deploy
-		// deploy的过程其实是创建一个worker的过程
-		// TODO deploy的时候，如果有 state 需要把 state 传过去
-		for _, executeTask := range executeTasks {
-			_, err := client.DeployTask(ctx, &task_manager.DeployTaskRequest{
-				ExecTask: executeTask,
-				JobId:    jobId,
-			})
-			if err != nil {
-				logger.Errorf("deploy task on task manager id: %v, failed: %v", taskManagerId, err)
-				return err
-			}
-		}
-		logger.Infof("Deploy all execute task on task manager id: %v, success", taskManagerId)
-	}
-
-	return nil
-}
-
-func (s *Sun) StartExecuteTasks(logicalMap map[uint64][]*common.Task, executeMap map[uint64][]*common.ExecuteTask) error {
-	// clsName -> Task
-	taskNameInvertedIndex := make(map[string]*common.Task)
-	for _, tasks := range logicalMap {
-		for _, task := range tasks {
-			if _, ok := taskNameInvertedIndex[task.ClsName]; !ok {
-				taskNameInvertedIndex[task.ClsName] = task
-			}
-		}
-	}
-
-	// clsName -> output task: List[str]
-	nextLogicalTasks := make(map[string][]string)
-	for _, tasks := range logicalMap {
-		for _, task := range tasks {
-			for _, preTask := range task.InputTasks {
-				if _, ok := nextLogicalTasks[preTask]; !ok {
-					nextLogicalTasks[preTask] = make([]string, 0)
-				}
-				nextLogicalTasks[preTask] = append(nextLogicalTasks[preTask], task.ClsName)
-			}
-		}
-	}
-
-	// subtaskName -> (taskManagerId, ExecuteTask)
-	subTaskNameInvertedIndex := make(map[string]*TaskTuple)
-	for taskManagerId, executeTasks := range executeMap {
-		for _, executeTask := range executeTasks {
-			subTaskNameInvertedIndex[executeTask.SubtaskName] = &TaskTuple{
-				TaskManagerId: taskManagerId,
-				ExecuteTask:   executeTask,
-			}
-		}
-	}
-
-	startedTasks := make(map[string]bool)
-	for clsName, _ := range taskNameInvertedIndex {
-		if _, ok := startedTasks[clsName]; !ok {
-			s.dfsToStartExecuteTask(clsName, nextLogicalTasks, taskNameInvertedIndex, subTaskNameInvertedIndex, startedTasks)
-		}
-	}
-
-	return nil
-}
-
-func (s *Sun) dfsToStartExecuteTask(clsName string, nextLogicalTasks map[string][]string, logicalTaskNameInvertedIndex map[string]*common.Task,
-	subtaskNameInvertedIndex map[string]*TaskTuple, startedTasks map[string]bool) {
-	if _, ok := startedTasks[clsName]; ok {
-		return
-	}
-	startedTasks[clsName] = true
-	list, ok := nextLogicalTasks[clsName]
-	if ok {
-		for _, nextLogicalTaskName := range list {
-			if _, exists := startedTasks[nextLogicalTaskName]; !exists {
-				s.dfsToStartExecuteTask(nextLogicalTaskName, nextLogicalTasks, logicalTaskNameInvertedIndex, subtaskNameInvertedIndex, startedTasks)
-			}
-		}
-	}
-
-	logicalTask := logicalTaskNameInvertedIndex[clsName]
-	for i := 0; i < int(logicalTask.Currency); i++ {
-		subtaskName := s.getSubTaskName(clsName, i, int(logicalTask.Currency))
-		taskManagerId := subtaskNameInvertedIndex[subtaskName].TaskManagerId
-		executeTask := subtaskNameInvertedIndex[subtaskName].ExecuteTask
-		s.innerDfsToStartExecuteTask(taskManagerId, executeTask)
-	}
-
-}
-
-func (s *Sun) innerDfsToStartExecuteTask(taskManagerID uint64, executeTask *common.ExecuteTask) {
-	host := s.taskRegisteredTaskManagerTable.table[taskManagerID].Host
-	port := s.taskRegisteredTaskManagerTable.table[taskManagerID].Port
-	conn, err := messenger.GetRpcConn(host, port)
-	if err != nil {
-		logger.Errorf("Fail to get rpc conn on TaskManager %v", taskManagerID)
-	}
-	client := task_manager.NewTaskManagerServiceClient(conn)
-	_, err = client.StartTask(context.Background(), &task_manager.StartTaskRequest{
-		SubtaskName: executeTask.SubtaskName,
-	})
-	if err != nil {
-		logger.Errorf("Fail to start subtask: %v on task manager id: ", executeTask.SubtaskName, taskManagerID)
-	}
-	return
-}
-
-func (s *Sun) RegisterTaskManager(_ context.Context, desc *common.TaskManagerDescription) (*common.NilResponse, error) {
-	err := s.taskRegisteredTaskManagerTable.register(desc)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "register task manager failed: %v", err)
-	}
-	return &common.NilResponse{}, nil
-}
-
-func (s *Sun) GetRegisterTaskManagerTable(context.Context, *common.NilRequest) (*TaskManagerResult, error) {
-	return &TaskManagerResult{
-		TaskManagerTable: s.taskRegisteredTaskManagerTable.table,
-	}, nil
-}
-
+// PrintTaskManagerTable For debug
 func (s *Sun) PrintTaskManagerTable() {
-	logger.Infof("Sun printing task manager table...")
-	logger.Infof("%v", s.taskRegisteredTaskManagerTable.table)
-	logger.Infof("%v", s.Scheduler.RegisteredTaskManagerTable)
-}
-
-func (s *Sun) TriggerCheckpoint(_ context.Context, request *TriggerCheckpointRequest) (*TriggerCheckpointResponse, error) {
-	checkpointId := generator.GetDataIdGeneratorInstance().Next()
-	err := s.checkpointCoordinator.triggerCheckpoint(request.JobId, checkpointId, request.CancelJob)
-	if err != nil {
-		logger.Errorf("trigger checkpoint failed: %v", err)
-		return &TriggerCheckpointResponse{
-			Status: &common.Status{
-				ErrCode: 1,
-				Message: err.Error(),
-			},
-		}, errno.TriggerCheckpointFail
-	}
-	return &TriggerCheckpointResponse{
-		Status:       &common.Status{},
-		CheckpointId: checkpointId,
-	}, nil
-}
-
-func (s *Sun) getSubTaskName(clsName string, idx, currency int) string {
-	return fmt.Sprintf("%s#(%d/%d)", clsName, idx+1, currency)
-}
-
-func (s *Sun) RestoreFromCheckpoint(_ context.Context, request *RestoreFromCheckpointRequest) (*RestoreFromCheckpointResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RestoreFromCheckpoint not implemented")
-}
-
-func (s *Sun) AcknowledgeCheckpoint(_ context.Context, request *AcknowledgeCheckpointRequest) (*common.NilResponse, error) {
-	if request.Status.ErrCode != 0 {
-		logger.Errorf("Failed to acknowledge checkpoint: Status.ErrCode != 0, %s", request.Status.Message)
-		return &common.NilResponse{}, errno.AcknowledgeCheckpointFail
-	}
-	succ, err := s.checkpointCoordinator.AcknowledgeCheckpoint(request)
-	if err != nil {
-		logger.Errorf("Failed to acknowledge checkpoint: %v", err)
-		return &common.NilResponse{}, errno.AcknowledgeCheckpointFail
-	}
-	if succ {
-		logger.Infof("Successfully acknowledge checkpoint(id=%v) of job(id=%v), begin to save", request.CheckpointId, request.JobId)
-	}
-	// 存储 state
-	stateData := request.State.Content
-	clsName := strings.Split(request.SubtaskName, "#")[0]
-	jobId := request.JobId
-	partitionIdx := strings.Split(request.SubtaskName, "#")[1]
-	partitionIdx = strings.Trim(partitionIdx, "()")
-	partitionIdx = strings.Split(partitionIdx, "/")[0]
-
-	saveFilePath := fmt.Sprintf(s.snapshotDir, jobId, clsName, partitionIdx)
-	err = common2.SaveBytesToFile(stateData, saveFilePath)
-	if err != nil {
-		logger.Errorf("Failed to save state: %v", err)
-		return &common.NilResponse{}, err
-	}
-	return &common.NilResponse{}, nil
+	s.StreamHelper.PrintTaskManagerTable()
 }
 
 func NewSun(rpc *messenger.RpcServer) *Sun {
@@ -367,17 +181,17 @@ func NewSun(rpc *messenger.RpcServer) *Sun {
 			LeaderInfo: nil,
 			NodesInfo:  nil,
 		},
-		lastRaftID:                     0,
-		mu:                             sync.Mutex{},
-		cachedInfo:                     map[string]*infos.NodeInfo{},
-		taskRegisteredTaskManagerTable: newRegisteredTaskManagerTable(),
-		idGenerator:                    NewIdGenerator(),
+		lastRaftID: 0,
+		mu:         sync.Mutex{},
+		cachedInfo: map[string]*infos.NodeInfo{},
 
-		jobInfoDir:  "jm/jobid_%s",
-		snapshotDir: "jm/jobid_%s/snapshot/%s/partition_%s",
+		StreamHelper: NewStreamHelper(),
+
+		//jobInfoDir:  "jm/jobid_%s",
+		//snapshotDir: "jm/jobid_%s/snapshot/%s/partition_%s",
 	}
-	sun.checkpointCoordinator = NewCheckpointCoordinator(sun.taskRegisteredTaskManagerTable)
-	sun.Scheduler = newUserDefinedScheduler(sun.taskRegisteredTaskManagerTable)
+	//sun.checkpointCoordinator = NewCheckpointCoordinator(sun.taskRegisteredTaskManagerTable)
+	//sun.Scheduler = newUserDefinedScheduler(sun.taskRegisteredTaskManagerTable)
 	RegisterSunServer(rpc, &sun)
 	return &sun
 }

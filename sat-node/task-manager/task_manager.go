@@ -25,21 +25,21 @@ type TaskManager struct {
 	selfDescription *common.TaskManagerDescription
 	slotTable       *SlotTable
 	cancelFunc      context.CancelFunc
-	nextWorkerId    atomic.Uint64
+	nextWorkerId    uint64
 }
 
 func (t *TaskManager) GetNextWorkerId() uint64 {
-	id := t.nextWorkerId.Load()
-	t.nextWorkerId.Add(1)
-	return id
+	return atomic.AddUint64(&t.nextWorkerId, 1) - 1
 }
 
-func (t *TaskManager) newSelfDescription(raftId uint64, slotNum uint64, host string, port uint64) *common.TaskManagerDescription {
+func (t *TaskManager) newSelfDescription(satelliteName string, slotNum uint64, host string, port uint64) *common.TaskManagerDescription {
 	return &common.TaskManagerDescription{
-		RaftId:     raftId,
-		SlotNumber: slotNum,
-		Host:       host,
-		Port:       port,
+		SatelliteName: satelliteName,
+		SlotNumber:    slotNum,
+		HostPort: &common.HostPort{
+			Host: host,
+			Port: port,
+		},
 	}
 }
 
@@ -48,12 +48,12 @@ func (t *TaskManager) PushRecord(_ context.Context, request *task_manager.PushRe
 	// TODO(qiu): 增加转发模式
 	worker, err := t.slotTable.getWorkerByWorkerId(workerId)
 	if err != nil {
-		logger.Errorf("task manager id: %v get worker id %v failed: %v", t.selfDescription.RaftId, workerId, err)
+		logger.Errorf("task manager id: %v get worker id %v failed: %v", t.selfDescription.SatelliteName, workerId, err)
 		return nil, status.Errorf(codes.Internal, "get worker failed: %v", err)
 	}
 	err = worker.PushRecord(request.Record, request.FromSubtask, request.PartitionIdx)
 	if err != nil {
-		logger.Errorf("task manager id: %v push record to worker id %v failed: %v", t.selfDescription.RaftId, workerId, err)
+		logger.Errorf("task manager id: %v push record to worker id %v failed: %v", t.selfDescription.SatelliteName, workerId, err)
 		return nil, status.Errorf(codes.Internal, "push record failed: %v", err)
 	}
 	return &common.NilResponse{}, nil
@@ -64,7 +64,7 @@ func (t *TaskManager) DeployTask(_ context.Context, request *task_manager.Deploy
 	defer t.mutex.Unlock()
 
 	if t.selfDescription.SlotNumber <= 0 {
-		logger.Errorf("task manager id: %v slot number is %v, not enough", t.selfDescription.RaftId)
+		logger.Errorf("task manager id: %v slot number is %v, not enough", t.selfDescription.SatelliteName)
 		return nil, errno.SlotCapacityNotEnough
 	}
 
@@ -79,7 +79,7 @@ func (t *TaskManager) DeployTask(_ context.Context, request *task_manager.Deploy
 
 func (t *TaskManager) StartTask(_ context.Context, request *task_manager.StartTaskRequest) (*common.NilResponse, error) {
 	subtaskName := request.SubtaskName
-	logger.Infof("task manager id %v starting subtask %v", t.selfDescription.RaftId, subtaskName)
+	logger.Infof("task manager id %v starting subtask %v", t.selfDescription.SatelliteName, subtaskName)
 	slot := t.slotTable.getSlot(subtaskName)
 	slot.start()
 	logger.Infof("return response")
@@ -99,7 +99,9 @@ func (t *TaskManager) registerToCloud() error {
 	}
 
 	c := sun.NewSunClient(conn)
-	_, err = c.RegisterTaskManager(context.Background(), t.selfDescription)
+	_, err = c.RegisterTaskManager(context.Background(), &sun.RegisterTaskManagerRequest{
+		TaskManagerDesc: t.selfDescription,
+	})
 	if err != nil {
 		logger.Errorf("register to cloud failed: %v", err)
 		return err
@@ -117,16 +119,15 @@ func (t *TaskManager) Run() {
 }
 
 func (t *TaskManager) RequestSlot(_ context.Context, request *task_manager.RequiredSlotRequest) (*task_manager.RequiredSlotResponse, error) {
-	if request.RequestSlotNum > t.selfDescription.SlotNumber {
-		logger.Errorf("request slot num is larger than free worker num")
-		return &task_manager.RequiredSlotResponse{
-			AvailableWorkers: nil,
-			Status: &common.Status{
-				ErrCode: errno.CodeRequestSlotFail,
-			},
-		}, errno.RequestSlotFail
-	}
-
+	//if request.RequestSlotNum > t.selfDescription.SlotNumber {
+	//	logger.Errorf("request slot num is larger than free worker num")
+	//	return &task_manager.RequiredSlotResponse{
+	//		AvailableWorkers: nil,
+	//		Status: &common.Status{
+	//			ErrCode: errno.CodeRequestSlotFail,
+	//		},
+	//	}, errno.RequestSlotFail
+	//}
 	// 返回可用的workerId
 	assignedWorkerIdList := make([]uint64, 0)
 	for i := 0; i < int(request.RequestSlotNum); i++ {
@@ -141,34 +142,35 @@ func (t *TaskManager) Stop() {
 	t.cancelFunc()
 }
 
-func (t *TaskManager) TriggerCheckpoint(_ context.Context, request *task_manager.TriggerCheckpointRequest) (*common.NilResponse, error) {
-	workerId := request.WorkerId
-	worker, err := t.slotTable.getWorkerByWorkerId(workerId)
-	if err != nil {
-		logger.Errorf("get worker by worker id %v failed: %v", workerId, err)
-		return &common.NilResponse{}, errno.WorkerNotFound
-	}
-	err = worker.TriggerCheckpoint(request.Checkpoint)
-	if err != nil {
-		logger.Errorf("trigger checkpoint failed: %v", err)
-		return &common.NilResponse{}, err
-	}
-	return &common.NilResponse{}, nil
-}
+//func (t *TaskManager) TriggerCheckpoint(_ context.Context, request *task_manager.TriggerCheckpointRequest) (*common.NilResponse, error) {
+//	workerId := request.WorkerId
+//	worker, err := t.slotTable.getWorkerByWorkerId(workerId)
+//	if err != nil {
+//		logger.Errorf("get worker by worker id %v failed: %v", workerId, err)
+//		return &common.NilResponse{}, errno.WorkerNotFound
+//	}
+//	err = worker.TriggerCheckpoint(request.Checkpoint)
+//	if err != nil {
+//		logger.Errorf("trigger checkpoint failed: %v", err)
+//		return &common.NilResponse{}, err
+//	}
+//	return &common.NilResponse{}, nil
+//}
 
-func NewTaskManager(ctx context.Context, config *Config, raftID uint64, server *messenger.RpcServer,
+func NewTaskManager(ctx context.Context, config *Config, satelliteName string, server *messenger.RpcServer,
 	slotNum uint64, host string, port uint64) *TaskManager {
 	taskManagerCtx, cancelFunc := context.WithCancel(ctx)
 
 	taskManager := &TaskManager{
-		ctx:        taskManagerCtx,
-		config:     config,
-		cancelFunc: cancelFunc,
-		mutex:      &sync.Mutex{},
+		ctx:          taskManagerCtx,
+		config:       config,
+		cancelFunc:   cancelFunc,
+		mutex:        &sync.Mutex{},
+		nextWorkerId: 0,
 	}
 
-	taskManager.slotTable = NewSlotTable(raftID, slotNum, taskManager.config.CloudAddr, taskManager.config.CloudPort)
-	taskManager.selfDescription = taskManager.newSelfDescription(raftID, slotNum, host, port)
+	taskManager.slotTable = NewSlotTable(satelliteName, slotNum, taskManager.config.CloudAddr, taskManager.config.CloudPort)
+	taskManager.selfDescription = taskManager.newSelfDescription(satelliteName, slotNum, host, port)
 
 	task_manager.RegisterTaskManagerServiceServer(server, taskManager)
 	return taskManager

@@ -9,9 +9,9 @@ import (
 )
 
 type SlotTable struct {
-	raftId   uint64
-	capacity uint64
-	table    map[string]*Slot // subtask_name -> slot
+	satelliteName string
+	capacity      uint64
+	table         map[string]*Slot // subtask_name -> slot
 
 	mutex *sync.Mutex
 
@@ -36,19 +36,19 @@ func (st *SlotTable) deployExecuteTask(jobId string, executeTask *common.Execute
 	defer st.mutex.Unlock()
 
 	if len(st.table) >= int(st.capacity) {
-		logger.Errorf("raft %d slot table length >= capacity", st.raftId)
+		logger.Errorf("raft %d slot table length >= capacity", st.satelliteName)
 		return errno.SlotCapacityNotEnough
 	}
 
 	subtaskName := executeTask.SubtaskName
 	if _, ok := st.table[subtaskName]; ok {
-		logger.Errorf("raft %d slot table has subtask %s", st.raftId, subtaskName)
+		logger.Errorf("raft %d slot table has subtask %s", st.satelliteName, subtaskName)
 		return errno.RequestSlotFail
 	}
 
-	st.table[subtaskName] = NewSlot(st.raftId, executeTask, st.jobManagerHost, st.jobManagerPort, jobId, state)
+	st.table[subtaskName] = NewSlot(st.satelliteName, executeTask, st.jobManagerHost, st.jobManagerPort, jobId, state)
 
-	logger.Infof("raft %d deploy subtask %s success", st.raftId, subtaskName)
+	logger.Infof("raft %s deploy subtask %s success", st.satelliteName, subtaskName)
 
 	return nil
 }
@@ -56,7 +56,7 @@ func (st *SlotTable) deployExecuteTask(jobId string, executeTask *common.Execute
 func (st *SlotTable) startExecuteTask(subtaskName string) {
 	slot := st.getSlot(subtaskName)
 	slot.start()
-	logger.Infof("raft %d start subtask %s success", st.raftId, subtaskName)
+	logger.Infof("raft %s start subtask %s success", st.satelliteName, subtaskName)
 }
 
 func (st *SlotTable) hasSlot(name string) bool {
@@ -74,12 +74,12 @@ func (st *SlotTable) getSlot(name string) *Slot {
 	return st.table[name]
 }
 
-func NewSlotTable(raftId uint64, capacity uint64, jobManagerHost string, jobManagerPort uint64) *SlotTable {
+func NewSlotTable(satelliteName string, capacity uint64, jobManagerHost string, jobManagerPort uint64) *SlotTable {
 	return &SlotTable{
-		raftId:   raftId,
-		capacity: capacity,
-		table:    make(map[string]*Slot),
-		mutex:    &sync.Mutex{},
+		satelliteName: satelliteName,
+		capacity:      capacity,
+		table:         make(map[string]*Slot),
+		mutex:         &sync.Mutex{},
 
 		jobManagerHost: jobManagerHost,
 		jobManagerPort: jobManagerPort,

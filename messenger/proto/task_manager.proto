@@ -14,7 +14,7 @@ service TaskManagerService {
   // From other subtask
   rpc PushRecord(PushRecordRequest) returns (NilResponse) {}
   // From job manager
-  rpc TriggerCheckpoint(TriggerCheckpointRequest) returns (NilResponse) {}
+//  rpc TriggerCheckpoint(TriggerCheckpointRequest) returns (NilResponse) {}
 }
 
 message DeployTaskRequest {
@@ -22,11 +22,11 @@ message DeployTaskRequest {
   string job_id = 2;
   File state = 3;
 }
-
-message TriggerCheckpointRequest {
-  Record.Checkpoint checkpoint = 1;
-  uint64 worker_id = 2;
-}
+//
+//message TriggerCheckpointRequest {
+//  Record.Checkpoint checkpoint = 1;
+//  uint64 worker_id = 2;
+//}
 
 message PushRecordRequest {
   Record record = 1;

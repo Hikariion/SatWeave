@@ -12,7 +12,7 @@ type UserTaskDefine struct {
 	Cls        string   `yaml:"cls"`
 	Currency   int64    `yaml:"currency"`
 	InputTasks []string `yaml:"input_tasks"`
-	Locate     uint64   `yaml:"locate"`
+	Locate     string   `yaml:"locate"`
 }
 
 type UserTaskWrapper struct {
