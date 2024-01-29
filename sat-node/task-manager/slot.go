@@ -26,7 +26,7 @@ type Slot struct {
 }
 
 func (s *Slot) start() {
-	logger.Infof("raft id %v subtask %v begin to run...", s.satelliteName, s.subTask.SubTaskName)
+	logger.Infof("satellite name  %v subtask %v begin to run...", s.satelliteName, s.subTask.SubTaskName)
 	s.subTask.Run()
 }
 
