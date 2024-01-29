@@ -11,7 +11,7 @@ import (
 )
 
 type SimpleSource struct {
-	OperatorBase
+	name      string
 	wordsChan chan string
 	done      chan bool
 	counter   uint64
@@ -59,6 +59,10 @@ func (op *SimpleSource) Compute([]byte) ([]byte, error) {
 		// TODO(qiu): 可以返回错误，表示没有单词了
 		return nil, nil
 	}
+}
+
+func (op *SimpleSource) SetName(name string) {
+	op.name = name
 }
 
 func (op *SimpleSource) IsSourceOp() bool {

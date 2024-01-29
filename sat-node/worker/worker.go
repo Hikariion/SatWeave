@@ -28,6 +28,7 @@ type Worker struct {
 	satelliteName string
 	// 算子名
 	clsName string
+	jobId   string
 	// 用 UUID 唯一标识这个 subtask
 	subtaskId       string
 	workerId        uint64
@@ -54,7 +55,6 @@ type Worker struct {
 	// job manager endpoint
 	jobManagerHost string
 	jobManagerPort uint64
-	jobId          string
 
 	// 初始化时的 state
 	state *common.File

@@ -2,7 +2,10 @@ package task_manager
 
 import (
 	"context"
+	"github.com/stretchr/testify/assert"
 	"satweave/messenger"
+	"satweave/utils/common"
+	"satweave/utils/logger"
 	"testing"
 )
 
@@ -35,29 +38,29 @@ func testTaskManager(t *testing.T) {
 
 	sun.PrintTaskManagerTable()
 
-	//t.Run("test sun schedule ", func(t *testing.T) {
-	//	userTasks, err := common.ReadUserDefinedTasks("./test-files/test.yaml")
-	//	assert.NoError(t, err)
-	//	assert.NotEmpty(t, userTasks)
-	//	//logger.Infof("%v", userTasks)
-	//	logicalTask, err := common.ConvertUserTaskWrapperToLogicTasks(userTasks)
-	//	assert.NoError(t, err)
-	//	assert.NotEmpty(t, logicalTask)
-	//
-	//	jobId := "test-job-id"
-	//	logicalTaskMap, executeTaskMap, err := sun.StreamHelper.Scheduler.Schedule(jobId, logicalTask)
-	//	assert.NoError(t, err)
-	//
-	//	logger.Infof("logicalTaskMap: %v", logicalTaskMap)
-	//	logger.Infof("executeTaskMap: %v", executeTaskMap)
-	//
-	//	//err = sun.StreamHelper.DeployExecuteTasks(context.Background(), executeTaskMap)
-	//	//assert.NoError(t, err)
-	//	//
-	//	//err = sun.StreamHelper.StartExecuteTasks(logicalTaskMap, executeTaskMap)
-	//	//assert.NoError(t, err)
-	//
-	//	time.Sleep(10 * time.Second)
-	//})
+	t.Run("test sun schedule ", func(t *testing.T) {
+		userTasks, err := common.ReadUserDefinedTasks("./test-files/test.yaml")
+		assert.NoError(t, err)
+		assert.NotEmpty(t, userTasks)
+		//logger.Infof("%v", userTasks)
+		logicalTask, err := common.ConvertUserTaskWrapperToLogicTasks(userTasks)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, logicalTask)
+
+		jobId := "test-job-id"
+		logicalTaskMap, executeTaskMap, err := sun.StreamHelper.Scheduler.Schedule(jobId, logicalTask)
+		assert.NoError(t, err)
+
+		logger.Infof("logicalTaskMap: %v", logicalTaskMap)
+		logger.Infof("executeTaskMap: %v", executeTaskMap)
+
+		err = sun.StreamHelper.DeployExecuteTasks(context.Background(), jobId, executeTaskMap)
+		assert.NoError(t, err)
+
+		//err = sun.StreamHelper.StartExecuteTasks(logicalTaskMap, executeTaskMap)
+		//assert.NoError(t, err)
+
+		//time.Sleep(10 * time.Second)
+	})
 
 }

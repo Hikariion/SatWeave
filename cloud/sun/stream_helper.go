@@ -78,7 +78,6 @@ func (s *StreamHelper) DeployExecuteTasks(ctx context.Context, jobId string, exe
 		client := task_manager.NewTaskManagerServiceClient(conn)
 		// 每个 Execute task 都需要 deploy
 		// deploy的过程其实是创建一个worker的过程
-		// TODO deploy的时候，如果有 state 需要把 state 传过去
 		for _, executeTask := range executeTasks {
 			_, err := client.DeployTask(ctx, &task_manager.DeployTaskRequest{
 				ExecTask: executeTask,

@@ -48,7 +48,7 @@ func GenTestTaskManagerCluster(ctx context.Context, basePath string, num int) ([
 	var taskManagers []*TaskManager
 	var rpcServers []*messenger.RpcServer
 	for i := 0; i < num; i++ {
-		taskManager, rpc := GenTestTaskManager(ctx, basePath, sunAddr, fmt.Sprintf("satellite#%d", uint64(i+1)), slotNum, "127.0.0.1")
+		taskManager, rpc := GenTestTaskManager(ctx, basePath, sunAddr, fmt.Sprintf("satellite%d", uint64(i+1)), slotNum, "127.0.0.1")
 		taskManagers = append(taskManagers, taskManager)
 		rpcServers = append(rpcServers, rpc)
 	}

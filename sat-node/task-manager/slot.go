@@ -13,6 +13,7 @@ const (
 	unDeployed
 )
 
+// Slot 对应一个 subtask
 type Slot struct {
 	satelliteName string
 	workerID      uint64
@@ -22,7 +23,6 @@ type Slot struct {
 
 	jobManagerHost string
 	jobManagerPort uint64
-	state          *common.File
 }
 
 func (s *Slot) start() {
@@ -30,8 +30,7 @@ func (s *Slot) start() {
 	s.subTask.Run()
 }
 
-func NewSlot(satelliteName string, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64, jobId string,
-	state *common.File) *Slot {
+func NewSlot(satelliteName string, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64, jobId string) *Slot {
 	return &Slot{
 		satelliteName:  satelliteName,
 		subTask:        worker.NewWorker(satelliteName, executeTask, jobManagerHost, jobManagerPort, jobId),
@@ -40,6 +39,5 @@ func NewSlot(satelliteName string, executeTask *common.ExecuteTask, jobManagerHo
 		jobId:          jobId,
 		jobManagerHost: jobManagerHost,
 		jobManagerPort: jobManagerPort,
-		state:          state,
 	}
 }

@@ -28,7 +28,7 @@ func (st *SlotTable) getWorkerByWorkerId(id uint64) (*worker.Worker, error) {
 	return nil, errno.WorkerNotFound
 }
 
-func (st *SlotTable) deployExecuteTask(jobId string, executeTask *common.ExecuteTask, state *common.File) error {
+func (st *SlotTable) deployExecuteTask(jobId string, executeTask *common.ExecuteTask) error {
 	/*
 		add a slot by execute_task
 	*/
@@ -46,9 +46,9 @@ func (st *SlotTable) deployExecuteTask(jobId string, executeTask *common.Execute
 		return errno.RequestSlotFail
 	}
 
-	st.table[subtaskName] = NewSlot(st.satelliteName, executeTask, st.jobManagerHost, st.jobManagerPort, jobId, state)
+	st.table[subtaskName] = NewSlot(st.satelliteName, executeTask, st.jobManagerHost, st.jobManagerPort, jobId)
 
-	logger.Infof("raft %s deploy subtask %s success", st.satelliteName, subtaskName)
+	logger.Infof("satellite %s deploy subtask %s success", st.satelliteName, subtaskName)
 
 	return nil
 }

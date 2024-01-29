@@ -68,7 +68,7 @@ func (t *TaskManager) DeployTask(_ context.Context, request *task_manager.Deploy
 		return nil, errno.SlotCapacityNotEnough
 	}
 
-	err := t.slotTable.deployExecuteTask(request.JobId, request.ExecTask, request.State)
+	err := t.slotTable.deployExecuteTask(request.JobId, request.ExecTask)
 	if err != nil {
 		logger.Errorf("deploy execute task %v failed, err: %v", request.ExecTask, err)
 	}

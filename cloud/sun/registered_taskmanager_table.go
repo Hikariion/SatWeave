@@ -37,7 +37,12 @@ func (r *RegisteredTaskManagerTable) hasTaskManager(SatelliteName string) bool {
 func (r *RegisteredTaskManagerTable) getHostPort(SatelliteName string) *common.HostPort {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	return r.table[SatelliteName].HostPort
+	if _, exists := r.table[SatelliteName]; !exists {
+		logger.Errorf("Satellite %v not exists", SatelliteName)
+		return nil
+	}
+	sat := r.table[SatelliteName]
+	return sat.GetHostPort()
 }
 
 func newRegisteredTaskManagerTable() *RegisteredTaskManagerTable {
