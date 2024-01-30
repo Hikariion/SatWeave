@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"satweave/messenger/common"
-	utils_common "satweave/utils/common"
 	"satweave/utils/logger"
 )
 
@@ -23,11 +22,11 @@ type DataStruct struct {
 	Finished bool   `json:"finished"`
 }
 
-func (op *HttpSource) Init(dataId []byte) {
-	if dataId == nil {
-		op.BeginDataId = 0
+func (op *HttpSource) Init(initMap map[string]interface{}) {
+	if _, ok := initMap["dataId"]; !ok {
+		op.BeginDataId = initMap["dataId"].(uint64)
 	} else {
-		op.BeginDataId = utils_common.BytesToUint64(dataId)
+		op.BeginDataId = 0
 	}
 
 	op.BinaryDataChannel = make(chan []byte, 1000)

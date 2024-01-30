@@ -4,7 +4,7 @@ type KeyByInputOp struct {
 	name string
 }
 
-func (op *KeyByInputOp) Init([]byte) {
+func (op *KeyByInputOp) Init(initMap map[string]interface{}) {
 
 }
 

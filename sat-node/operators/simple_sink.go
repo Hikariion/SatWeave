@@ -10,7 +10,7 @@ type SimpleSink struct {
 	file *os.File
 }
 
-func (op *SimpleSink) Init([]byte) {
+func (op *SimpleSink) Init(initMap map[string]interface{}) {
 	// 创建一个文件用来存储
 	logger.Infof("Init Simple Sink...")
 	// 创建一个文件用来存储

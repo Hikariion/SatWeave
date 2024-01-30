@@ -3,28 +3,24 @@ package operators
 import (
 	"bufio"
 	"os"
-	"satweave/utils/errno"
+	"satweave/messenger/common"
 	"satweave/utils/logger"
-	"strings"
 )
 
 type SimpleSource struct {
-	name      string
-	wordsChan chan string
-	done      chan bool
-	counter   uint64
+	name string
+
+	// 用于 Source 算子和 Worker 之间的通信
+	InputChannel chan *common.Record
 }
 
-func (op *SimpleSource) Init([]byte) {
-	op.wordsChan = make(chan string, 1)
-	op.done = make(chan bool)
+func (op *SimpleSource) Init(initMap map[string]interface{}) {
+	op.InputChannel = initMap["InputChannel"].(chan *common.Record)
 
 	go func() {
-		defer close(op.wordsChan)
 		file, err := os.Open("./test-files/document.txt")
 		if err != nil {
 			logger.Errorf("open file failed: %v", err)
-			close(op.done)
 			return
 		}
 		defer file.Close()
@@ -34,28 +30,21 @@ func (op *SimpleSource) Init([]byte) {
 
 		for scanner.Scan() {
 			word := scanner.Text()
-			if word != "" {
-				op.wordsChan <- strings.ToLower(word)
+			if word != "" && len(word) > 0 {
+				// TODO 1.30 应该在这个地方插入 Event，而不是在 Compute 中
+				record := &common.Record{
+					DataType: common.DataType_BINARY,
+					Data:     []byte(word),
+				}
+				op.InputChannel <- record
 			}
 		}
-		close(op.done)
+		return
 	}()
 }
 
 func (op *SimpleSource) Compute([]byte) ([]byte, error) {
-	select {
-	case word, ok := <-op.wordsChan:
-		logger.Infof("word: %s", word)
-		if !ok {
-			// TODO(qiu): 可以返回错误，表示没有单词了
-			return nil, errno.JobFinished
-		}
-
-		return []byte(word), nil
-	case <-op.done:
-		// TODO(qiu): 可以返回错误，表示没有单词了
-		return nil, nil
-	}
+	return nil, nil
 }
 
 func (op *SimpleSource) SetName(name string) {

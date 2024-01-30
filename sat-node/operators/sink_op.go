@@ -4,7 +4,7 @@ type SinkOperator struct {
 	OperatorBase
 }
 
-func (op *SinkOperator) Init([]byte) {
+func (op *SinkOperator) Init(initMap map[string]interface{}) {
 
 }
 
