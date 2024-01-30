@@ -6,7 +6,7 @@ type SimpleSink struct {
 	name string
 }
 
-func (op *SimpleSink) Init(map[string]string) {
+func (op *SimpleSink) Init() {
 	logger.Infof("Init Simple Sink...")
 }
 

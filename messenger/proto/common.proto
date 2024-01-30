@@ -97,30 +97,14 @@ message RequiredSlotDescription {
 }
 
 enum DataType {
-  PICKLE = 0;
+  BINARY = 0;
   CHECKPOINT = 1;
   FINISH = 2;
 }
 
 message Record {
-  int64 data_id = 1; // for filter
+  uint64 data_id = 1; // for filter
   DataType data_type = 2;
   bytes data = 3;
-  uint64 timestamp = 4;
-  int64 partition_key = 5; // for partitioning
-
-  message KeyValue {
-    repeated string keys = 1;
-    repeated string values = 2;
-  }
-
-  message Checkpoint {
-    uint64 id = 1;
-    bool cancel_job = 2;
-  }
-
-  message Finish {
-
-  }
-
+  int64 partition_key = 4; // for partitioning
 }

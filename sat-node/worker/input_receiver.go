@@ -5,7 +5,6 @@ import (
 	"satweave/messenger/common"
 	"satweave/utils/logger"
 	"sync"
-	"time"
 )
 
 type InputReceiver struct {
@@ -16,82 +15,76 @@ type InputReceiver struct {
 	*/
 
 	// channel = inputChannel 与 worker 共用
-	channel    chan *common.Record
-	partitions []*InputPartitionReceiver
+	InputChannel       chan *common.Record
+	PartitionReceivers []*InputPartitionReceiver
 	// TODO(qiu): barrier 需要 new 并且初始化，大小 = partition 数量
-	barrier  *sync.WaitGroup
-	allowOne chan struct{}
+	EventBarrier *sync.WaitGroup
+	AllowOne     chan struct{}
 
 	ctx context.Context
 }
 
 func (i *InputReceiver) RecvData(partitionIdx int64, record *common.Record) {
-	i.partitions[partitionIdx].RecvData(record)
+	i.PartitionReceivers[partitionIdx].RecvData(record)
 }
 
 func (i *InputReceiver) RunAllPartitionReceiver() {
-	if i.partitions == nil {
+	if i.PartitionReceivers == nil {
+		logger.Errorf("partition receivers is nil")
 		return
 	}
-	for _, partition := range i.partitions {
-		go partition.innerPraseDataAndCarryToChannel(partition.queue, partition.channel, partition.barrier, partition.allowOne)
+	for _, partitionReceiver := range i.PartitionReceivers {
+		go partitionReceiver.Run()
 	}
 }
 
 type InputPartitionReceiver struct {
-	ctx      context.Context
-	queue    chan *common.Record
-	channel  chan *common.Record
-	barrier  *sync.WaitGroup
-	allowOne chan struct{}
+	ctx          context.Context
+	InnerQueue   chan *common.Record
+	InputChannel chan *common.Record
+	EventBarrier *sync.WaitGroup
+	AllowOne     chan struct{}
 }
 
+// TODO 1.30 看一下这个函数的调用关系
 func (ipr *InputPartitionReceiver) RecvData(record *common.Record) {
-	logger.Infof("push record %v to queue", record)
-	ipr.queue <- record
-	logger.Infof("push record %v to queue finished", record)
+	logger.Infof("push record %v to InputPartitionReceiver Inner Queue", record)
+	ipr.InnerQueue <- record
+	logger.Infof("push record %v to InputPartitionReceiver Inner Queue", record)
 }
 
-func (ipr *InputPartitionReceiver) praseDataAndCarryToChannel(inputQueue chan *common.Record, outputChannel chan *common.Record,
-	eventBarrier *sync.WaitGroup, allowOne chan struct{}) error {
-	err := ipr.innerPraseDataAndCarryToChannel(inputQueue, outputChannel, eventBarrier, allowOne)
-	if err != nil {
-		logger.Errorf("InputPartitionReceiver.innerPraseDataAndCarryToChannel() failed: %v", err)
-		return err
-	}
-	return nil
-}
-
-func (ipr *InputPartitionReceiver) innerPraseDataAndCarryToChannel(inputQueue chan *common.Record, outputChannel chan *common.Record, barrier *sync.WaitGroup, allowOne chan struct{}) error {
-	logger.Infof("start innerPraseDataAndCarryToChannel....")
+// PhraseDataAndCarryToChannel 用于解析 InnerQueue 中接收到的数据，并且写入 InputChannel
+func (ipr *InputPartitionReceiver) PhraseDataAndCarryToChannel() {
+	logger.Infof("start PhraseDataAndCarryToChannel....")
 	needBarrierDataType := []common.DataType{common.DataType_CHECKPOINT, common.DataType_FINISH}
 	for {
 		select {
 		case <-ipr.ctx.Done():
 			logger.Infof("context done, close input partition receiver")
-			return nil
+			return
 		default:
 			// 从 inputQueue 中读取数据
-			record := <-inputQueue
+			record := <-ipr.InnerQueue
+			// 如果是Barrier的数据类型，需要阻塞
 			if ContainType(needBarrierDataType, record.DataType) {
-				barrier.Done()
+				ipr.EventBarrier.Done()
 				logger.Infof("Receive Barrier wg --, begin to wait ... ")
-				barrier.Wait()
+				ipr.EventBarrier.Wait()
 				logger.Infof("Block finished, begin to make checkpoint")
 				// 重置 wg，每个协程都只执行一次
-				barrier.Add(1)
+				ipr.EventBarrier.Add(1)
 				// allowOne 用于只让一个协程往 output 发送数据
 				select {
-				case <-allowOne:
-					logger.Infof("Be the allowOne, transfer checkpoint signal")
-					outputChannel <- record
-					// TODO 一秒会不会有点久
-					time.Sleep(1 * time.Second)
-					allowOne <- struct{}{}
+				case <-ipr.AllowOne:
+					logger.Infof("Be the allowOne, transfer checkpoint or finish signal")
+					ipr.InputChannel <- record
+					//// TODO 一秒会不会有点久
+					//time.Sleep(100 * time.Second)
+					ipr.AllowOne <- struct{}{}
 				default:
 				}
 			} else {
-				outputChannel <- record
+				ipr.InputChannel <- record
 			}
 		}
 	}
@@ -108,38 +101,38 @@ func ContainType(list []common.DataType, element common.DataType) bool {
 
 func (ipr *InputPartitionReceiver) Run() {
 	logger.Infof("partition run ...")
-
-	ipr.innerPraseDataAndCarryToChannel(ipr.queue, ipr.channel, ipr.barrier, make(chan struct{}, 1))
+	ipr.PhraseDataAndCarryToChannel()
 }
 
 func NewInputReceiver(ctx context.Context, inputChannel chan *common.Record, inputEndpoints []*common.InputEndpoints) *InputReceiver {
 	inputReceiver := &InputReceiver{
-		ctx:        ctx,
-		channel:    inputChannel,
-		barrier:    &sync.WaitGroup{},
-		partitions: make([]*InputPartitionReceiver, 0),
-		allowOne:   make(chan struct{}, 1),
+		ctx:                ctx,
+		InputChannel:       inputChannel,
+		EventBarrier:       &sync.WaitGroup{},
+		PartitionReceivers: make([]*InputPartitionReceiver, 0),
+		AllowOne:           make(chan struct{}, 1),
 	}
 	// 在这里初始化 barrier
 	for i := 0; i < len(inputEndpoints); i++ {
-		inputReceiver.barrier.Add(1)
+		inputReceiver.EventBarrier.Add(1)
 	}
-	// 初始化 allowOne
-	inputReceiver.allowOne <- struct{}{}
 
+	// 初始化 PartitionReceivers
 	for i := 0; i < len(inputEndpoints); i++ {
-		inputPartitionReceiver := inputReceiver.NewInputPartitionReceiver(inputReceiver.channel, inputReceiver.barrier, inputReceiver.allowOne)
-		inputReceiver.partitions = append(inputReceiver.partitions, inputPartitionReceiver)
+		partitionReceiver := inputReceiver.NewInputPartitionReceiver(inputReceiver.InputChannel, inputReceiver.EventBarrier, inputReceiver.AllowOne)
+		inputReceiver.PartitionReceivers = append(inputReceiver.PartitionReceivers, partitionReceiver)
 	}
 	return inputReceiver
 }
 
-func (i *InputReceiver) NewInputPartitionReceiver(channel chan *common.Record, eventBarrier *sync.WaitGroup, allowOne chan struct{}) *InputPartitionReceiver {
+func (i *InputReceiver) NewInputPartitionReceiver(inputChannel chan *common.Record, eventBarrier *sync.WaitGroup,
+	allowOne chan struct{}) *InputPartitionReceiver {
 	return &InputPartitionReceiver{
-		ctx:      i.ctx,
-		channel:  channel,
-		queue:    make(chan *common.Record, 1000),
-		barrier:  eventBarrier,
-		allowOne: allowOne,
+		ctx:          i.ctx,
+		InputChannel: inputChannel,
+		// TODO(qiu): 这里可以调整 InnerQueue 的大小
+		InnerQueue:   make(chan *common.Record, 1000),
+		EventBarrier: eventBarrier,
+		AllowOne:     allowOne,
 	}
 }

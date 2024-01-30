@@ -48,7 +48,7 @@ func (t *TaskManager) PushRecord(_ context.Context, request *task_manager.PushRe
 	// TODO(qiu): 增加转发模式
 	worker, err := t.slotTable.getWorkerByWorkerId(workerId)
 	if err != nil {
-		logger.Errorf("task manager id: %v get worker id %v failed: %v", t.selfDescription.SatelliteName, workerId, err)
+		logger.Errorf("satellite: %s get worker id %v failed: %v", t.selfDescription.SatelliteName, workerId, err)
 		return nil, status.Errorf(codes.Internal, "get worker failed: %v", err)
 	}
 	err = worker.PushRecord(request.Record, request.FromSubtask, request.PartitionIdx)
@@ -79,9 +79,9 @@ func (t *TaskManager) DeployTask(_ context.Context, request *task_manager.Deploy
 
 func (t *TaskManager) StartTask(_ context.Context, request *task_manager.StartTaskRequest) (*common.NilResponse, error) {
 	subtaskName := request.SubtaskName
-	logger.Infof("task manager id %v starting subtask %v", t.selfDescription.SatelliteName, subtaskName)
+	logger.Infof("task manager name %v begin to start %v", t.selfDescription.SatelliteName, subtaskName)
 	slot := t.slotTable.getSlot(subtaskName)
-	slot.start()
+	go slot.start()
 	logger.Infof("return response")
 	return &common.NilResponse{}, nil
 }

@@ -4,7 +4,7 @@ type SourceOperator struct {
 	OperatorBase
 }
 
-func (op *SourceOperator) Init(map[string]string) {
+func (op *SourceOperator) Init() {
 
 }
 

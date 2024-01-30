@@ -17,7 +17,7 @@ type SimpleSource struct {
 	counter   uint64
 }
 
-func (op *SimpleSource) Init(map[string]string) {
+func (op *SimpleSource) Init() {
 	op.wordsChan = make(chan string, 1)
 	op.done = make(chan bool)
 

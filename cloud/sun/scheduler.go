@@ -57,9 +57,8 @@ func (u *DefaultScheduler) TransformLogicalMapToExecuteMap(jobId string, logical
 	for satelliteName, logicalTasks := range logicalMap {
 		HostPort := u.RegisteredTaskManagerTable.getHostPort(satelliteName)
 		executeMap[satelliteName] = make([]*common.ExecuteTask, 0)
-
+		usedWorkerIdx := 0
 		for _, logicalTask := range logicalTasks {
-			usedWorkerIdx := 0
 			for i := 0; i < int(logicalTask.Currency); i++ {
 				workerID := availWorkersMap[satelliteName][usedWorkerIdx]
 				usedWorkerIdx++

@@ -4,7 +4,7 @@ type SinkOperator struct {
 	OperatorBase
 }
 
-func (op *SinkOperator) Init(map[string]string) {
+func (op *SinkOperator) Init() {
 
 }
 

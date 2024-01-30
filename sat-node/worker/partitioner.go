@@ -21,10 +21,10 @@ func (k *KeyPartitioner) Partitioning(record *common.Record, partitionNum int64)
 type TimestampPartitioner struct {
 }
 
-func (t *TimestampPartitioner) Partitioning(record *common.Record, partitionNum uint64) (uint64, error) {
-	timestamp := record.Timestamp
-	return timestamp % partitionNum, nil
-}
+//func (t *TimestampPartitioner) Partitioning(record *common.Record, partitionNum uint64) (uint64, error) {
+//	timestamp := record.Timestamp
+//	return timestamp % partitionNum, nil
+//}
 
 type RandomPartitioner struct {
 }

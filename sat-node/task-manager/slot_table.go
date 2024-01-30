@@ -36,13 +36,13 @@ func (st *SlotTable) deployExecuteTask(jobId string, executeTask *common.Execute
 	defer st.mutex.Unlock()
 
 	if len(st.table) >= int(st.capacity) {
-		logger.Errorf("raft %d slot table length >= capacity", st.satelliteName)
+		logger.Errorf("satellite  %s slot table length >= capacity", st.satelliteName)
 		return errno.SlotCapacityNotEnough
 	}
 
 	subtaskName := executeTask.SubtaskName
 	if _, ok := st.table[subtaskName]; ok {
-		logger.Errorf("raft %d slot table has subtask %s", st.satelliteName, subtaskName)
+		logger.Errorf("satellite %s slot table has subtask %s", st.satelliteName, subtaskName)
 		return errno.RequestSlotFail
 	}
 
@@ -56,7 +56,7 @@ func (st *SlotTable) deployExecuteTask(jobId string, executeTask *common.Execute
 func (st *SlotTable) startExecuteTask(subtaskName string) {
 	slot := st.getSlot(subtaskName)
 	slot.start()
-	logger.Infof("raft %s start subtask %s success", st.satelliteName, subtaskName)
+	logger.Infof("satellite %s start subtask %s success", st.satelliteName, subtaskName)
 }
 
 func (st *SlotTable) hasSlot(name string) bool {
