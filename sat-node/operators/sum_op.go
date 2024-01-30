@@ -5,7 +5,7 @@ type SumOp struct {
 	counter map[string]uint64
 }
 
-func (op *SumOp) Init() {
+func (op *SumOp) Init([]byte) {
 	op.counter = make(map[string]uint64)
 }
 

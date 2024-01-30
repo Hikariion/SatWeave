@@ -17,7 +17,7 @@ type SimpleSource struct {
 	counter   uint64
 }
 
-func (op *SimpleSource) Init() {
+func (op *SimpleSource) Init([]byte) {
 	op.wordsChan = make(chan string, 1)
 	op.done = make(chan bool)
 
@@ -54,6 +54,7 @@ func (op *SimpleSource) Compute([]byte) ([]byte, error) {
 			// TODO(qiu): 可以返回错误，表示没有单词了
 			return nil, errno.JobFinished
 		}
+
 		return []byte(word), nil
 	case <-op.done:
 		// TODO(qiu): 可以返回错误，表示没有单词了

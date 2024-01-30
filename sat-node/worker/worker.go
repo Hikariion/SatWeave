@@ -161,7 +161,7 @@ func (w *Worker) ComputeCore() error {
 	taskInstance := w.cls
 	taskInstance.SetName(w.SubTaskName)
 	// TODO: 这里的 init 需要完善
-	taskInstance.Init()
+	taskInstance.Init(nil)
 
 	// ------------------------ 如果 state 不为空，需要恢复状态 ------------------------
 	//if w.state != nil {

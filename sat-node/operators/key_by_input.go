@@ -4,7 +4,7 @@ type KeyByInputOp struct {
 	name string
 }
 
-func (op *KeyByInputOp) Init() {
+func (op *KeyByInputOp) Init([]byte) {
 
 }
 

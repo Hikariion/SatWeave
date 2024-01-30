@@ -4,7 +4,7 @@ type SourceOperator struct {
 	OperatorBase
 }
 
-func (op *SourceOperator) Init() {
+func (op *SourceOperator) Init([]byte) {
 
 }
 
