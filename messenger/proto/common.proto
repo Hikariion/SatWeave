@@ -103,8 +103,7 @@ enum DataType {
 }
 
 message Record {
-  uint64 data_id = 1; // for filter
-  DataType data_type = 2;
-  bytes data = 3;
-  int64 partition_key = 4; // for partitioning
+  DataType data_type = 1;
+  bytes data = 2;
+  int64 partition_key = 3; // for partitioning
 }

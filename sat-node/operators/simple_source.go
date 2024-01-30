@@ -2,8 +2,6 @@ package operators
 
 import (
 	"bufio"
-	"bytes"
-	"encoding/binary"
 	"os"
 	"satweave/utils/errno"
 	"satweave/utils/logger"
@@ -36,9 +34,7 @@ func (op *SimpleSource) Init([]byte) {
 
 		for scanner.Scan() {
 			word := scanner.Text()
-			logger.Infof("read word %s", word)
 			if word != "" {
-				logger.Infof("send word %s, push", word)
 				op.wordsChan <- strings.ToLower(word)
 			}
 		}
@@ -79,15 +75,7 @@ func (op *SimpleSource) IsKeyByOp() bool {
 }
 
 func (op *SimpleSource) Checkpoint() []byte {
-	counter := op.counter
-	buf := new(bytes.Buffer)
-	// 小端存储
-	err := binary.Write(buf, binary.LittleEndian, counter)
-	if err != nil {
-		logger.Errorf("binary.Write error: %v", err)
-		return nil
-	}
-	return buf.Bytes()
+	return nil
 }
 
 func (op *SimpleSource) RestoreFromCheckpoint([]byte) error {

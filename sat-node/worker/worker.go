@@ -11,7 +11,6 @@ import (
 	"satweave/sat-node/operators"
 	common2 "satweave/utils/common"
 	"satweave/utils/errno"
-	"satweave/utils/generator"
 	"satweave/utils/logger"
 	"sync"
 )
@@ -185,7 +184,7 @@ func (w *Worker) ComputeCore() error {
 			var outputData []byte = nil
 			var err error = nil
 
-			dataType, inputData, dataId := w.getInputData(isSourceOp)
+			dataType, inputData := w.getInputData(isSourceOp)
 
 			// TODO 1.31 都还没做 error 的处理
 			if dataType == common.DataType_BINARY {
@@ -220,7 +219,7 @@ func (w *Worker) ComputeCore() error {
 				return errno.UnknownDataType
 			}
 
-			w.pushOutputData(isSinkOp, outputData, dataType, dataId, partitionKey)
+			w.pushOutputData(isSinkOp, outputData, dataType, partitionKey)
 
 			//var record *common.Record
 			//var dataType common.DataType
@@ -413,11 +412,11 @@ func (w *Worker) ComputeCore() error {
 // -------------------- get input --------------------
 
 // 获取算子的输入数据，返回数据类型、内容、数据ID
-func (w *Worker) getInputData(isSourceOp bool) (common.DataType, []byte, uint64) {
+func (w *Worker) getInputData(isSourceOp bool) (common.DataType, []byte) {
 	// 不是 SourceOp, 从 inputChannel 正常获取数据
 	if !isSourceOp {
 		record := <-w.InputChannel
-		return record.DataType, record.Data, record.DataId
+		return record.DataType, record.Data
 	}
 
 	// 是SourceOp, 从 inputChannel 里获取 event
@@ -427,14 +426,13 @@ func (w *Worker) getInputData(isSourceOp bool) (common.DataType, []byte, uint64)
 		// event 可能是 checkpoint 或 finish
 
 		// 只需要返回 DataType, 后面的几个参数没有意义
-		return record.DataType, nil, 0
+		return record.DataType, nil
 	default:
 		// SourceOp 没有 event，继续处理
 		// TODO 1.30 dataId 生成的位置要改一下，不在这里生成
-		dataId := generator.GetDataIdGeneratorInstance().Next()
 		dataType := common.DataType_BINARY
 		// data 为 nil，真实的 data 在 执行source算子 compute 的时候填充
-		return dataType, nil, dataId
+		return dataType, nil
 	}
 }
 
@@ -461,6 +459,7 @@ func (w *Worker) BinaryDataProcess(taskInstance operators.OperatorBase, isKeyOp 
 		// 不是 partition key operator, 计算 outputData
 		// PS: Source Operator 也会走这里
 		outputData, _ = taskInstance.Compute(inputData)
+
 	}
 	return outputData, partitionKey, nil
 }
@@ -517,12 +516,11 @@ func (w *Worker) finishEventProcess(taskInstance operators.OperatorBase, isSinkO
 //}
 
 // -------------------- push output --------------------
-func (w *Worker) pushOutputData(isSinkOp bool, outputData []byte, dataType common.DataType, dataId uint64, partitionKey int64) {
+func (w *Worker) pushOutputData(isSinkOp bool, outputData []byte, dataType common.DataType, partitionKey int64) {
 	if isSinkOp {
 		return
 	}
 	record := &common.Record{
-		DataId:       dataId,
 		DataType:     dataType,
 		Data:         outputData,
 		PartitionKey: partitionKey,
@@ -549,7 +547,6 @@ func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partition
 func (w *Worker) PushEventRecordToOutputChannel(dataId uint64, dataType common.DataType,
 	data []byte, outputChannel chan *common.Record) {
 	record := &common.Record{
-		DataId:       dataId,
 		DataType:     dataType,
 		Data:         data,
 		PartitionKey: -1,
