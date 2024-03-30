@@ -7,8 +7,12 @@ import (
 
 // HaSumOp 是高通聚合算子
 type HaSumOp struct {
-	OperatorBase
+	name    string
 	counter uint64
+}
+
+func (op *HaSumOp) SetName(name string) {
+	op.name = name
 }
 
 func (op *HaSumOp) Init(initMap map[string]interface{}) {
@@ -31,4 +35,25 @@ func (op *HaSumOp) Compute(data []byte) ([]byte, error) {
 	res := common.Uint64ToBytes(op.counter)
 
 	return res, nil
+}
+
+func (op *HaSumOp) IsSourceOp() bool {
+	return false
+}
+
+func (op *HaSumOp) IsSinkOp() bool {
+	return false
+}
+
+func (op *HaSumOp) IsKeyByOp() bool {
+	return false
+}
+
+func (op *HaSumOp) Checkpoint() []byte {
+	// TODO: checkpoint
+	return nil
+}
+
+func (op *HaSumOp) RestoreFromCheckpoint([]byte) error {
+	return nil
 }

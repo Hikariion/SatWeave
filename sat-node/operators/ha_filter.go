@@ -7,11 +7,15 @@ import (
 
 // HaFilterOp 是高通滤波算子
 type HaFilterOp struct {
-	OperatorBase
+	name   string
 	fHigh  float64 // 高频分量
 	T      float64 // 信号时长
 	cutoff float64 // 截止频率
 	fs     float64 // 采样频率
+}
+
+func (op *HaFilterOp) SetName(name string) {
+	op.name = name
 }
 
 func (op *HaFilterOp) Init(initMap map[string]interface{}) {

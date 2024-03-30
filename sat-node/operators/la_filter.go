@@ -7,10 +7,15 @@ import (
 
 // LaFilterOp 是低通滤波算子
 type LaFilterOp struct {
+	name   string
 	fHigh  float64 // 高频分量
 	T      float64 // 信号时长
 	cutoff float64 // 截止频率
 	fs     float64 // 采样频率
+}
+
+func (op *LaFilterOp) SetName(name string) {
+	op.name = name
 }
 
 func (op *LaFilterOp) Init(initMap map[string]interface{}) {
@@ -44,4 +49,25 @@ func (op *LaFilterOp) Compute(data []byte) ([]byte, error) {
 	}
 
 	return res, nil
+}
+
+func (op *LaFilterOp) IsSourceOp() bool {
+	return false
+}
+
+func (op *LaFilterOp) IsSinkOp() bool {
+	return false
+}
+
+func (op *LaFilterOp) IsKeyByOp() bool {
+	return false
+}
+
+func (op *LaFilterOp) Checkpoint() []byte {
+	// TODO: checkpoint
+	return nil
+}
+
+func (op *LaFilterOp) RestoreFromCheckpoint([]byte) error {
+	return nil
 }

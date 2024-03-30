@@ -7,8 +7,12 @@ import (
 
 // LaSumOp 是低通聚合算子
 type LaSumOp struct {
-	OperatorBase
+	name    string
 	counter uint64
+}
+
+func (op *LaSumOp) SetName(name string) {
+	op.name = name
 }
 
 func (op *LaSumOp) Init(initMap map[string]interface{}) {
@@ -31,4 +35,25 @@ func (op *LaSumOp) Compute(data []byte) ([]byte, error) {
 	res := common.Uint64ToBytes(op.counter)
 
 	return res, nil
+}
+
+func (op *LaSumOp) IsSourceOp() bool {
+	return false
+}
+
+func (op *LaSumOp) IsSinkOp() bool {
+	return false
+}
+
+func (op *LaSumOp) IsKeyByOp() bool {
+	return false
+}
+
+func (op *LaSumOp) Checkpoint() []byte {
+	// TODO: checkpoint
+	return nil
+}
+
+func (op *LaSumOp) RestoreFromCheckpoint([]byte) error {
+	return nil
 }
