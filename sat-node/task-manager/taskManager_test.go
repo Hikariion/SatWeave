@@ -61,7 +61,7 @@ func testTaskManager(t *testing.T) {
 		err = sun.StreamHelper.StartExecuteTasks(jobId, logicalTaskMap, executeTaskMap)
 		assert.NoError(t, err)
 
-		time.Sleep(30 * time.Second)
+		time.Sleep(time.Second * 100)
 	})
 
 }

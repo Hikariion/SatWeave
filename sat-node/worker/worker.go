@@ -160,7 +160,10 @@ func (w *Worker) ComputeCore() error {
 
 			w.pushOutputData(isSinkOp, outputData, dataType, partitionKey)
 		}
+		break
 	}
+
+	return nil
 }
 
 /* record.data

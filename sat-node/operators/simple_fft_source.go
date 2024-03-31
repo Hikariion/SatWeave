@@ -32,7 +32,7 @@ func (op *SimpleFFTSource) Init(initMap map[string]interface{}) {
 		count := 0
 		for {
 			if count >= 10 {
-				return
+				break
 			}
 			N := int(op.fs * op.T)
 
@@ -67,6 +67,14 @@ func (op *SimpleFFTSource) Init(initMap map[string]interface{}) {
 
 			time.Sleep(1 * time.Second)
 		}
+
+		record := &common2.Record{
+			DataType: common2.DataType_FINISH,
+			Data:     nil,
+		}
+
+		op.InputChannel <- record
+
 	}()
 }
 
