@@ -2,6 +2,7 @@ package operators
 
 import (
 	"math"
+	"math/rand"
 	common2 "satweave/messenger/common"
 	"satweave/utils/common"
 	"time"
@@ -10,7 +11,7 @@ import (
 type SimpleFFTSource struct {
 	name string
 	// 用于 Source 算子和 Worker 之间通信
-	InputChannel chan common2.Record
+	InputChannel chan *common2.Record
 
 	// For dsp
 	fs    float64
@@ -20,7 +21,7 @@ type SimpleFFTSource struct {
 }
 
 func (op *SimpleFFTSource) Init(initMap map[string]interface{}) {
-	op.InputChannel = initMap["InputChannel"].(chan common2.Record)
+	op.InputChannel = initMap["InputChannel"].(chan *common2.Record)
 
 	op.fs = 1000.0
 	op.T = 1.0
@@ -30,14 +31,24 @@ func (op *SimpleFFTSource) Init(initMap map[string]interface{}) {
 	go func() {
 		count := 0
 		for {
-			if count > 20 {
+			if count >= 10 {
 				return
 			}
 			N := int(op.fs * op.T)
+
+			rand.Seed(time.Now().UnixNano()) // 初始化随机数种子
+
 			signal := make([]complex128, N)
+			// 为每次循环生成随机的频率和相位
+			fLow := rand.Float64()*5 + 5              // 产生5到10之间的随机低频
+			fHigh := rand.Float64()*45 + 5            // 产生5到50之间的随机高频
+			phaseLow := rand.Float64() * 2 * math.Pi  // 为低频生成随机相位
+			phaseHigh := rand.Float64() * 2 * math.Pi // 为高频生成随机相位
 			for n := 0; n < N; n++ {
-				t := float64(n) / op.fs
-				signal[n] = complex(math.Sin(2*math.Pi*op.fLow*t)+0.5*math.Sin(2*math.Pi*op.fHigh*t), 0)
+				if rand.Float64() <= 2.0/3.0 {
+					t := float64(n) / op.fs
+					signal[n] = complex(math.Sin(2*math.Pi*fLow*t+phaseLow)+0.5*math.Sin(2*math.Pi*fHigh*t+phaseHigh), 0)
+				}
 			}
 
 			data, err := common.Complex128SliceToBytes(signal)
@@ -45,7 +56,7 @@ func (op *SimpleFFTSource) Init(initMap map[string]interface{}) {
 				return
 			}
 
-			record := common2.Record{
+			record := &common2.Record{
 				DataType: common2.DataType_BINARY,
 				Data:     data,
 			}
@@ -53,6 +64,7 @@ func (op *SimpleFFTSource) Init(initMap map[string]interface{}) {
 			op.InputChannel <- record
 
 			count++
+
 			time.Sleep(1 * time.Second)
 		}
 	}()

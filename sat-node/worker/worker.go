@@ -123,9 +123,8 @@ func (w *Worker) ComputeCore() error {
 	taskInstance.SetName(w.SubTaskName)
 
 	initMap := make(map[string]interface{})
-	if isSourceOp {
-		initMap["InputChannel"] = w.InputChannel
-	}
+	initMap["InputChannel"] = w.InputChannel
+	initMap["counter"] = uint64(0)
 
 	taskInstance.Init(initMap)
 

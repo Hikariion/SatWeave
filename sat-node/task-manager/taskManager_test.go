@@ -40,7 +40,7 @@ func testTaskManager(t *testing.T) {
 	sun.PrintTaskManagerTable()
 
 	t.Run("test sun schedule ", func(t *testing.T) {
-		userTasks, err := common.ReadUserDefinedTasks("./test-files/test.yaml")
+		userTasks, err := common.ReadUserDefinedTasks("./test-files/FFT_config.yaml")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, userTasks)
 		//logger.Infof("%v", userTasks)
@@ -61,7 +61,7 @@ func testTaskManager(t *testing.T) {
 		err = sun.StreamHelper.StartExecuteTasks(jobId, logicalTaskMap, executeTaskMap)
 		assert.NoError(t, err)
 
-		time.Sleep(2 * time.Second)
+		time.Sleep(30 * time.Second)
 	})
 
 }

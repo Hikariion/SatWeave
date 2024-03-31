@@ -4,7 +4,7 @@ tasks:
     locate: satellite1
   - cls: FFTOp
     currency: 1
-    input_tasks: [HttpSource]
+    input_tasks: [SimpleFFTSource]
     locate: satellite1
   - cls: HaFilterOp
     currency: 1
@@ -14,7 +14,7 @@ tasks:
     currency: 1
     input_tasks: [HaFilterOp]
     locate: satellite1
-  - cls: SimpleSink
+  - cls: SimpleFFTSink
     currency: 1
     input_tasks: [HaSumOp]
     locate: satellite1

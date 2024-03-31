@@ -12,4 +12,5 @@ var FactoryMap = map[string]OperatorFactory{
 	"LaFilterOp":      func() OperatorBase { return new(LaFilterOp) },
 	"LaSumOp":         func() OperatorBase { return new(LaSumOp) },
 	"SimpleFFTSource": func() OperatorBase { return new(SimpleFFTSource) },
+	"SimpleFFTSink":   func() OperatorBase { return new(SimpleFFTSink) },
 }

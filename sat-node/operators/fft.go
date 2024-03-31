@@ -24,9 +24,10 @@ func (op *FFTOp) Compute(data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	signalFFT := fft.FFT(signal)
+	fft.FFT(signal)
 
-	res, err := common.Complex128SliceToBytes(signalFFT)
+	res, err := common.Complex128SliceToBytes(signal)
+
 	if err != nil {
 		return nil, err
 	}
