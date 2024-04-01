@@ -7,6 +7,8 @@ package worker
 import (
 	"context"
 	"github.com/google/uuid"
+	"os"
+	"path"
 	"satweave/messenger/common"
 	"satweave/sat-node/operators"
 	common2 "satweave/utils/common"
@@ -149,7 +151,22 @@ func (w *Worker) ComputeCore() error {
 					return err
 				}
 			} else if dataType == common.DataType_CHECKPOINT {
-				//_ = w.checkpointEventProcess(taskInstance, isSinkOp, inputData)
+				data := w.checkpointEventProcess(isSinkOp)
+				if data != nil {
+					_ = os.MkdirAll("snapshot", os.ModePerm)
+					// 存储data
+					file, err := os.Create(path.Join("snapshot", w.jobId+"-"+w.clsName+".bin"))
+					if err != nil {
+						logger.Errorf("Failed to create file: %v", err)
+					}
+					_, err = file.Write(data)
+					if err != nil {
+						logger.Errorf("Failed to write data: %v", err)
+					}
+					_ = file.Sync()
+					_ = file.Close()
+				}
+
 			} else if dataType == common.DataType_FINISH {
 				_ = w.finishEventProcess(taskInstance, isSinkOp, inputData)
 				logger.Infof("%s finished successfully!", w.SubTaskName)
@@ -226,7 +243,7 @@ func (w *Worker) finishEventProcess(taskInstance operators.OperatorBase, isSinkO
 	if isSinkOp {
 		return nil
 	}
-	w.PushFinishEventToOutputChannel(w.OutputChannel)
+	w.PushFinishEventToOutputChannel()
 	return nil
 }
 
@@ -253,18 +270,39 @@ func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partition
 }
 
 func (w *Worker) PushEventRecordToOutputChannel(dataType common.DataType,
-	data []byte, outputChannel chan *common.Record) {
+	data []byte) {
+	if w.isSinkOp() {
+		return
+	}
 	record := &common.Record{
 		DataType:     dataType,
 		Data:         data,
 		PartitionKey: -1,
 	}
-	outputChannel <- record
+	w.OutputChannel <- record
 }
 
-func (w *Worker) PushFinishEventToOutputChannel(outputChannel chan *common.Record) {
-	w.PushEventRecordToOutputChannel(common.DataType_FINISH, nil, outputChannel)
+func (w *Worker) PushFinishEventToOutputChannel() {
+	w.PushEventRecordToOutputChannel(common.DataType_FINISH, nil)
 }
+
+// --------------------------- checkpoint ----------------------------
+func (w *Worker) checkpointEventProcess(isSinkOp bool) []byte {
+	if isSinkOp {
+		return nil
+	}
+	data := w.cls.Checkpoint()
+
+	w.PushCheckpointEventToOutputChannel(w.OutputChannel)
+
+	return data
+}
+
+func (w *Worker) PushCheckpointEventToOutputChannel(outputChannel chan *common.Record) {
+	w.PushEventRecordToOutputChannel(common.DataType_CHECKPOINT, nil)
+}
+
+// --------------------------- Run ----------------------------
 
 // Run 启动 Worker
 func (w *Worker) Run() {

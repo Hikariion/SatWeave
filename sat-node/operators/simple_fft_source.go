@@ -65,6 +65,14 @@ func (op *SimpleFFTSource) Init(initMap map[string]interface{}) {
 
 			count++
 
+			if count == 5 {
+				record := &common2.Record{
+					DataType: common2.DataType_CHECKPOINT,
+					Data:     nil,
+				}
+				op.InputChannel <- record
+			}
+
 			time.Sleep(1 * time.Second)
 		}
 

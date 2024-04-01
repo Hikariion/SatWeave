@@ -56,7 +56,7 @@ func (ipr *InputPartitionReceiver) RecvData(record *common.Record) {
 // PhraseDataAndCarryToChannel 用于解析 InnerQueue 中接收到的数据，并且写入 InputChannel
 func (ipr *InputPartitionReceiver) PhraseDataAndCarryToChannel() {
 	logger.Infof("start PhraseDataAndCarryToChannel....")
-	needBarrierDataType := []common.DataType{common.DataType_CHECKPOINT, common.DataType_FINISH}
+	//needBarrierDataType := []common.DataType{common.DataType_CHECKPOINT, common.DataType_FINISH}
 	for {
 		select {
 		case <-ipr.ctx.Done():
@@ -65,27 +65,28 @@ func (ipr *InputPartitionReceiver) PhraseDataAndCarryToChannel() {
 		default:
 			// 从 inputQueue 中读取数据
 			record := <-ipr.InnerQueue
-			// 如果是Barrier的数据类型，需要阻塞
-			if ContainType(needBarrierDataType, record.DataType) {
-				ipr.EventBarrier.Done()
-				logger.Infof("Receive Barrier wg --, begin to wait ... ")
-				ipr.EventBarrier.Wait()
-				logger.Infof("Block finished, begin to make checkpoint")
-				// 重置 wg，每个协程都只执行一次
-				ipr.EventBarrier.Add(1)
-				// allowOne 用于只让一个协程往 output 发送数据
-				select {
-				case <-ipr.AllowOne:
-					logger.Infof("Be the allowOne, transfer checkpoint or finish signal")
-					ipr.InputChannel <- record
-					//// TODO 一秒会不会有点久
-					//time.Sleep(100 * time.Second)
-					ipr.AllowOne <- struct{}{}
-				default:
-				}
-			} else {
-				ipr.InputChannel <- record
-			}
+			ipr.InputChannel <- record
+			//// 如果是Barrier的数据类型，需要阻塞
+			//if ContainType(needBarrierDataType, record.DataType) {
+			//	ipr.EventBarrier.Done()
+			//	logger.Infof("Receive Barrier wg --, begin to wait ... ")
+			//	ipr.EventBarrier.Wait()
+			//	logger.Infof("Block finished, begin to make checkpoint")
+			//	// 重置 wg，每个协程都只执行一次
+			//	ipr.EventBarrier.Add(1)
+			//	// allowOne 用于只让一个协程往 output 发送数据
+			//	select {
+			//	case <-ipr.AllowOne:
+			//		logger.Infof("Be the allowOne, transfer checkpoint or finish signal")
+			//		ipr.InputChannel <- record
+			//		//// TODO 一秒会不会有点久
+			//		//time.Sleep(100 * time.Second)
+			//		ipr.AllowOne <- struct{}{}
+			//	default:
+			//	}
+			//} else {
+			//	ipr.InputChannel <- record
+			//}
 		}
 	}
 }

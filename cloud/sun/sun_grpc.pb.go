@@ -26,6 +26,7 @@ const (
 	Sun_ReportClusterInfo_FullMethodName   = "/messenger.Sun/ReportClusterInfo"
 	Sun_SubmitJob_FullMethodName           = "/messenger.Sun/SubmitJob"
 	Sun_RegisterTaskManager_FullMethodName = "/messenger.Sun/RegisterTaskManager"
+	Sun_SaveSnapShot_FullMethodName        = "/messenger.Sun/SaveSnapShot"
 )
 
 // SunClient is the client API for Sun service.
@@ -39,6 +40,7 @@ type SunClient interface {
 	SubmitJob(ctx context.Context, in *SubmitJobRequest, opts ...grpc.CallOption) (*SubmitJobResponse, error)
 	// from task manager
 	RegisterTaskManager(ctx context.Context, in *RegisterTaskManagerRequest, opts ...grpc.CallOption) (*RegisterTaskManagerResponse, error)
+	SaveSnapShot(ctx context.Context, in *SaveSnapShotRequest, opts ...grpc.CallOption) (*common.Result, error)
 }
 
 type sunClient struct {
@@ -94,6 +96,15 @@ func (c *sunClient) RegisterTaskManager(ctx context.Context, in *RegisterTaskMan
 	return out, nil
 }
 
+func (c *sunClient) SaveSnapShot(ctx context.Context, in *SaveSnapShotRequest, opts ...grpc.CallOption) (*common.Result, error) {
+	out := new(common.Result)
+	err := c.cc.Invoke(ctx, Sun_SaveSnapShot_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SunServer is the server API for Sun service.
 // All implementations must embed UnimplementedSunServer
 // for forward compatibility
@@ -105,6 +116,7 @@ type SunServer interface {
 	SubmitJob(context.Context, *SubmitJobRequest) (*SubmitJobResponse, error)
 	// from task manager
 	RegisterTaskManager(context.Context, *RegisterTaskManagerRequest) (*RegisterTaskManagerResponse, error)
+	SaveSnapShot(context.Context, *SaveSnapShotRequest) (*common.Result, error)
 	mustEmbedUnimplementedSunServer()
 }
 
@@ -126,6 +138,9 @@ func (UnimplementedSunServer) SubmitJob(context.Context, *SubmitJobRequest) (*Su
 }
 func (UnimplementedSunServer) RegisterTaskManager(context.Context, *RegisterTaskManagerRequest) (*RegisterTaskManagerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterTaskManager not implemented")
+}
+func (UnimplementedSunServer) SaveSnapShot(context.Context, *SaveSnapShotRequest) (*common.Result, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveSnapShot not implemented")
 }
 func (UnimplementedSunServer) mustEmbedUnimplementedSunServer() {}
 
@@ -230,6 +245,24 @@ func _Sun_RegisterTaskManager_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Sun_SaveSnapShot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveSnapShotRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SunServer).SaveSnapShot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sun_SaveSnapShot_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SunServer).SaveSnapShot(ctx, req.(*SaveSnapShotRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Sun_ServiceDesc is the grpc.ServiceDesc for Sun service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -256,6 +289,10 @@ var Sun_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RegisterTaskManager",
 			Handler:    _Sun_RegisterTaskManager_Handler,
+		},
+		{
+			MethodName: "SaveSnapShot",
+			Handler:    _Sun_SaveSnapShot_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -16,6 +16,7 @@ service Sun {
 
   // from task manager
   rpc RegisterTaskManager(RegisterTaskManagerRequest) returns (RegisterTaskManagerResponse) {}
+  rpc SaveSnapShot(SaveSnapShotRequest) returns (Result) {}
 
 //  rpc GetRegisterTaskManagerTable(NilRequest) returns (TaskManagerResult) {}
 
@@ -29,6 +30,10 @@ service Sun {
 //  rpc AcknowledgeCheckpoint(AcknowledgeCheckpointRequest) returns (NilResponse) {}
 }
 
+message SaveSnapShotRequest {
+  string file_path = 1;
+  bytes state = 2;
+}
 
 message RegisterTaskManagerResponse {
   bool success = 1;
@@ -37,8 +42,6 @@ message RegisterTaskManagerResponse {
 message RegisterTaskManagerRequest {
   TaskManagerDescription task_manager_desc = 1;
 }
-
-
 
 message TriggerCheckpointRequest {
   string job_id = 1;

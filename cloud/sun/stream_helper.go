@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"os"
 	"satweave/messenger"
 	"satweave/messenger/common"
 	task_manager "satweave/shared/task-manager"
+	common2 "satweave/utils/common"
 	"satweave/utils/generator"
 	"satweave/utils/logger"
 )
@@ -15,6 +17,7 @@ import (
 type StreamHelper struct {
 	taskRegisteredTaskManagerTable *RegisteredTaskManagerTable
 	Scheduler                      *DefaultScheduler
+	snapshotDir                    string
 
 	//checkpointCoordinator *CheckpointCoordinator
 	//jobInfoDir  string
@@ -210,10 +213,29 @@ func (s *StreamHelper) getSubTaskName(jobId string, clsName string, idx, currenc
 	return fmt.Sprintf("%s#%s#(%d/%d)", jobId, clsName, idx+1, currency)
 }
 
+func (s *StreamHelper) SaveSnapShot(filePath string, state []byte) error {
+	file, err := os.Create(filePath)
+	defer file.Close()
+	if err != nil {
+		return err
+	}
+
+	_, err = file.Write(state)
+
+	file.Sync()
+
+	return nil
+}
+
 func NewStreamHelper() *StreamHelper {
 	streamHelper := &StreamHelper{
 		taskRegisteredTaskManagerTable: newRegisteredTaskManagerTable(),
+		snapshotDir:                    "./snapshot",
 	}
+
+	// 创建 snapshot 目录
+	_ = common2.InitPath(streamHelper.snapshotDir)
+
 	streamHelper.Scheduler = newUserDefinedScheduler(streamHelper.taskRegisteredTaskManagerTable)
 	return streamHelper
 }

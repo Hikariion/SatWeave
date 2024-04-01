@@ -89,6 +89,20 @@ func (s *Sun) RegisterTaskManager(ctx context.Context, request *RegisterTaskMana
 	return s.StreamHelper.RegisterTaskManager(ctx, request)
 }
 
+func (s *Sun) SaveSnapShot(_ context.Context, request *SaveSnapShotRequest) (*common.Result, error) {
+	filePath := request.FilePath
+	data := request.State
+	err := s.StreamHelper.SaveSnapShot(filePath, data)
+	if err != nil {
+		return &common.Result{
+			Status: common.Result_FAIL,
+		}, err
+	}
+	return &common.Result{
+		Status: common.Result_OK,
+	}, nil
+}
+
 //func (s *Sun) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*SubmitJobResponse, error) {
 //	jobId := s.idGenerator.Next()
 //
@@ -186,12 +200,7 @@ func NewSun(rpc *messenger.RpcServer) *Sun {
 		cachedInfo: map[string]*infos.NodeInfo{},
 
 		StreamHelper: NewStreamHelper(),
-
-		//jobInfoDir:  "jm/jobid_%s",
-		//snapshotDir: "jm/jobid_%s/snapshot/%s/partition_%s",
 	}
-	//sun.checkpointCoordinator = NewCheckpointCoordinator(sun.taskRegisteredTaskManagerTable)
-	//sun.Scheduler = newUserDefinedScheduler(sun.taskRegisteredTaskManagerTable)
 	RegisterSunServer(rpc, &sun)
 	return &sun
 }

@@ -50,8 +50,8 @@ func (op *HaSumOp) IsKeyByOp() bool {
 }
 
 func (op *HaSumOp) Checkpoint() []byte {
-	// TODO: checkpoint
-	return nil
+	data := common.Uint64ToBytes(op.counter)
+	return data
 }
 
 func (op *HaSumOp) RestoreFromCheckpoint([]byte) error {
