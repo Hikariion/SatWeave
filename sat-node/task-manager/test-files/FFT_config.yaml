@@ -4,17 +4,21 @@ tasks:
     locate: satellite1
   - cls: FFTOp
     currency: 1
-    input_tasks: [SimpleFFTSource]
+    input_tasks:
+      - SimpleFFTSource
     locate: satellite1
   - cls: HaFilterOp
     currency: 1
-    input_tasks: [FFTOp]
+    input_tasks:
+      - FFTOp
     locate: satellite1
   - cls: HaSumOp
     currency: 1
-    input_tasks: [HaFilterOp]
+    input_tasks:
+      - HaFilterOp
     locate: satellite1
   - cls: SimpleFFTSink
     currency: 1
-    input_tasks: [HaSumOp]
+    input_tasks:
+      - HaSumOp
     locate: satellite1

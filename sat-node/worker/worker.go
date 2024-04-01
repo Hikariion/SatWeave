@@ -129,6 +129,7 @@ func (w *Worker) ComputeCore() error {
 	taskInstance.Init(initMap)
 
 	for {
+		flag := false
 		select {
 		case <-w.ctx.Done():
 			logger.Infof("finish cls %v", w.clsName)
@@ -152,7 +153,7 @@ func (w *Worker) ComputeCore() error {
 			} else if dataType == common.DataType_FINISH {
 				_ = w.finishEventProcess(taskInstance, isSinkOp, inputData)
 				logger.Infof("%s finished successfully!", w.SubTaskName)
-				break
+				flag = true
 			} else {
 				logger.Errorf("Failed unknown data type")
 				return errno.UnknownDataType
@@ -160,9 +161,11 @@ func (w *Worker) ComputeCore() error {
 
 			w.pushOutputData(isSinkOp, outputData, dataType, partitionKey)
 		}
-		break
+		if flag {
+			break
+		}
 	}
-
+	w.cancel()
 	return nil
 }
 
