@@ -15,13 +15,6 @@ type HttpSource struct {
 	currentDataId     uint64
 }
 
-// DataStruct 定义了一个可以序列化为 JSON 的结构体
-type DataStruct struct {
-	DataID   uint64 `json:"dataId"`
-	Content  []byte `json:"content"`
-	Finished bool   `json:"finished"`
-}
-
 func (op *HttpSource) Init(initMap map[string]interface{}) {
 	if _, ok := initMap["dataId"]; !ok {
 		op.BeginDataId = initMap["dataId"].(uint64)

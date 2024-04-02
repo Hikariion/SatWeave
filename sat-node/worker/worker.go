@@ -7,8 +7,8 @@ package worker
 import (
 	"context"
 	"github.com/google/uuid"
-	"os"
-	"path"
+	"satweave/cloud/sun"
+	"satweave/messenger"
 	"satweave/messenger/common"
 	"satweave/sat-node/operators"
 	common2 "satweave/utils/common"
@@ -153,18 +153,21 @@ func (w *Worker) ComputeCore() error {
 			} else if dataType == common.DataType_CHECKPOINT {
 				data := w.checkpointEventProcess(isSinkOp)
 				if data != nil {
-					_ = os.MkdirAll("snapshot", os.ModePerm)
-					// 存储data
-					file, err := os.Create(path.Join("snapshot", w.jobId+"-"+w.clsName+".bin"))
+					conn, err := messenger.GetRpcConn(w.jobManagerHost, w.jobManagerPort)
 					if err != nil {
-						logger.Errorf("Failed to create file: %v", err)
+						logger.Errorf("GetRpcConn Err: %v", err)
+						return err
 					}
-					_, err = file.Write(data)
+					client := sun.NewSunClient(conn)
+					result, err := client.SaveSnapShot(context.Background(), &sun.SaveSnapShotRequest{
+						FilePath: w.jobId + "-" + w.SubTaskName,
+						State:    data,
+					})
 					if err != nil {
-						logger.Errorf("Failed to write data: %v", err)
+						logger.Errorf("SaveSnapShot Err: %v", err)
+						return err
 					}
-					_ = file.Sync()
-					_ = file.Close()
+					logger.Infof("SaveSnapShot result: %v", result)
 				}
 
 			} else if dataType == common.DataType_FINISH {

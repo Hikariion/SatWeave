@@ -152,7 +152,7 @@ func (u *DefaultScheduler) AskForAvailableWorkers(logicalMap map[string][]*commo
 }
 
 func (u *DefaultScheduler) getSubTaskName(jobId string, clsName string, idx, currency int) string {
-	return fmt.Sprintf("%s#%s#(%d/%d)", jobId, clsName, idx+1, currency)
+	return fmt.Sprintf("%s#%s#-%d-%d", jobId, clsName, idx+1, currency)
 }
 
 func newUserDefinedScheduler(table *RegisteredTaskManagerTable) *DefaultScheduler {

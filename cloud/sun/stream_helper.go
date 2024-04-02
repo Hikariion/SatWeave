@@ -6,6 +6,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"os"
+	"path"
 	"satweave/messenger"
 	"satweave/messenger/common"
 	task_manager "satweave/shared/task-manager"
@@ -210,11 +211,11 @@ func (s *StreamHelper) PrintTaskManagerTable() {
 }
 
 func (s *StreamHelper) getSubTaskName(jobId string, clsName string, idx, currency int) string {
-	return fmt.Sprintf("%s#%s#(%d/%d)", jobId, clsName, idx+1, currency)
+	return fmt.Sprintf("%s#%s#-%d-%d", jobId, clsName, idx+1, currency)
 }
 
 func (s *StreamHelper) SaveSnapShot(filePath string, state []byte) error {
-	file, err := os.Create(filePath)
+	file, err := os.Create(path.Join(s.snapshotDir, filePath))
 	defer file.Close()
 	if err != nil {
 		return err
