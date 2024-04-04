@@ -67,6 +67,6 @@ func (op *SimpleSource) Checkpoint() []byte {
 	return nil
 }
 
-func (op *SimpleSource) RestoreFromCheckpoint([]byte) error {
+func (op *SimpleSource) RestoreFromCheckpoint(SunIp, ClsName string, SunPort uint64) error {
 	return nil
 }

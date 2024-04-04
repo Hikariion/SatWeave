@@ -1,8 +1,12 @@
 package operators
 
 import (
+	"context"
 	"math/cmplx"
+	"satweave/cloud/sun"
+	"satweave/messenger"
 	"satweave/utils/common"
+	"satweave/utils/logger"
 )
 
 // HaSumOp 是高通聚合算子
@@ -16,7 +20,6 @@ func (op *HaSumOp) SetName(name string) {
 }
 
 func (op *HaSumOp) Init(initMap map[string]interface{}) {
-	op.counter = initMap["counter"].(uint64)
 }
 
 func (op *HaSumOp) Compute(data []byte) ([]byte, error) {
@@ -54,6 +57,25 @@ func (op *HaSumOp) Checkpoint() []byte {
 	return data
 }
 
-func (op *HaSumOp) RestoreFromCheckpoint([]byte) error {
+func (op *HaSumOp) RestoreFromCheckpoint(SunIp, ClsName string, SunPort uint64) error {
+	conn, err := messenger.GetRpcConn(SunIp, SunPort)
+	if err != nil {
+		logger.Errorf("Fail to get rpc conn on TaskManager %v", SunIp)
+		return err
+	}
+	client := sun.NewSunClient(conn)
+	result, err := client.RestoreFromCheckpoint(context.Background(),
+		&sun.RestoreFromCheckpointRequest{
+			SubtaskName: ClsName,
+		})
+	if err != nil {
+		return err
+	}
+	state := result.State
+	if state == nil {
+		op.counter = 0
+	} else {
+		op.counter = common.BytesToUint64(state)
+	}
 	return nil
 }

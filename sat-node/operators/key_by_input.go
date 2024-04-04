@@ -32,6 +32,6 @@ func (op *KeyByInputOp) Checkpoint() []byte {
 	return nil
 }
 
-func (op *KeyByInputOp) RestoreFromCheckpoint([]byte) error {
+func (op *KeyByInputOp) RestoreFromCheckpoint(SunIp, ClsName string, SunPort uint64) error {
 	return nil
 }

@@ -214,8 +214,32 @@ func (s *StreamHelper) getSubTaskName(jobId string, clsName string, idx, currenc
 	return fmt.Sprintf("%s#%s#-%d-%d", jobId, clsName, idx+1, currency)
 }
 
-func (s *StreamHelper) SaveSnapShot(filePath string, state []byte) error {
-	file, err := os.Create(path.Join(s.snapshotDir, filePath))
+func (s *StreamHelper) RestoreFromCheckpoint(SubtaskName string) ([]byte, error) {
+	fullPath := path.Join(s.snapshotDir, SubtaskName)
+
+	// 使用os.Stat检查文件是否存在
+	if _, err := os.Stat(fullPath); err != nil {
+		if os.IsNotExist(err) {
+			// 文件不存在，返回nil
+			return nil, nil
+		}
+		// 其他错误，这里简单处理为返回nil
+		// 实际应用中你可能需要更复杂的错误处理
+		return nil, err
+	}
+
+	data, err := os.ReadFile(fullPath)
+	if err != nil {
+		// 读取错误，返回nil
+		// 同样，你可能需要根据实际情况处理这类错误
+		return nil, err
+	}
+
+	return data, err
+}
+
+func (s *StreamHelper) SaveSnapShot(SubtaskName string, state []byte) error {
+	file, err := os.Create(path.Join(s.snapshotDir, SubtaskName))
 	defer file.Close()
 	if err != nil {
 		return err

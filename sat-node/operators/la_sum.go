@@ -54,6 +54,6 @@ func (op *LaSumOp) Checkpoint() []byte {
 	return nil
 }
 
-func (op *LaSumOp) RestoreFromCheckpoint([]byte) error {
+func (op *LaSumOp) RestoreFromCheckpoint(SunIp, ClsName string, SunPort uint64) error {
 	return nil
 }

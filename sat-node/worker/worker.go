@@ -126,8 +126,8 @@ func (w *Worker) ComputeCore() error {
 
 	initMap := make(map[string]interface{})
 	initMap["InputChannel"] = w.InputChannel
-	initMap["counter"] = uint64(0)
 
+	taskInstance.RestoreFromCheckpoint(w.jobManagerHost, w.SubTaskName, w.jobManagerPort)
 	taskInstance.Init(initMap)
 
 	for {
@@ -160,7 +160,7 @@ func (w *Worker) ComputeCore() error {
 					}
 					client := sun.NewSunClient(conn)
 					result, err := client.SaveSnapShot(context.Background(), &sun.SaveSnapShotRequest{
-						FilePath: w.jobId + "-" + w.SubTaskName,
+						FilePath: w.SubTaskName,
 						State:    data,
 					})
 					if err != nil {

@@ -52,6 +52,6 @@ func (op *FFTOp) Checkpoint() []byte {
 	return nil
 }
 
-func (op *FFTOp) RestoreFromCheckpoint([]byte) error {
+func (op *FFTOp) RestoreFromCheckpoint(SunIp, ClsName string, SunPort uint64) error {
 	return nil
 }

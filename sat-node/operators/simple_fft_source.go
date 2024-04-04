@@ -1,17 +1,27 @@
 package operators
 
 import (
-	"math"
-	"math/rand"
+	"bufio"
+	"context"
+	"fmt"
+	"os"
+	"satweave/cloud/sun"
+	"satweave/messenger"
 	common2 "satweave/messenger/common"
 	"satweave/utils/common"
+	"satweave/utils/logger"
+	"strconv"
+	"strings"
 	"time"
 )
+
+const offset = 30
 
 type SimpleFFTSource struct {
 	name string
 	// 用于 Source 算子和 Worker 之间通信
 	InputChannel chan *common2.Record
+	nextRecordId uint64
 
 	// For dsp
 	fs    float64
@@ -22,33 +32,28 @@ type SimpleFFTSource struct {
 
 func (op *SimpleFFTSource) Init(initMap map[string]interface{}) {
 	op.InputChannel = initMap["InputChannel"].(chan *common2.Record)
+	op.nextRecordId = 0
 
 	op.fs = 1000.0
 	op.T = 1.0
 	op.fHigh = 50.0
 	op.fLow = 5.0
 
+	endId := op.nextRecordId + (offset / 2)
+
 	go func() {
-		count := 0
 		for {
-			if count >= 10 {
-				break
-			}
-			N := int(op.fs * op.T)
+			signal, err := readSignalByID("test-files/signals.txt", op.nextRecordId)
 
-			rand.Seed(time.Now().UnixNano()) // 初始化随机数种子
-
-			signal := make([]complex128, N)
-			// 为每次循环生成随机的频率和相位
-			fLow := rand.Float64()*5 + 5              // 产生5到10之间的随机低频
-			fHigh := rand.Float64()*45 + 5            // 产生5到50之间的随机高频
-			phaseLow := rand.Float64() * 2 * math.Pi  // 为低频生成随机相位
-			phaseHigh := rand.Float64() * 2 * math.Pi // 为高频生成随机相位
-			for n := 0; n < N; n++ {
-				if rand.Float64() <= 2.0/3.0 {
-					t := float64(n) / op.fs
-					signal[n] = complex(math.Sin(2*math.Pi*fLow*t+phaseLow)+0.5*math.Sin(2*math.Pi*fHigh*t+phaseHigh), 0)
+			if err != nil {
+				record := &common2.Record{
+					DataType: common2.DataType_FINISH,
+					Data:     nil,
 				}
+
+				op.InputChannel <- record
+
+				return
 			}
 
 			data, err := common.Complex128SliceToBytes(signal)
@@ -63,9 +68,9 @@ func (op *SimpleFFTSource) Init(initMap map[string]interface{}) {
 
 			op.InputChannel <- record
 
-			count++
+			op.nextRecordId++
 
-			if count == 5 {
+			if op.nextRecordId == endId {
 				record := &common2.Record{
 					DataType: common2.DataType_CHECKPOINT,
 					Data:     nil,
@@ -75,14 +80,6 @@ func (op *SimpleFFTSource) Init(initMap map[string]interface{}) {
 
 			time.Sleep(1 * time.Second)
 		}
-
-		record := &common2.Record{
-			DataType: common2.DataType_FINISH,
-			Data:     nil,
-		}
-
-		op.InputChannel <- record
-
 	}()
 }
 
@@ -107,9 +104,83 @@ func (op *SimpleFFTSource) IsKeyByOp() bool {
 }
 
 func (op *SimpleFFTSource) Checkpoint() []byte {
+	res := common.Uint64ToBytes(op.nextRecordId)
+	return res
+}
+
+func (op *SimpleFFTSource) RestoreFromCheckpoint(SunIp, ClsName string, SunPort uint64) error {
+	conn, err := messenger.GetRpcConn(SunIp, SunPort)
+	if err != nil {
+		logger.Errorf("Fail to get rpc conn on TaskManager %v", SunIp)
+		return err
+	}
+	client := sun.NewSunClient(conn)
+	result, err := client.RestoreFromCheckpoint(context.Background(),
+		&sun.RestoreFromCheckpointRequest{
+			SubtaskName: ClsName,
+		})
+	if err != nil {
+		return err
+	}
+	state := result.State
+	if state == nil {
+		op.nextRecordId = 0
+	} else {
+		op.nextRecordId = common.BytesToUint64(state)
+	}
 	return nil
 }
 
-func (op *SimpleFFTSource) RestoreFromCheckpoint([]byte) error {
-	return nil
+func readSignalByID(filePath string, id uint64) ([]complex128, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("error opening file: %v", err)
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	var foundID bool
+	var signal []complex128
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// 尝试将行转换为ID
+		currentID, err := strconv.Atoi(line)
+		if err == nil {
+			if currentID == int(id) {
+				foundID = true // 找到匹配的ID
+				continue       // 继续读取下一行以获取信号数据
+			}
+		}
+
+		if foundID {
+			// 找到ID后，当前行包含信号数据
+			dataParts := strings.Split(line, ", ")
+			for _, part := range dataParts {
+				values := strings.Split(part, " ")
+				if len(values) != 2 {
+					continue // 如果数据格式不符，跳过此数据点
+				}
+				realPart, err := strconv.ParseFloat(values[0], 64)
+				if err != nil {
+					continue // 如果实部无法转换，跳过此数据点
+				}
+				imagPart, err := strconv.ParseFloat(values[1], 64)
+				if err != nil {
+					continue // 如果虚部无法转换，跳过此数据点
+				}
+				signal = append(signal, complex(realPart, imagPart))
+			}
+			return signal, nil // 返回找到的信号
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading file: %v", err)
+	}
+
+	if !foundID {
+		return nil, fmt.Errorf("signal not found for ID %d", id)
+	}
+	return signal, nil
 }

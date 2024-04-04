@@ -103,6 +103,20 @@ func (s *Sun) SaveSnapShot(_ context.Context, request *SaveSnapShotRequest) (*co
 	}, nil
 }
 
+func (s *Sun) RestoreFromCheckpoint(_ context.Context, request *RestoreFromCheckpointRequest) (*RestoreFromCheckpointResponse, error) {
+	state, err := s.StreamHelper.RestoreFromCheckpoint(request.SubtaskName)
+	if err != nil {
+		return &RestoreFromCheckpointResponse{
+			Success: false,
+			State:   nil,
+		}, err
+	}
+	return &RestoreFromCheckpointResponse{
+		Success: true,
+		State:   state,
+	}, nil
+}
+
 //func (s *Sun) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*SubmitJobResponse, error) {
 //	jobId := s.idGenerator.Next()
 //

@@ -10,5 +10,5 @@ type OperatorBase interface {
 	IsSourceOp() bool
 	IsSinkOp() bool
 	IsKeyByOp() bool
-	RestoreFromCheckpoint([]byte) error
+	RestoreFromCheckpoint(SunIp, ClsName string, SunPort uint64) error
 }

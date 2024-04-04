@@ -68,6 +68,6 @@ func (op *LaFilterOp) Checkpoint() []byte {
 	return nil
 }
 
-func (op *LaFilterOp) RestoreFromCheckpoint([]byte) error {
+func (op *LaFilterOp) RestoreFromCheckpoint(SunIp, ClsName string, SunPort uint64) error {
 	return nil
 }

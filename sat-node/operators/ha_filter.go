@@ -68,6 +68,7 @@ func (op *HaFilterOp) Checkpoint() []byte {
 	return nil
 }
 
-func (op *HaFilterOp) RestoreFromCheckpoint([]byte) error {
+func (op *HaFilterOp) RestoreFromCheckpoint(SunIp, ClsName string, SunPort uint64) error {
+
 	return nil
 }

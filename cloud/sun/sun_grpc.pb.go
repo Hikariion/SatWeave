@@ -21,12 +21,13 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Sun_MoonRegister_FullMethodName        = "/messenger.Sun/MoonRegister"
-	Sun_GetLeaderInfo_FullMethodName       = "/messenger.Sun/GetLeaderInfo"
-	Sun_ReportClusterInfo_FullMethodName   = "/messenger.Sun/ReportClusterInfo"
-	Sun_SubmitJob_FullMethodName           = "/messenger.Sun/SubmitJob"
-	Sun_RegisterTaskManager_FullMethodName = "/messenger.Sun/RegisterTaskManager"
-	Sun_SaveSnapShot_FullMethodName        = "/messenger.Sun/SaveSnapShot"
+	Sun_MoonRegister_FullMethodName          = "/messenger.Sun/MoonRegister"
+	Sun_GetLeaderInfo_FullMethodName         = "/messenger.Sun/GetLeaderInfo"
+	Sun_ReportClusterInfo_FullMethodName     = "/messenger.Sun/ReportClusterInfo"
+	Sun_SubmitJob_FullMethodName             = "/messenger.Sun/SubmitJob"
+	Sun_RegisterTaskManager_FullMethodName   = "/messenger.Sun/RegisterTaskManager"
+	Sun_SaveSnapShot_FullMethodName          = "/messenger.Sun/SaveSnapShot"
+	Sun_RestoreFromCheckpoint_FullMethodName = "/messenger.Sun/RestoreFromCheckpoint"
 )
 
 // SunClient is the client API for Sun service.
@@ -41,6 +42,7 @@ type SunClient interface {
 	// from task manager
 	RegisterTaskManager(ctx context.Context, in *RegisterTaskManagerRequest, opts ...grpc.CallOption) (*RegisterTaskManagerResponse, error)
 	SaveSnapShot(ctx context.Context, in *SaveSnapShotRequest, opts ...grpc.CallOption) (*common.Result, error)
+	RestoreFromCheckpoint(ctx context.Context, in *RestoreFromCheckpointRequest, opts ...grpc.CallOption) (*RestoreFromCheckpointResponse, error)
 }
 
 type sunClient struct {
@@ -105,6 +107,15 @@ func (c *sunClient) SaveSnapShot(ctx context.Context, in *SaveSnapShotRequest, o
 	return out, nil
 }
 
+func (c *sunClient) RestoreFromCheckpoint(ctx context.Context, in *RestoreFromCheckpointRequest, opts ...grpc.CallOption) (*RestoreFromCheckpointResponse, error) {
+	out := new(RestoreFromCheckpointResponse)
+	err := c.cc.Invoke(ctx, Sun_RestoreFromCheckpoint_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SunServer is the server API for Sun service.
 // All implementations must embed UnimplementedSunServer
 // for forward compatibility
@@ -117,6 +128,7 @@ type SunServer interface {
 	// from task manager
 	RegisterTaskManager(context.Context, *RegisterTaskManagerRequest) (*RegisterTaskManagerResponse, error)
 	SaveSnapShot(context.Context, *SaveSnapShotRequest) (*common.Result, error)
+	RestoreFromCheckpoint(context.Context, *RestoreFromCheckpointRequest) (*RestoreFromCheckpointResponse, error)
 	mustEmbedUnimplementedSunServer()
 }
 
@@ -141,6 +153,9 @@ func (UnimplementedSunServer) RegisterTaskManager(context.Context, *RegisterTask
 }
 func (UnimplementedSunServer) SaveSnapShot(context.Context, *SaveSnapShotRequest) (*common.Result, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveSnapShot not implemented")
+}
+func (UnimplementedSunServer) RestoreFromCheckpoint(context.Context, *RestoreFromCheckpointRequest) (*RestoreFromCheckpointResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RestoreFromCheckpoint not implemented")
 }
 func (UnimplementedSunServer) mustEmbedUnimplementedSunServer() {}
 
@@ -263,6 +278,24 @@ func _Sun_SaveSnapShot_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Sun_RestoreFromCheckpoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestoreFromCheckpointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SunServer).RestoreFromCheckpoint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sun_RestoreFromCheckpoint_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SunServer).RestoreFromCheckpoint(ctx, req.(*RestoreFromCheckpointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Sun_ServiceDesc is the grpc.ServiceDesc for Sun service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -293,6 +326,10 @@ var Sun_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SaveSnapShot",
 			Handler:    _Sun_SaveSnapShot_Handler,
+		},
+		{
+			MethodName: "RestoreFromCheckpoint",
+			Handler:    _Sun_RestoreFromCheckpoint_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -17,17 +17,21 @@ service Sun {
   // from task manager
   rpc RegisterTaskManager(RegisterTaskManagerRequest) returns (RegisterTaskManagerResponse) {}
   rpc SaveSnapShot(SaveSnapShotRequest) returns (Result) {}
+  rpc RestoreFromCheckpoint(RestoreFromCheckpointRequest) returns (RestoreFromCheckpointResponse) {}
 
 //  rpc GetRegisterTaskManagerTable(NilRequest) returns (TaskManagerResult) {}
 
 
 //  rpc TriggerCheckpoint(TriggerCheckpointRequest) returns (TriggerCheckpointResponse) {}
-//  rpc RestoreFromCheckpoint(RestoreFromCheckpointRequest) returns (RestoreFromCheckpointResponse) {}
+}
 
+message RestoreFromCheckpointRequest {
+  string  subtask_name = 1;
+}
 
-
-  // from subtask
-//  rpc AcknowledgeCheckpoint(AcknowledgeCheckpointRequest) returns (NilResponse) {}
+message RestoreFromCheckpointResponse {
+  bool success = 1;
+  bytes state = 2;
 }
 
 message SaveSnapShotRequest {
@@ -48,20 +52,6 @@ message TriggerCheckpointRequest {
   bool cancel_job = 2;
 }
 
-//message TriggerCheckpointResponse {
-//  Status status = 1;
-//  int64 checkpoint_id = 2;
-//}
-//
-//message RestoreFromCheckpointRequest {
-//  string job_id = 1;
-//  uint64 checkpoint_id = 2;
-//}
-//
-//message RestoreFromCheckpointResponse {
-//  Status status = 1;
-//  string job_id = 2;
-//}
 
 message SubmitJobResponse {
   bool success = 1;

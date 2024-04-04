@@ -57,6 +57,6 @@ func (op *SimpleFFTSink) Checkpoint() []byte {
 	return nil
 }
 
-func (op *SimpleFFTSink) RestoreFromCheckpoint([]byte) error {
+func (op *SimpleFFTSink) RestoreFromCheckpoint(SunIp, ClsName string, SunPort uint64) error {
 	return nil
 }
