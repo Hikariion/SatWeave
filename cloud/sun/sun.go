@@ -2,9 +2,13 @@ package sun
 
 import (
 	"context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"gopkg.in/yaml.v2"
 	"satweave/messenger"
 	"satweave/messenger/common"
 	"satweave/sat-node/infos"
+	common2 "satweave/utils/common"
 	"satweave/utils/logger"
 	"sync"
 	"sync/atomic"
@@ -117,84 +121,46 @@ func (s *Sun) RestoreFromCheckpoint(_ context.Context, request *RestoreFromCheck
 	}, nil
 }
 
-//func (s *Sun) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*SubmitJobResponse, error) {
-//	jobId := s.idGenerator.Next()
-//
-//	// 创建存储 jobInfo 的目录
-//	jobInfoPath := path.Join(s.jobInfoDir, jobId)
-//	err := os.MkdirAll(jobInfoPath, 755)
-//	if err != nil {
-//		logger.Errorf("mkdir job info path failed: %v", err)
-//		return &SubmitJobResponse{}, err
-//	}
-//
-//	executeMap, err := s.innerSubmitJob(ctx, request.Tasks, jobId)
-//	if err != nil {
-//		return &SubmitJobResponse{}, status.Errorf(codes.Internal, "submit job failed: %v", err)
-//	}
-//
-//	// 把所有 Op 信息注册到 CheckpointCoordinator 里
-//	err = s.checkpointCoordinator.registerJob(jobId, executeMap)
-//	if err != nil {
-//		return &SubmitJobResponse{}, errno.RegisterJobFail
-//	}
-//
-//	return &SubmitJobResponse{
-//		JobId: jobId,
-//	}, nil
-//}
+func (s *Sun) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*SubmitJobResponse, error) {
+	yamlBytes := request.YamlByte
+	var tasksWrapper common2.UserTaskWrapper
+	err := yaml.Unmarshal(yamlBytes, &tasksWrapper)
+	if err != nil {
+		logger.Errorf("ReadUserDefinedTasks() failed: %v", err)
+		return nil, err
+	}
+	logicalTasks, err := common2.ConvertUserTaskWrapperToLogicTasks(&tasksWrapper)
+	if err != nil {
+		logger.Errorf("ConvertUserTaskWrapperToLogicTasks() failed: %v", err)
+		return &SubmitJobResponse{
+			Success: false,
+		}, err
+	}
 
-//func (s *Sun) TriggerCheckpoint(_ context.Context, request *TriggerCheckpointRequest) (*TriggerCheckpointResponse, error) {
-//	checkpointId := generator.GetDataIdGeneratorInstance().Next()
-//	err := s.checkpointCoordinator.triggerCheckpoint(request.JobId, checkpointId, request.CancelJob)
-//	if err != nil {
-//		logger.Errorf("trigger checkpoint failed: %v", err)
-//		return &TriggerCheckpointResponse{
-//			Status: &common.Status{
-//				ErrCode: 1,
-//				Message: err.Error(),
-//			},
-//		}, errno.TriggerCheckpointFail
-//	}
-//	return &TriggerCheckpointResponse{
-//		Status:       &common.Status{},
-//		CheckpointId: checkpointId,
-//	}, nil
-//}
+	for _, task := range logicalTasks {
+		task.Locate = request.SatelliteName
+	}
 
-//func (s *Sun) RestoreFromCheckpoint(_ context.Context, request *RestoreFromCheckpointRequest) (*RestoreFromCheckpointResponse, error) {
-//	return nil, status.Errorf(codes.Unimplemented, "method RestoreFromCheckpoint not implemented")
-//}
-//
-//func (s *Sun) AcknowledgeCheckpoint(_ context.Context, request *AcknowledgeCheckpointRequest) (*common.NilResponse, error) {
-//	if request.Status.ErrCode != 0 {
-//		logger.Errorf("Failed to acknowledge checkpoint: Status.ErrCode != 0, %s", request.Status.Message)
-//		return &common.NilResponse{}, errno.AcknowledgeCheckpointFail
-//	}
-//	succ, err := s.checkpointCoordinator.AcknowledgeCheckpoint(request)
-//	if err != nil {
-//		logger.Errorf("Failed to acknowledge checkpoint: %v", err)
-//		return &common.NilResponse{}, errno.AcknowledgeCheckpointFail
-//	}
-//	if succ {
-//		logger.Infof("Successfully acknowledge checkpoint(id=%v) of job(id=%v), begin to save", request.CheckpointId, request.JobId)
-//	}
-//	// 存储 state
-//	stateData := request.State.Content
-//	clsName := strings.Split(request.SubtaskName, "#")[0]
-//	jobId := request.JobId
-//	partitionIdx := strings.Split(request.SubtaskName, "#")[1]
-//	partitionIdx = strings.Trim(partitionIdx, "()")
-//	partitionIdx = strings.Split(partitionIdx, "/")[0]
-//
-//	saveFilePath := fmt.Sprintf(s.snapshotDir, jobId, clsName, partitionIdx)
-//	err = common2.SaveBytesToFile(stateData, saveFilePath)
-//	if err != nil {
-//		logger.Errorf("Failed to save state: %v", err)
-//		return &common.NilResponse{}, err
-//	}
-//	return &common.NilResponse{}, nil
-//}
+	logicalTaskMap, executeTaskMap, err := s.StreamHelper.Scheduler.Schedule(request.JobId, logicalTasks)
+
+	err = s.StreamHelper.DeployExecuteTasks(ctx, request.JobId, executeTaskMap)
+	if err != nil {
+		return &SubmitJobResponse{
+			Success: false,
+		}, status.Errorf(codes.Internal, "submit job failed: %v", err)
+	}
+
+	err = s.StreamHelper.StartExecuteTasks(request.JobId, logicalTaskMap, executeTaskMap)
+	if err != nil {
+		return &SubmitJobResponse{
+			Success: false,
+		}, status.Errorf(codes.Internal, "submit job failed: %v", err)
+	}
+
+	return &SubmitJobResponse{
+		Success: true,
+	}, nil
+}
 
 // PrintTaskManagerTable For debug
 func (s *Sun) PrintTaskManagerTable() {

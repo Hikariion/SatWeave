@@ -11,7 +11,6 @@ import (
 	"satweave/messenger/common"
 	task_manager "satweave/shared/task-manager"
 	common2 "satweave/utils/common"
-	"satweave/utils/generator"
 	"satweave/utils/logger"
 )
 
@@ -28,45 +27,6 @@ type StreamHelper struct {
 type TaskTuple struct {
 	SatelliteName string
 	ExecuteTask   *common.ExecuteTask
-}
-
-func (s *StreamHelper) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*SubmitJobResponse, error) {
-	jobId := generator.GetJobIdGeneratorInstance().Next()
-
-	_, err := s.innerSubmitJob(ctx, request.Tasks, jobId)
-
-	if err != nil {
-		return &SubmitJobResponse{
-			JobId:   jobId,
-			Success: false,
-		}, err
-	}
-
-	return &SubmitJobResponse{
-		JobId:   jobId,
-		Success: true,
-	}, nil
-}
-
-func (s *StreamHelper) innerSubmitJob(ctx context.Context, tasks []*common.Task, jobId string) (map[string][]*common.ExecuteTask, error) {
-	// scheduler
-	_, executeMap, err := s.Scheduler.Schedule(jobId, tasks)
-	if err != nil {
-		logger.Errorf("schedule failed: %v", err)
-		return nil, err
-	}
-
-	// deploy 创建对应的 worker
-	err = s.DeployExecuteTasks(ctx, jobId, executeMap)
-	if err != nil {
-		logger.Errorf("deploy execute tasks failed: %v", err)
-		return nil, err
-	}
-	logger.Infof("deploy execute tasks success")
-
-	// TODO start 让 worker run起来
-
-	return executeMap, nil
 }
 
 func (s *StreamHelper) DeployExecuteTasks(ctx context.Context, jobId string, executeMap map[string][]*common.ExecuteTask) error {

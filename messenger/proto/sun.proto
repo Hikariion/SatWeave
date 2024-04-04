@@ -55,11 +55,12 @@ message TriggerCheckpointRequest {
 
 message SubmitJobResponse {
   bool success = 1;
-  string job_id = 2;
 }
 
 message SubmitJobRequest {
-  repeated Task tasks = 1;
+  string job_id = 1;
+  string satellite_name = 2;
+  bytes yaml_byte = 3;
 };
 
 message TaskManagerResult {
