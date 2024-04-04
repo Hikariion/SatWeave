@@ -61,6 +61,9 @@ type Worker struct {
 
 	// 初始化时的 state
 	state *common.File
+
+	// 存储迁移路径
+	pathNodes []string
 }
 
 // ----------------------------------- init for start subtask -----------------------------------
@@ -127,7 +130,11 @@ func (w *Worker) ComputeCore() error {
 	initMap := make(map[string]interface{})
 	initMap["InputChannel"] = w.InputChannel
 
-	taskInstance.RestoreFromCheckpoint(w.jobManagerHost, w.SubTaskName, w.jobManagerPort)
+	err := taskInstance.RestoreFromCheckpoint(w.jobManagerHost, w.SubTaskName, w.jobManagerPort)
+	if err != nil {
+		logger.Errorf("RestoreFromCheckpoint Err: %v", err)
+		return err
+	}
 	taskInstance.Init(initMap)
 
 	for {
@@ -168,6 +175,9 @@ func (w *Worker) ComputeCore() error {
 						return err
 					}
 					logger.Infof("SaveSnapShot result: %v", result)
+				}
+				if isSinkOp {
+					// TODO 触发预迁移
 				}
 
 			} else if dataType == common.DataType_FINISH {
