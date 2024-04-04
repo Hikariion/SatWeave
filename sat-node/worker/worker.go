@@ -291,11 +291,10 @@ func (w *Worker) PushFinishEventToOutputChannel() {
 
 // --------------------------- checkpoint ----------------------------
 func (w *Worker) checkpointEventProcess(isSinkOp bool) []byte {
-	if isSinkOp {
-		return nil
-	}
 	data := w.cls.Checkpoint()
-
+	if isSinkOp {
+		return data
+	}
 	w.PushCheckpointEventToOutputChannel(w.OutputChannel)
 
 	return data
