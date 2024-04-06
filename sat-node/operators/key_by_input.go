@@ -1,7 +1,7 @@
 package operators
 
 type KeyByInputOp struct {
-	name string
+	JobId string
 }
 
 func (op *KeyByInputOp) Init(initMap map[string]interface{}) {
@@ -12,8 +12,8 @@ func (op *KeyByInputOp) Compute([]byte) ([]byte, error) {
 	return nil, nil
 }
 
-func (op *KeyByInputOp) SetName(name string) {
-	op.name = name
+func (op *KeyByInputOp) SetJobId(JobId string) {
+	op.JobId = JobId
 }
 
 func (op *KeyByInputOp) IsSourceOp() bool {

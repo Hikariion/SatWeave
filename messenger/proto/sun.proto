@@ -18,11 +18,13 @@ service Sun {
   rpc RegisterTaskManager(RegisterTaskManagerRequest) returns (RegisterTaskManagerResponse) {}
   rpc SaveSnapShot(SaveSnapShotRequest) returns (Result) {}
   rpc RestoreFromCheckpoint(RestoreFromCheckpointRequest) returns (RestoreFromCheckpointResponse) {}
+  rpc ReceiverStreamData(ReceiverStreamDataRequest) returns(Result) {}
+}
 
-//  rpc GetRegisterTaskManagerTable(NilRequest) returns (TaskManagerResult) {}
-
-
-//  rpc TriggerCheckpoint(TriggerCheckpointRequest) returns (TriggerCheckpointResponse) {}
+message ReceiverStreamDataRequest {
+  string job_id = 1;
+  string dataId = 2;
+  string res = 3;
 }
 
 message RestoreFromCheckpointRequest {
@@ -61,6 +63,7 @@ message SubmitJobRequest {
   string job_id = 1;
   string satellite_name = 2;
   bytes yaml_byte = 3;
+  repeated string pathNodes = 4;
 };
 
 message TaskManagerResult {

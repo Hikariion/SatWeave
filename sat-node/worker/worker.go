@@ -64,6 +64,7 @@ type Worker struct {
 
 	// 存储迁移路径
 	pathNodes []string
+	YamlByte  []byte
 }
 
 // ----------------------------------- init for start subtask -----------------------------------
@@ -125,10 +126,12 @@ func (w *Worker) ComputeCore() error {
 	isKeyOp := w.isKeyOp()
 
 	taskInstance := w.cls
-	taskInstance.SetName(w.SubTaskName)
+	taskInstance.SetJobId(w.jobId)
 
 	initMap := make(map[string]interface{})
 	initMap["InputChannel"] = w.InputChannel
+	initMap["SunIp"] = w.jobManagerHost
+	initMap["SunPort"] = w.jobManagerPort
 
 	err := taskInstance.RestoreFromCheckpoint(w.jobManagerHost, w.SubTaskName, w.jobManagerPort)
 	if err != nil {
@@ -177,9 +180,29 @@ func (w *Worker) ComputeCore() error {
 					logger.Infof("SaveSnapShot result: %v", result)
 				}
 				if isSinkOp {
-					// TODO 触发预迁移
+					var nextId int
+					for i, _ := range w.pathNodes {
+						if w.pathNodes[i] == w.satelliteName {
+							nextId = (i + 1) % len(w.pathNodes)
+						}
+					}
+					nextSatelliteName := w.pathNodes[nextId]
+					conn, err := messenger.GetRpcConn(w.jobManagerHost, w.jobManagerPort)
+					if err != nil {
+						logger.Errorf("GetRpcConn Err: %v", err)
+						return err
+					}
+					client := sun.NewSunClient(conn)
+					_, err = client.SubmitJob(context.Background(), &sun.SubmitJobRequest{
+						JobId:         w.jobId,
+						YamlByte:      w.YamlByte,
+						SatelliteName: nextSatelliteName,
+					})
+					if err != nil {
+						logger.Errorf("Pre Migation Err: %v", err)
+						return err
+					}
 				}
-
 			} else if dataType == common.DataType_FINISH {
 				_ = w.finishEventProcess(taskInstance, isSinkOp, inputData)
 				logger.Infof("%s finished successfully!", w.SubTaskName)
@@ -344,7 +367,7 @@ func (w *Worker) Stop() {
 }
 
 func NewWorker(satelliteName string, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64, jobId string,
-) *Worker {
+	pathNodes []string, yamlBytes []byte) *Worker {
 	// TODO(qiu): 这个 ctx 是否可以继承 task manager
 	workerCtx, cancel := context.WithCancel(context.Background())
 	worker := &Worker{
@@ -366,6 +389,8 @@ func NewWorker(satelliteName string, executeTask *common.ExecuteTask, jobManager
 		jobManagerHost: jobManagerHost,
 		jobManagerPort: jobManagerPort,
 		jobId:          jobId,
+		pathNodes:      pathNodes,
+		YamlByte:       yamlBytes,
 	}
 
 	// init op

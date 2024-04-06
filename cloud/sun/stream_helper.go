@@ -18,10 +18,7 @@ type StreamHelper struct {
 	taskRegisteredTaskManagerTable *RegisteredTaskManagerTable
 	Scheduler                      *DefaultScheduler
 	snapshotDir                    string
-
-	//checkpointCoordinator *CheckpointCoordinator
-	//jobInfoDir  string
-	//snapshotDir string
+	streamJobDataDir               string
 }
 
 type TaskTuple struct {
@@ -29,7 +26,8 @@ type TaskTuple struct {
 	ExecuteTask   *common.ExecuteTask
 }
 
-func (s *StreamHelper) DeployExecuteTasks(ctx context.Context, jobId string, executeMap map[string][]*common.ExecuteTask) error {
+func (s *StreamHelper) DeployExecuteTasks(ctx context.Context, jobId string, executeMap map[string][]*common.ExecuteTask,
+	pathNodes []string, yamlBytes []byte) error {
 	for taskManagerId, executeTasks := range executeMap {
 		HostPort := s.taskRegisteredTaskManagerTable.table[taskManagerId].HostPort
 		host := HostPort.GetHost()
@@ -44,8 +42,10 @@ func (s *StreamHelper) DeployExecuteTasks(ctx context.Context, jobId string, exe
 		// deploy的过程其实是创建一个worker的过程
 		for _, executeTask := range executeTasks {
 			_, err := client.DeployTask(ctx, &task_manager.DeployTaskRequest{
-				ExecTask: executeTask,
-				JobId:    jobId,
+				ExecTask:  executeTask,
+				JobId:     jobId,
+				PathNodes: pathNodes,
+				YamlBytes: yamlBytes,
 			})
 			if err != nil {
 				logger.Errorf("deploy task on task manager id: %v, failed: %v", taskManagerId, err)
@@ -212,14 +212,46 @@ func (s *StreamHelper) SaveSnapShot(SubtaskName string, state []byte) error {
 	return nil
 }
 
+func (s *StreamHelper) SaveStreamJobData(jobId, dataId, data string) error {
+	jobDataFilePath := path.Join(s.streamJobDataDir, jobId)
+
+	file, err := os.OpenFile(jobDataFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		// 如果打开文件失败，则返回错误
+		return err
+	}
+	defer file.Close()
+
+	// 构造要追加的数据，格式为 "dataId: data\n"
+	formattedData := fmt.Sprintf("%s: %s\n", dataId, data)
+
+	// 向文件追加数据
+	if _, err := file.WriteString(formattedData); err != nil {
+		return err // 如果写入文件失败，则返回错误
+	}
+
+	return nil
+}
+
 func NewStreamHelper() *StreamHelper {
 	streamHelper := &StreamHelper{
 		taskRegisteredTaskManagerTable: newRegisteredTaskManagerTable(),
 		snapshotDir:                    "./snapshot",
+		streamJobDataDir:               "./stream-job-data",
 	}
 
 	// 创建 snapshot 目录
-	_ = common2.InitPath(streamHelper.snapshotDir)
+	err := common2.InitPath(streamHelper.snapshotDir)
+	if err != nil {
+		logger.Errorf("create snapshot dir failed: %v", err)
+		return nil
+	}
+
+	err = common2.InitPath(streamHelper.streamJobDataDir)
+	if err != nil {
+		logger.Errorf("create stream job data dir failed: %v", err)
+		return nil
+	}
 
 	streamHelper.Scheduler = newUserDefinedScheduler(streamHelper.taskRegisteredTaskManagerTable)
 	return streamHelper

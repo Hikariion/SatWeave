@@ -20,7 +20,8 @@ service TaskManagerService {
 message DeployTaskRequest {
   ExecuteTask exec_task = 1;
   string job_id = 2;
-  File state = 3;
+  repeated string pathNodes = 3;
+  bytes yamlBytes= 4;
 }
 //
 //message TriggerCheckpointRequest {

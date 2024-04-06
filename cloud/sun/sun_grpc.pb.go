@@ -28,6 +28,7 @@ const (
 	Sun_RegisterTaskManager_FullMethodName   = "/messenger.Sun/RegisterTaskManager"
 	Sun_SaveSnapShot_FullMethodName          = "/messenger.Sun/SaveSnapShot"
 	Sun_RestoreFromCheckpoint_FullMethodName = "/messenger.Sun/RestoreFromCheckpoint"
+	Sun_ReceiverStreamData_FullMethodName    = "/messenger.Sun/ReceiverStreamData"
 )
 
 // SunClient is the client API for Sun service.
@@ -43,6 +44,7 @@ type SunClient interface {
 	RegisterTaskManager(ctx context.Context, in *RegisterTaskManagerRequest, opts ...grpc.CallOption) (*RegisterTaskManagerResponse, error)
 	SaveSnapShot(ctx context.Context, in *SaveSnapShotRequest, opts ...grpc.CallOption) (*common.Result, error)
 	RestoreFromCheckpoint(ctx context.Context, in *RestoreFromCheckpointRequest, opts ...grpc.CallOption) (*RestoreFromCheckpointResponse, error)
+	ReceiverStreamData(ctx context.Context, in *ReceiverStreamDataRequest, opts ...grpc.CallOption) (*common.Result, error)
 }
 
 type sunClient struct {
@@ -116,6 +118,15 @@ func (c *sunClient) RestoreFromCheckpoint(ctx context.Context, in *RestoreFromCh
 	return out, nil
 }
 
+func (c *sunClient) ReceiverStreamData(ctx context.Context, in *ReceiverStreamDataRequest, opts ...grpc.CallOption) (*common.Result, error) {
+	out := new(common.Result)
+	err := c.cc.Invoke(ctx, Sun_ReceiverStreamData_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SunServer is the server API for Sun service.
 // All implementations must embed UnimplementedSunServer
 // for forward compatibility
@@ -129,6 +140,7 @@ type SunServer interface {
 	RegisterTaskManager(context.Context, *RegisterTaskManagerRequest) (*RegisterTaskManagerResponse, error)
 	SaveSnapShot(context.Context, *SaveSnapShotRequest) (*common.Result, error)
 	RestoreFromCheckpoint(context.Context, *RestoreFromCheckpointRequest) (*RestoreFromCheckpointResponse, error)
+	ReceiverStreamData(context.Context, *ReceiverStreamDataRequest) (*common.Result, error)
 	mustEmbedUnimplementedSunServer()
 }
 
@@ -156,6 +168,9 @@ func (UnimplementedSunServer) SaveSnapShot(context.Context, *SaveSnapShotRequest
 }
 func (UnimplementedSunServer) RestoreFromCheckpoint(context.Context, *RestoreFromCheckpointRequest) (*RestoreFromCheckpointResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RestoreFromCheckpoint not implemented")
+}
+func (UnimplementedSunServer) ReceiverStreamData(context.Context, *ReceiverStreamDataRequest) (*common.Result, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReceiverStreamData not implemented")
 }
 func (UnimplementedSunServer) mustEmbedUnimplementedSunServer() {}
 
@@ -296,6 +311,24 @@ func _Sun_RestoreFromCheckpoint_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Sun_ReceiverStreamData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReceiverStreamDataRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SunServer).ReceiverStreamData(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sun_ReceiverStreamData_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SunServer).ReceiverStreamData(ctx, req.(*ReceiverStreamDataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Sun_ServiceDesc is the grpc.ServiceDesc for Sun service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -330,6 +363,10 @@ var Sun_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RestoreFromCheckpoint",
 			Handler:    _Sun_RestoreFromCheckpoint_Handler,
+		},
+		{
+			MethodName: "ReceiverStreamData",
+			Handler:    _Sun_ReceiverStreamData_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

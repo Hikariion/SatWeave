@@ -10,7 +10,7 @@ import (
 type HttpSource struct {
 	BeginDataId       uint64
 	BinaryDataChannel chan []byte
-	name              string
+	JobId             string
 	finished          bool
 	currentDataId     uint64
 }
@@ -71,8 +71,8 @@ func (op *HttpSource) Compute([]byte) ([]byte, error) {
 	return recordBinaryData, nil
 }
 
-func (op *HttpSource) SetName(name string) {
-	op.name = name
+func (op *HttpSource) SetName(JobId string) {
+	op.JobId = JobId
 }
 
 func (op *HttpSource) Checkpoint() []byte {

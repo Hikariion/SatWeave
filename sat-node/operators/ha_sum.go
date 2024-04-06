@@ -11,12 +11,12 @@ import (
 
 // HaSumOp 是高通聚合算子
 type HaSumOp struct {
-	name    string
+	JobId   string
 	counter uint64
 }
 
-func (op *HaSumOp) SetName(name string) {
-	op.name = name
+func (op *HaSumOp) SetJobId(JobId string) {
+	op.JobId = JobId
 }
 
 func (op *HaSumOp) Init(initMap map[string]interface{}) {

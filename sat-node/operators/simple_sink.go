@@ -11,7 +11,7 @@ import (
 )
 
 type SimpleSink struct {
-	name         string
+	JobId        string
 	file         *os.File
 	nextRecordId uint64
 }
@@ -29,7 +29,7 @@ func (op *SimpleSink) Init(initMap map[string]interface{}) {
 
 func (op *SimpleSink) Compute(data []byte) ([]byte, error) {
 	str := string(data)
-	logger.Infof("%v: %v", op.name, str)
+	logger.Infof("%v: %v", op.JobId, str)
 
 	// 把 dataId 转成 str
 	dataIdStr := strconv.FormatUint(op.nextRecordId, 10)
@@ -43,8 +43,8 @@ func (op *SimpleSink) Compute(data []byte) ([]byte, error) {
 	return nil, nil
 }
 
-func (op *SimpleSink) SetName(name string) {
-	op.name = name
+func (op *SimpleSink) SetJobId(JobId string) {
+	op.JobId = JobId
 }
 
 func (op *SimpleSink) IsSourceOp() bool {

@@ -30,10 +30,11 @@ func (s *Slot) start() {
 	s.subTask.Run()
 }
 
-func NewSlot(satelliteName string, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64, jobId string) *Slot {
+func NewSlot(satelliteName string, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64, jobId string, pathNodes []string,
+	yamlBytes []byte) *Slot {
 	return &Slot{
 		satelliteName:  satelliteName,
-		subTask:        worker.NewWorker(satelliteName, executeTask, jobManagerHost, jobManagerPort, jobId),
+		subTask:        worker.NewWorker(satelliteName, executeTask, jobManagerHost, jobManagerPort, jobId, pathNodes, yamlBytes),
 		status:         deployed,
 		workerID:       executeTask.WorkerId,
 		jobId:          jobId,

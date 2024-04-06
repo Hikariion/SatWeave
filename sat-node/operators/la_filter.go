@@ -7,15 +7,15 @@ import (
 
 // LaFilterOp 是低通滤波算子
 type LaFilterOp struct {
-	name   string
+	JobId  string
 	fHigh  float64 // 高频分量
 	T      float64 // 信号时长
 	cutoff float64 // 截止频率
 	fs     float64 // 采样频率
 }
 
-func (op *LaFilterOp) SetName(name string) {
-	op.name = name
+func (op *LaFilterOp) SetJobId(JobId string) {
+	op.JobId = JobId
 }
 
 func (op *LaFilterOp) Init(initMap map[string]interface{}) {

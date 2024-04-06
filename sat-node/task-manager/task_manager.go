@@ -68,7 +68,7 @@ func (t *TaskManager) DeployTask(_ context.Context, request *task_manager.Deploy
 		return nil, errno.SlotCapacityNotEnough
 	}
 
-	err := t.slotTable.deployExecuteTask(request.JobId, request.ExecTask)
+	err := t.slotTable.deployExecuteTask(request.JobId, request.ExecTask, request.PathNodes, request.YamlBytes)
 	if err != nil {
 		logger.Errorf("deploy execute task %v failed, err: %v", request.ExecTask, err)
 	}
@@ -142,23 +142,8 @@ func (t *TaskManager) Stop() {
 	t.cancelFunc()
 }
 
-//func (t *TaskManager) TriggerCheckpoint(_ context.Context, request *task_manager.TriggerCheckpointRequest) (*common.NilResponse, error) {
-//	workerId := request.WorkerId
-//	worker, err := t.slotTable.getWorkerByWorkerId(workerId)
-//	if err != nil {
-//		logger.Errorf("get worker by worker id %v failed: %v", workerId, err)
-//		return &common.NilResponse{}, errno.WorkerNotFound
-//	}
-//	err = worker.TriggerCheckpoint(request.Checkpoint)
-//	if err != nil {
-//		logger.Errorf("trigger checkpoint failed: %v", err)
-//		return &common.NilResponse{}, err
-//	}
-//	return &common.NilResponse{}, nil
-//}
-
 func NewTaskManager(ctx context.Context, config *Config, satelliteName string, server *messenger.RpcServer,
-	slotNum uint64, host string, port uint64) *TaskManager {
+	slotNum uint64, host string, port uint64, pathNodes []string) *TaskManager {
 	taskManagerCtx, cancelFunc := context.WithCancel(ctx)
 
 	taskManager := &TaskManager{

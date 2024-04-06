@@ -6,6 +6,7 @@ import (
 	"os"
 	"satweave/cloud/sun"
 	"satweave/messenger"
+	"satweave/utils/generator"
 	"testing"
 	"time"
 )
@@ -23,8 +24,7 @@ func testTaskManager(t *testing.T) {
 	var taskManagers []*TaskManager
 	var rpcServers []*messenger.RpcServer
 
-	// Run Sun
-	taskManagers, rpcServers, _, s := GenTestTaskManagerCluster(ctx, basePath, nodeNum)
+	taskManagers, rpcServers, _, s, pathNodes := GenTestTaskManagerCluster(ctx, basePath, nodeNum)
 
 	for i := 0; i < nodeNum; i++ {
 		go func(rpc *messenger.RpcServer) {
@@ -43,10 +43,13 @@ func testTaskManager(t *testing.T) {
 		yamlBytes, err := os.ReadFile("./test-files/FFT_config.yaml")
 		assert.NoError(t, err)
 
+		JobId := generator.GetJobIdGeneratorInstance().Next()
+
 		request := &sun.SubmitJobRequest{
-			JobId:         "1071dfe3-d54a-4a0e-9bcb-64d6e984781d",
+			JobId:         JobId,
 			YamlByte:      yamlBytes,
 			SatelliteName: "satellite1",
+			PathNodes:     pathNodes,
 		}
 
 		response, err := s.SubmitJob(context.Background(), request)

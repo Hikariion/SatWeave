@@ -10,7 +10,7 @@ import (
 )
 
 type HttpFFTSource struct {
-	name         string
+	JobId        string
 	InputChannel chan *common.Record
 	nextDataId   uint64
 }
@@ -83,8 +83,8 @@ func (op *HttpFFTSource) Compute(data []byte) ([]byte, error) {
 	return nil, nil
 }
 
-func (op *HttpFFTSource) SetName(name string) {
-	op.name = name
+func (op *HttpFFTSource) SetName(JobId string) {
+	op.JobId = JobId
 }
 
 func (op *HttpFFTSource) IsSourceOp() bool {

@@ -143,7 +143,7 @@ func (s *Sun) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*Submit
 
 	logicalTaskMap, executeTaskMap, err := s.StreamHelper.Scheduler.Schedule(request.JobId, logicalTasks)
 
-	err = s.StreamHelper.DeployExecuteTasks(ctx, request.JobId, executeTaskMap)
+	err = s.StreamHelper.DeployExecuteTasks(ctx, request.JobId, executeTaskMap, request.PathNodes, yamlBytes)
 	if err != nil {
 		return &SubmitJobResponse{
 			Success: false,
@@ -160,6 +160,18 @@ func (s *Sun) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*Submit
 	return &SubmitJobResponse{
 		Success: true,
 	}, nil
+}
+
+func (s *Sun) ReceiverStreamData(_ context.Context, request *ReceiverStreamDataRequest) (*common.Result, error) {
+	err := s.StreamHelper.SaveStreamJobData(request.JobId, request.DataId, request.Res)
+	if err != nil {
+		return &common.Result{
+			Status: common.Result_FAIL,
+		}, err
+	}
+	return &common.Result{
+		Status: common.Result_OK,
+	}, err
 }
 
 // PrintTaskManagerTable For debug

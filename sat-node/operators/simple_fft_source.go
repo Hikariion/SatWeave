@@ -18,7 +18,7 @@ import (
 const offset = 30
 
 type SimpleFFTSource struct {
-	name string
+	JobId string
 	// 用于 Source 算子和 Worker 之间通信
 	InputChannel chan *common2.Record
 	nextRecordId uint64
@@ -87,8 +87,8 @@ func (op *SimpleFFTSource) Compute([]byte) ([]byte, error) {
 	return nil, nil
 }
 
-func (op *SimpleFFTSource) SetName(name string) {
-	op.name = name
+func (op *SimpleFFTSource) SetJobId(JobId string) {
+	op.JobId = JobId
 }
 
 func (op *SimpleFFTSource) IsSourceOp() bool {

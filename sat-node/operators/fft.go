@@ -7,11 +7,11 @@ import (
 
 // FFTOp 是快速傅里叶变换算子
 type FFTOp struct {
-	name string
+	JobId string
 }
 
-func (op *FFTOp) SetName(name string) {
-	op.name = name
+func (op *FFTOp) SetJobId(JobId string) {
+	op.JobId = JobId
 }
 
 func (op *FFTOp) Init(initMap map[string]interface{}) {

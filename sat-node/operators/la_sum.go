@@ -7,12 +7,12 @@ import (
 
 // LaSumOp 是低通聚合算子
 type LaSumOp struct {
-	name    string
+	JobId   string
 	counter uint64
 }
 
-func (op *LaSumOp) SetName(name string) {
-	op.name = name
+func (op *LaSumOp) SetJobId(JobId string) {
+	op.JobId = JobId
 }
 
 func (op *LaSumOp) Init(initMap map[string]interface{}) {

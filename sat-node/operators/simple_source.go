@@ -8,7 +8,7 @@ import (
 )
 
 type SimpleSource struct {
-	name string
+	JobId string
 
 	// 用于 Source 算子和 Worker 之间的通信
 	InputChannel chan *common.Record
@@ -47,8 +47,8 @@ func (op *SimpleSource) Compute([]byte) ([]byte, error) {
 	return nil, nil
 }
 
-func (op *SimpleSource) SetName(name string) {
-	op.name = name
+func (op *SimpleSource) SetJobId(JobId string) {
+	op.JobId = JobId
 }
 
 func (op *SimpleSource) IsSourceOp() bool {

@@ -14,9 +14,14 @@ type SimpleFFTSink struct {
 	name         string
 	file         *os.File
 	nextRecordId uint64
+	jobId        string
+	SunIp        string
+	SunPort      uint64
 }
 
 func (op *SimpleFFTSink) Init(initMap map[string]interface{}) {
+	op.SunIp = initMap["SunIp"].(string)
+	op.SunPort = initMap["SunPort"].(uint64)
 	// 创建一个文件用来存储
 	logger.Infof("Init Simple FFT Sink...")
 	// 创建一个文件用来存储
@@ -37,18 +42,31 @@ func (op *SimpleFFTSink) Compute(data []byte) ([]byte, error) {
 	// 把 dataId 转成 str
 	dataIdStr := strconv.FormatUint(op.nextRecordId, 10)
 
-	// 将 res 写入文件，每个条目占一行
-	if _, err := op.file.WriteString(dataIdStr + " " + resStr + "\n"); err != nil {
+	conn, err := messenger.GetRpcConn(op.SunIp, op.SunPort)
+	if err != nil {
+		logger.Errorf("Fail to get rpc conn on TaskManager %v", op.SunIp)
 		return nil, err
 	}
+	client := sun.NewSunClient(conn)
+	_, err = client.ReceiverStreamData(context.Background(),
+		&sun.ReceiverStreamDataRequest{
+			JobId:  op.jobId,
+			DataId: dataIdStr,
+			Res:    resStr,
+		})
+
+	//// 将 res 写入文件，每个条目占一行
+	//if _, err := op.file.WriteString(dataIdStr + " " + resStr + "\n"); err != nil {
+	//	return nil, err
+	//}
 
 	op.nextRecordId++
 
 	return nil, nil
 }
 
-func (op *SimpleFFTSink) SetName(name string) {
-	op.name = name
+func (op *SimpleFFTSink) SetJobId(jobId string) {
+	op.jobId = jobId
 }
 
 func (op *SimpleFFTSink) IsSourceOp() bool {
@@ -68,7 +86,7 @@ func (op *SimpleFFTSink) Checkpoint() []byte {
 	return res
 }
 
-func (op *SimpleFFTSink) RestoreFromCheckpoint(SunIp, ClsName string, SunPort uint64) error {
+func (op *SimpleFFTSink) RestoreFromCheckpoint(SunIp, SubTaskName string, SunPort uint64) error {
 	conn, err := messenger.GetRpcConn(SunIp, SunPort)
 	if err != nil {
 		logger.Errorf("Fail to get rpc conn on TaskManager %v", SunIp)
@@ -77,7 +95,7 @@ func (op *SimpleFFTSink) RestoreFromCheckpoint(SunIp, ClsName string, SunPort ui
 	client := sun.NewSunClient(conn)
 	result, err := client.RestoreFromCheckpoint(context.Background(),
 		&sun.RestoreFromCheckpointRequest{
-			SubtaskName: ClsName,
+			SubtaskName: SubTaskName,
 		})
 	if err != nil {
 		return err
