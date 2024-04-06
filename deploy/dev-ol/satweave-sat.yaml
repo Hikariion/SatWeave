@@ -27,10 +27,10 @@ spec:
           imagePullPolicy: Always
           image: 'harbor.act.buaa.edu.cn/satweave/satweave-sat-node:SNAPSHOT-latest'
           env:
-            name: SATELLITE_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
+            - name: SATELLITE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           command:
             - /satweave/satweave-sat-node
           args:
