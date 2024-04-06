@@ -26,7 +26,7 @@ func GenTestTaskManager(ctx context.Context, basePath string, sunAddr string, sa
 	taskManagerConfig.CloudPort = uint64(cloudPort)
 	taskManagerConfig.StoragePath = basePath
 
-	taskManager := NewTaskManager(ctx, &taskManagerConfig, satelliteName, nodeRpc, slotNum, host, port, pathNodes)
+	taskManager := NewTaskManager(ctx, &taskManagerConfig, satelliteName, nodeRpc, slotNum, host, port)
 
 	return taskManager, nodeRpc
 }

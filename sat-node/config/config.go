@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"satweave/sat-node/moon"
+	task_manager "satweave/sat-node/task-manager"
 	"satweave/sat-node/watcher"
 	"satweave/utils/common"
 	"satweave/utils/config"
@@ -20,8 +21,9 @@ type Config struct {
 	HttpPort    uint64 `json:"HttpPort"`
 	StoragePath string `json:"StoragePath"`
 	//WorkerConfig  task_manager.Config `json:"WorkerConfig"`
-	MoonConfig    moon.Config    `json:"MoonConfig"`
-	WatcherConfig watcher.Config `json:"WatcherConfig"`
+	MoonConfig        moon.Config         `json:"MoonConfig"`
+	WatcherConfig     watcher.Config      `json:"WatcherConfig"`
+	TaskManagerConfig task_manager.Config `json:"TaskManagerConfig"`
 }
 
 var DefaultConfig Config
@@ -30,15 +32,17 @@ func init() {
 	// 初始化 ip
 	_, ipAddr := getSelfIpAddr()
 	DefaultConfig = Config{
-		IpAddr:        ipAddr,
-		HttpPort:      httpPort,
-		MoonConfig:    moon.DefaultConfig,
-		WatcherConfig: watcher.DefaultConfig,
-		//WorkerConfig:  task_manager.DefaultConfig,
-		StoragePath: "./sat-data",
+		IpAddr:            ipAddr,
+		HttpPort:          httpPort,
+		MoonConfig:        moon.DefaultConfig,
+		WatcherConfig:     watcher.DefaultConfig,
+		TaskManagerConfig: task_manager.DefaultConfig,
+		StoragePath:       "./sat-data",
 	}
 	DefaultConfig.WatcherConfig.SelfNodeInfo.RpcPort = rpcPort
 	DefaultConfig.WatcherConfig.SelfNodeInfo.IpAddr = ipAddr
+	DefaultConfig.TaskManagerConfig.IpAddr = ipAddr
+	DefaultConfig.TaskManagerConfig.RpcPort = rpcPort
 }
 
 // InitConfig check config and init data dir and set some empty config value

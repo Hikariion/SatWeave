@@ -6,7 +6,6 @@ import (
 	"os"
 	"satweave/cloud/sun"
 	"satweave/messenger"
-	"satweave/utils/generator"
 	"testing"
 	"time"
 )
@@ -43,10 +42,10 @@ func testTaskManager(t *testing.T) {
 		yamlBytes, err := os.ReadFile("./test-files/FFT_config.yaml")
 		assert.NoError(t, err)
 
-		JobId := generator.GetJobIdGeneratorInstance().Next()
+		//JobId := generator.GetJobIdGeneratorInstance().Next()
 
 		request := &sun.SubmitJobRequest{
-			JobId:         JobId,
+			JobId:         "cb5f6a1d-16bc-42c1-882a-e62bfd56ea3c",
 			YamlByte:      yamlBytes,
 			SatelliteName: "satellite1",
 			PathNodes:     pathNodes,

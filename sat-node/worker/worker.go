@@ -15,6 +15,7 @@ import (
 	"satweave/utils/errno"
 	"satweave/utils/logger"
 	"sync"
+	"time"
 )
 
 const (
@@ -132,6 +133,7 @@ func (w *Worker) ComputeCore() error {
 	initMap["InputChannel"] = w.InputChannel
 	initMap["SunIp"] = w.jobManagerHost
 	initMap["SunPort"] = w.jobManagerPort
+	initMap["SatelliteName"] = w.satelliteName
 
 	err := taskInstance.RestoreFromCheckpoint(w.jobManagerHost, w.SubTaskName, w.jobManagerPort)
 	if err != nil {
@@ -180,6 +182,7 @@ func (w *Worker) ComputeCore() error {
 					logger.Infof("SaveSnapShot result: %v", result)
 				}
 				if isSinkOp {
+					time.Sleep(2 * time.Second)
 					var nextId int
 					for i, _ := range w.pathNodes {
 						if w.pathNodes[i] == w.satelliteName {
@@ -197,12 +200,14 @@ func (w *Worker) ComputeCore() error {
 						JobId:         w.jobId,
 						YamlByte:      w.YamlByte,
 						SatelliteName: nextSatelliteName,
+						PathNodes:     w.pathNodes,
 					})
 					if err != nil {
 						logger.Errorf("Pre Migation Err: %v", err)
 						return err
 					}
 				}
+				continue
 			} else if dataType == common.DataType_FINISH {
 				_ = w.finishEventProcess(taskInstance, isSinkOp, inputData)
 				logger.Infof("%s finished successfully!", w.SubTaskName)

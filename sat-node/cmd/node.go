@@ -14,6 +14,7 @@ import (
 	"satweave/sat-node/config"
 	"satweave/sat-node/infos"
 	"satweave/sat-node/moon"
+	task_manager "satweave/sat-node/task-manager"
 	"satweave/sat-node/watcher"
 	"satweave/utils/logger"
 	"strconv"
@@ -41,6 +42,7 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 	confPath := cmd.Flag("config").Value.String()
 	conf := config.DefaultConfig
 	conf.WatcherConfig.SunAddr = cmd.Flag("sunAddr").Value.String()
+	conf.TaskManagerConfig.SunAddr = cmd.Flag("sunAddr").Value.String()
 
 	// open config file
 	configFile, err := os.Open(confPath)
@@ -82,6 +84,11 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 	// Gen Watcher
 	w := watcher.NewWatcher(ctx, &conf.WatcherConfig, rpc, m, storageRegister)
 
+	// Gen TaskManager
+	taskManagerConfig := &conf.TaskManagerConfig
+	satelliteName := os.Getenv("SATELLITE_NAME")
+	taskManager := task_manager.NewTaskManager(ctx, taskManagerConfig, satelliteName, rpc, taskManagerConfig.SlotNum, taskManagerConfig.CloudAddr, taskManagerConfig.RpcPort)
+
 	// Run
 	go func() {
 		err := rpc.Run()
@@ -93,6 +100,8 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 	logger.Infof("Start to boot sat component ...")
 
 	go w.Run()
+
+	go taskManager.Run()
 
 	logger.Infof("sat node init success")
 

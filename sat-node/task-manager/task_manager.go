@@ -143,7 +143,7 @@ func (t *TaskManager) Stop() {
 }
 
 func NewTaskManager(ctx context.Context, config *Config, satelliteName string, server *messenger.RpcServer,
-	slotNum uint64, host string, port uint64, pathNodes []string) *TaskManager {
+	slotNum uint64, host string, port uint64) *TaskManager {
 	taskManagerCtx, cancelFunc := context.WithCancel(ctx)
 
 	taskManager := &TaskManager{

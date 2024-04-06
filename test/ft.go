@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"satweave/utils/common"
 	"strconv"
 	"strings"
 )
@@ -52,12 +53,23 @@ func main() {
 	//	fmt.Fprintln(file) // 每个信号后换行
 	//}
 	//fmt.Println("Signals have been written to signals.txt")
-	file, _ := os.Open("signals.txt")
-	defer file.Close()
-	signal, _ := readSignalByID(file, 0)
-	fmt.Println(signal)
-	signal, _ = readSignalByID(file, 1)
-	fmt.Println(signal)
+	//file, _ := os.Open("signals.txt")
+	//defer file.Close()
+	//signal, _ := readSignalByID(file, 0)
+	//fmt.Println(signal)
+	//signal, _ = readSignalByID(file, 1)
+	//fmt.Println(signal)
+	res, _ := readBytesToUint64("ecb55ebd-cb27-44e4-9a8a-cd36c26c216f#SimpleFFTSource#-1-1")
+	fmt.Println(res)
+}
+
+// readBytesToUint64
+func readBytesToUint64(filePath string) (uint64, error) {
+	file, _ := os.Open(filePath)
+	var bytes []byte
+	_, _ = file.Read(bytes)
+	result := common.BytesToUint64(bytes)
+	return result, nil
 }
 
 func readSignalByID(file *os.File, id int) ([]complex128, error) {

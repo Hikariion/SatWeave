@@ -1,18 +1,21 @@
 package task_manager
 
 type Config struct {
-	// Slot 数量
-	SlotNum     int
+	SunAddr   string
+	CloudAddr string
+	CloudPort uint64
+
+	// Self
+	SlotNum     uint64
 	StoragePath string
-	SunAddr     string
-	CloudAddr   string
-	CloudPort   uint64
+	IpAddr      string
+	RpcPort     uint64
 }
 
 var DefaultConfig Config
 
 func init() {
 	DefaultConfig = Config{
-		SlotNum: 5,
+		SlotNum: 1000,
 	}
 }

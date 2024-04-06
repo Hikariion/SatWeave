@@ -11,17 +11,19 @@ import (
 )
 
 type SimpleFFTSink struct {
-	name         string
-	file         *os.File
-	nextRecordId uint64
-	jobId        string
-	SunIp        string
-	SunPort      uint64
+	name          string
+	file          *os.File
+	nextRecordId  uint64
+	jobId         string
+	SunIp         string
+	SunPort       uint64
+	SatelliteName string
 }
 
 func (op *SimpleFFTSink) Init(initMap map[string]interface{}) {
 	op.SunIp = initMap["SunIp"].(string)
 	op.SunPort = initMap["SunPort"].(uint64)
+	op.SatelliteName = initMap["SatelliteName"].(string)
 	// 创建一个文件用来存储
 	logger.Infof("Init Simple FFT Sink...")
 	// 创建一个文件用来存储
@@ -38,6 +40,7 @@ func (op *SimpleFFTSink) Compute(data []byte) ([]byte, error) {
 
 	// 把 res 转成 string
 	resStr := strconv.FormatUint(res, 10)
+	resStr = resStr + " " + op.SatelliteName
 
 	// 把 dataId 转成 str
 	dataIdStr := strconv.FormatUint(op.nextRecordId, 10)

@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-const offset = 30
+const offset = 100
 
 type SimpleFFTSource struct {
 	JobId string
@@ -32,14 +32,14 @@ type SimpleFFTSource struct {
 
 func (op *SimpleFFTSource) Init(initMap map[string]interface{}) {
 	op.InputChannel = initMap["InputChannel"].(chan *common2.Record)
-	op.nextRecordId = 0
 
 	op.fs = 1000.0
 	op.T = 1.0
 	op.fHigh = 50.0
 	op.fLow = 5.0
 
-	endId := op.nextRecordId + (offset / 2)
+	endId := op.nextRecordId + offset
+	checkpointId := op.nextRecordId + uint64(offset*0.8)
 
 	go func() {
 		for {
@@ -71,13 +71,15 @@ func (op *SimpleFFTSource) Init(initMap map[string]interface{}) {
 			op.nextRecordId++
 
 			if op.nextRecordId == endId {
+				return
+			}
+			if op.nextRecordId == checkpointId {
 				record := &common2.Record{
 					DataType: common2.DataType_CHECKPOINT,
 					Data:     nil,
 				}
 				op.InputChannel <- record
 			}
-
 			time.Sleep(1 * time.Second)
 		}
 	}()
