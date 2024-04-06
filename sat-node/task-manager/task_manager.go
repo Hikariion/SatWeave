@@ -116,6 +116,7 @@ func (t *TaskManager) Run() {
 	if err != nil {
 		logger.Errorf("register to cloud failed: %v", err)
 	}
+	logger.Infof("register to cloud success")
 }
 
 func (t *TaskManager) RequestSlot(_ context.Context, request *task_manager.RequiredSlotRequest) (*task_manager.RequiredSlotResponse, error) {

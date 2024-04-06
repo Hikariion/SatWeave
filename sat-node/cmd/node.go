@@ -99,7 +99,7 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 
 	logger.Infof("Start to boot sat component ...")
 
-	go w.Run()
+	//go w.Run()
 
 	go taskManager.Run()
 
