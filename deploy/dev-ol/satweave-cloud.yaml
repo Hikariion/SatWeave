@@ -28,8 +28,8 @@ spec:
           image: 'harbor.act.buaa.edu.cn/satweave/satweave-cloud:SNAPSHOT-latest'
           resources:
             limits:
-              cpu: '2'
-              memory: 1000Mi
+              cpu: '16'
+              memory: 16000Mi
           volumeMounts:
             - name: host-time
               mountPath: /etc/localtime
@@ -80,6 +80,7 @@ metadata:
     kubesphere.io/serviceType: statefulservice
   name: satweave-cloud-dev
 spec:
+  type: NodePort
   sessionAffinity: None
   selector:
     app: satweave-cloud-dev
@@ -87,10 +88,11 @@ spec:
     - name: http-cloud
       protocol: TCP
       port: 3268
+      nodePort: 53268
       targetPort: 3268
     - name: grpc-cloud
       protocol: TCP
       port: 3267
+      nodePort: 53267
       targetPort: 3267
-  clusterIP: None
 

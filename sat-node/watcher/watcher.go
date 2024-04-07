@@ -73,13 +73,13 @@ func (w *Watcher) AddNewNodeToCluster(_ context.Context, info *infos.NodeInfo) (
 		_, err := w.moon.ProposeInfo(w.ctx, request)
 		logger.Infof("propose New nodeInfo: %v", info.RaftId)
 		if err != nil {
-			// TODO
+			// TODO(qiu)
 			return nil, err
 		}
 		err = w.moon.ProposeConfChangeAddNode(w.ctx, info)
 		logger.Infof("propose conf change to add node: %v", info.RaftId)
 		if err != nil {
-			// TODO
+			// TODO(qiu)
 			return nil, err
 		}
 	}
@@ -148,7 +148,7 @@ func (w *Watcher) GetCurrentTerm() uint64 {
 	return w.GetCurrentClusterInfo().Term
 }
 
-// 获取所有对等点的信息，该信息保证通信节点真实有效
+// GetCurrentPeerInfo 获取所有对等点的信息，该信息保证通信节点真实有效
 func (w *Watcher) GetCurrentPeerInfo() []*infos.NodeInfo {
 	nodeInfoStorage := w.register.GetStorage(infos.InfoType_NODE_INFO)
 	nodeInfos, err := nodeInfoStorage.GetAll()
@@ -205,7 +205,7 @@ func (w *Watcher) genNewMapXClusterInfo() *infos.ClusterInfo {
 		return clusterNodes[i].RaftId < clusterNodes[j].RaftId
 	})
 	leaderID := w.moon.GetLeaderID()
-	// TODO (zhang): need a way to gen infoStorage key
+	// TODO : need a way to gen infoStorage key
 	leaderInfo, err := nodeInfoStorage.Get(strconv.FormatUint(leaderID, 10))
 	if err != nil {
 		logger.Errorf("get leaderInfo from nodeInfoStorage fail: %v", err)
@@ -245,7 +245,7 @@ func (w *Watcher) genNewClusterInfo() *infos.ClusterInfo {
 		return clusterNodes[i].RaftId < clusterNodes[j].RaftId
 	})
 	leaderID := w.moon.GetLeaderID()
-	// TODO (zhang): need a way to gen infoStorage key
+	// TODO : need a way to gen infoStorage key
 	leaderInfo, err := nodeInfoStorage.Get(strconv.FormatUint(leaderID, 10))
 	if err != nil {
 		logger.Errorf("get leaderInfo from nodeInfoStorage fail: %v", err)
@@ -292,6 +292,7 @@ func (w *Watcher) GetMoon() moon.InfoController {
 
 func (w *Watcher) AskSky() (leaderInfo *infos.NodeInfo, err error) {
 	if w.Config.SunAddr == "" {
+		logger.Errorf("sun addr is empty")
 		return nil, errno.ConnectSunFail
 	}
 	conn, err := grpc.Dial(w.Config.SunAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -326,6 +327,7 @@ func (w *Watcher) Run() {
 		err = w.RequestJoinCluster(leaderInfo)
 		if err != nil {
 			logger.Errorf("watcher request join to cluster err: %v", err)
+			// TODO(qiu): 如果节点加入不成功，增加错误处理
 		}
 	}
 	logger.Infof("%v request join to cluster success", w.GetSelfInfo().RaftId)
@@ -354,12 +356,6 @@ func (w *Watcher) processMonitor() {
 
 // TODO(qiu)L initCluster 需要修改
 func (w *Watcher) initCluster() {
-	//rootDefaultBucket := infos.GenBucketInfo("root", "default", "root")
-	//_, err := w.moon.GetInfoDirect(infos.InfoType_BUCKET_INFO, rootDefaultBucket.GetID())
-	//if err == nil { // root default bucket exist
-	//	return
-	//}
-	logger.Infof("init root default bucket")
 	_, err := w.moon.ProposeInfo(w.ctx, &moon2.ProposeInfoRequest{
 		Operate: moon2.ProposeInfoRequest_ADD,
 		//Id:       rootDefaultBucket.GetID(),

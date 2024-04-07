@@ -13,7 +13,7 @@ var DefaultConfig Config
 func init() {
 	DefaultConfig = Config{
 		ClusterInfo:        infos.ClusterInfo{},
-		RaftStoragePath:    "./ecos-data/moon/raft/",
-		RocksdbStoragePath: "./ecos-data/moon/rocksdb/",
+		RaftStoragePath:    "./satweave-data/moon/raft/",
+		RocksdbStoragePath: "./satweave-data/moon/rocksdb/",
 	}
 }

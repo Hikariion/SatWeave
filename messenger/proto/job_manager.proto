@@ -1,0 +1,16 @@
+syntax = "proto3";
+package messenger;
+
+import "task_manager.proto";
+import "common.proto";
+
+option go_package = "satweave/sat-node/job-manager";
+
+message SubmitJobRequest {
+  repeated Task tasks = 1;
+}
+
+service JobManagerService {
+  // from user front client
+  rpc SubmitJob(SubmitJobRequest) returns (NilResponse) {}
+}

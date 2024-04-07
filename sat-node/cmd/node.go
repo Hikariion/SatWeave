@@ -9,10 +9,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
 	"satweave/messenger"
 	"satweave/sat-node/config"
 	"satweave/sat-node/infos"
 	"satweave/sat-node/moon"
+	task_manager "satweave/sat-node/task-manager"
 	"satweave/sat-node/watcher"
 	"satweave/utils/logger"
 	"strconv"
@@ -40,6 +42,7 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 	confPath := cmd.Flag("config").Value.String()
 	conf := config.DefaultConfig
 	conf.WatcherConfig.SunAddr = cmd.Flag("sunAddr").Value.String()
+	conf.TaskManagerConfig.SunAddr = cmd.Flag("sunAddr").Value.String()
 
 	// open config file
 	configFile, err := os.Open(confPath)
@@ -60,6 +63,11 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// 清空 basePath 下的文件
+	if err := os.RemoveAll(path.Join(conf.StoragePath, "*")); err != nil {
+		logger.Errorf("remove storage path fail: %v", err)
+	}
+
 	// Print config
 	logger.Infof("sat node config: %v", conf)
 
@@ -76,6 +84,11 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 	// Gen Watcher
 	w := watcher.NewWatcher(ctx, &conf.WatcherConfig, rpc, m, storageRegister)
 
+	// Gen TaskManager
+	taskManagerConfig := &conf.TaskManagerConfig
+	satelliteName := os.Getenv("SATELLITE_NAME")
+	taskManager := task_manager.NewTaskManager(ctx, taskManagerConfig, satelliteName, rpc, taskManagerConfig.SlotNum, taskManagerConfig.IpAddr, taskManagerConfig.RpcPort)
+
 	// Run
 	go func() {
 		err := rpc.Run()
@@ -86,7 +99,9 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 
 	logger.Infof("Start to boot sat component ...")
 
-	go w.Run()
+	//go w.Run()
+
+	go taskManager.Run()
 
 	logger.Infof("sat node init success")
 

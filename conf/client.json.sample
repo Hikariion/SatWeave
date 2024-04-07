@@ -1,0 +1,7 @@
+{
+  "NodeAddr": "satweave-sat-dev.satweave.svc.cluster.local",
+  "NodePort": 3267,
+  "CloudAddr": "satweave-cloud-dev.satweave.svc.cluster.local",
+  "CloudPort": 3267,
+  "ConnectType": 0
+}

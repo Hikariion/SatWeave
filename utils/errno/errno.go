@@ -14,6 +14,8 @@ const (
 	ClientError
 	GatewayError
 	CommonError
+	TaskManagerError
+	JobManagerError
 
 	SystemError int32 = 77 * 1000
 )
@@ -166,6 +168,42 @@ var (
 	TransporterWriteFail = newErr(CodeTransporterWriteFail, "transporter write fail")
 	GaiaClosedErr        = newErr(CodeGaiaClosed, "gaia context done")
 	RemoteGaiaFail       = newErr(CodeRemoteGaiaFail, "remote gaia fail")
+)
+
+const (
+	/* Task Manager error */
+
+	CodeRequestSlotFail int32 = TaskManagerError + iota
+	CodeSlotCapacityNotEnough
+	CodeWorkerNotFound
+	CodeJobFinished
+	CodeUnknownDataType
+	CodeRestoreFromCheckpointFail
+)
+
+var (
+	RequestSlotFail           = newErr(CodeRequestSlotFail, "request slot fail")
+	SlotCapacityNotEnough     = newErr(CodeSlotCapacityNotEnough, "slot capacity not enough")
+	WorkerNotFound            = newErr(CodeWorkerNotFound, "worker not found")
+	JobFinished               = newErr(CodeJobFinished, "job finished")
+	UnknownDataType           = newErr(CodeUnknownDataType, "unknown data type")
+	RestoreFromCheckpointFail = newErr(CodeRestoreFromCheckpointFail, "restore from checkpoint fail")
+)
+
+const (
+	/* Job Manager error */
+
+	CodeRegisterJobFail int32 = JobManagerError + iota
+	CodeTriggerCheckpointFail
+	CodeCheckpointIdNotInPending
+	CodeAcknowledgeCheckpointFail
+)
+
+var (
+	RegisterJobFail           = newErr(CodeRegisterJobFail, "register job fail")
+	TriggerCheckpointFail     = newErr(CodeTriggerCheckpointFail, "trigger checkpoint fail")
+	CheckpointIdNotInPending  = newErr(CodeCheckpointIdNotInPending, "checkpoint id not in pending")
+	AcknowledgeCheckpointFail = newErr(CodeAcknowledgeCheckpointFail, "acknowledge checkpoint fail")
 )
 
 type Errno struct {

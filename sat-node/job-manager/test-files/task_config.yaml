@@ -1,0 +1,17 @@
+tasks:
+  - name: SimpleSource
+    currency: 1
+    locate: TM_1
+  - name: KeyByInputOp
+    currency: 1
+    input_tasks: [SimpleSource]
+    locate: TM_1
+  - name: SumOp
+    currency: 2
+    input_tasks: [KeyByInputOp]
+    locate: TM_1
+  - name: SimpleSink
+    currency: 1
+    input_tasks: [SumOp]
+    locate: TM_1
+task_files_dir: resources/task_source_files

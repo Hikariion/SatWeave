@@ -3,13 +3,33 @@ syntax = "proto3";
 package messenger;
 import "job.proto";
 
-option go_package = "satweave/shared/worker";
+option go_package = "satweave/shared/task-manager";
 
 service Worker {
   // 客户端提交一个任务
   rpc SubmitJob (SubmitJobRequest) returns (SubmitJobReply) {}
   // 客户端上传任务附件
   rpc UploadAttachment (stream Chunk) returns (UploadAttachmentReply) {}
+  // 前驱任务的输入计算流
+  rpc InputStream (InputStreamRequest) returns (InputStreamReply) {}
+}
+
+message InputStreamRequest {
+  // task id
+  string task_id = 1;
+  // job id(self), 根据 task id + job id 可以从 task 表中找到需要执行的算子以及后继算子
+  string job_id = 2;
+}
+
+enum ExecutorState {
+  // 算子执行中出错
+  ExecutorError = 0;
+  // 后继算子rpc请求失败
+  NextExecutorRpcError = 1;
+}
+
+message InputStreamReply {
+  // 输入流
 }
 
 message ChunkBlock {

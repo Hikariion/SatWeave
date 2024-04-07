@@ -1,0 +1,19 @@
+tasks:
+  - cls: SimpleFFTSource
+    currency: 1
+  - cls: FFTOp
+    currency: 1
+    input_tasks:
+      - SimpleFFTSource
+  - cls: LaFilterOp
+    currency: 1
+    input_tasks:
+      - FFTOp
+  - cls: LaSumOp
+    currency: 1
+    input_tasks:
+      - LaFilterOp
+  - cls: SimpleFFTSink
+    currency: 1
+    input_tasks:
+      - LaSumOp
