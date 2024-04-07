@@ -198,7 +198,7 @@ func (w *Worker) ComputeCore() error {
 					client := sun.NewSunClient(conn)
 					_, err = client.SubmitJob(context.Background(), &sun.SubmitJobRequest{
 						JobId:         w.jobId,
-						YamlByte:      w.YamlByte,
+						YamlStr:       string(w.YamlByte),
 						SatelliteName: nextSatelliteName,
 						PathNodes:     w.pathNodes,
 					})

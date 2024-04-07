@@ -31,7 +31,7 @@ func SubmitStreamJob(c *gin.Context) {
 		return
 	}
 
-	if request.JobId == "" || request.SatelliteName == "" || request.YamlByte == nil || request.PathNodes == nil {
+	if request.JobId == "" || request.SatelliteName == "" || request.YamlStr == "" || request.PathNodes == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "JobId, SatelliteName, YamlByte, PathNodes must be provided"})
 		return
 	}

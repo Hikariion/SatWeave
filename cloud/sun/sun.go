@@ -122,7 +122,7 @@ func (s *Sun) RestoreFromCheckpoint(_ context.Context, request *RestoreFromCheck
 }
 
 func (s *Sun) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*SubmitJobResponse, error) {
-	yamlBytes := request.YamlByte
+	yamlBytes := []byte(request.YamlStr)
 	var tasksWrapper common2.UserTaskWrapper
 	err := yaml.Unmarshal(yamlBytes, &tasksWrapper)
 	if err != nil {

@@ -62,7 +62,7 @@ message SubmitJobResponse {
 message SubmitJobRequest {
   string job_id = 1;
   string satellite_name = 2;
-  bytes yaml_byte = 3;
+  string yaml_str = 3;
   repeated string pathNodes = 4;
 };
 

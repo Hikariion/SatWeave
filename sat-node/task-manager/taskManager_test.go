@@ -48,7 +48,7 @@ func testTaskManager(t *testing.T) {
 
 		request := &sun.SubmitJobRequest{
 			JobId:         "cb5f6a1d-16bc-42c1-882a-e62bfd56ea3c",
-			YamlByte:      yamlBytes,
+			YamlStr:       string(yamlBytes),
 			SatelliteName: "satellite1",
 			PathNodes:     pathNodes,
 		}
@@ -71,7 +71,7 @@ func TestReal(t *testing.T) {
 
 	request := &sun.SubmitJobRequest{
 		JobId:         "cb5f6a1d-16bc-42c1-882a-e62bfd56ea3c",
-		YamlByte:      yamlBytes,
+		YamlStr:       string(yamlBytes),
 		SatelliteName: "satellite1",
 		PathNodes:     pathNodes,
 	}
