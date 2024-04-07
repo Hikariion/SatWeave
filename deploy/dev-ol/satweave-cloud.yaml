@@ -80,6 +80,7 @@ metadata:
     kubesphere.io/serviceType: statefulservice
   name: satweave-cloud-dev
 spec:
+  type: NodePort
   sessionAffinity: None
   selector:
     app: satweave-cloud-dev
@@ -92,5 +93,4 @@ spec:
       protocol: TCP
       port: 3267
       targetPort: 3267
-  clusterIP: None
 
