@@ -1,0 +1,65 @@
+syntax = "proto3";
+import "common.proto";
+package messenger;
+
+option go_package = "satweave/shared/task-manager";
+
+service TaskManagerService {
+  // Deploy a task to the task manager.
+  rpc DeployTask(DeployTaskRequest) returns (NilResponse) {}
+  rpc StartTask(StartTaskRequest) returns (NilResponse) {}
+  rpc RequestSlot(RequiredSlotRequest) returns (RequiredSlotResponse) {}
+
+
+  // From other subtask
+  rpc PushRecord(PushRecordRequest) returns (NilResponse) {}
+  // From job manager
+//  rpc TriggerCheckpoint(TriggerCheckpointRequest) returns (NilResponse) {}
+}
+
+message DeployTaskRequest {
+  ExecuteTask exec_task = 1;
+  string job_id = 2;
+  repeated string pathNodes = 3;
+  bytes yamlBytes= 4;
+}
+//
+//message TriggerCheckpointRequest {
+//  Record.Checkpoint checkpoint = 1;
+//  uint64 worker_id = 2;
+//}
+
+message PushRecordRequest {
+  Record record = 1;
+  string from_subtask = 2;
+  int64 partition_idx = 3;
+  uint64 worker_id = 5;
+}
+
+message RequiredSlotRequest {
+//  repeated RequiredSlotDescription slot_descs = 1;
+  uint64 request_slot_num = 1;
+}
+
+message RequiredSlotResponse {
+  Status status = 1;
+  repeated uint64 available_workers = 2;
+}
+
+message AvailableWorkersResponse {
+  repeated uint64 workers = 1;
+}
+
+message OperatorRequest {
+  // 对应的算子
+  string cls_name = 1;
+  // 流式计算的数据
+  string data = 2;
+  // 计算图的 id
+  int64 graph_id = 3;
+}
+
+
+message StartTaskRequest {
+  string subtask_name = 1;
+}

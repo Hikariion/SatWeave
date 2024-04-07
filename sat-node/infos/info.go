@@ -14,8 +14,8 @@ func (m *BaseInfo) GetInfoType() InfoType {
 		return InfoType_NODE_INFO
 	case *BaseInfo_ClusterInfo:
 		return InfoType_CLUSTER_INFO
-	case *BaseInfo_BucketInfo:
-		return InfoType_BUCKET_INFO
+	case *BaseInfo_TaskInfo:
+		return InfoType_TASK_INFO
 	}
 	logger.Errorf("get invalid info type")
 	return InfoType_INVALID
@@ -25,10 +25,10 @@ func (m *BaseInfo) GetID() string {
 	switch info := m.Info.(type) {
 	case *BaseInfo_NodeInfo:
 		return info.NodeInfo.GetID()
-	case *BaseInfo_BucketInfo:
-		return info.BucketInfo.GetID()
 	case *BaseInfo_ClusterInfo:
 		return info.ClusterInfo.GetID()
+	case *BaseInfo_TaskInfo:
+		return info.TaskInfo.GetID()
 	}
 	logger.Errorf("get invalid info type")
 	return "INFO_TYPE_INVALID"

@@ -47,3 +47,18 @@ func PathExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
 }
+
+// SaveBytesToFile saves a byte slice to a file
+func SaveBytesToFile(data []byte, filePath string) error {
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}

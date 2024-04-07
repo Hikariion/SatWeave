@@ -7,6 +7,7 @@ import (
 	"satweave/sat-node/infos"
 	moon2 "satweave/shared/moon"
 	"testing"
+	"time"
 )
 
 func TestWatcher(t *testing.T) {
@@ -21,6 +22,7 @@ func testWatcher(t *testing.T) {
 	ctx := context.Background()
 	var watchers []*Watcher
 	var rpcServers []*messenger.RpcServer
+	var leader uint64
 
 	// Run Sun
 	watchers, rpcServers, _ = GenTestWatcherCluster(ctx, basePath, nodeNum)
@@ -40,34 +42,57 @@ func testWatcher(t *testing.T) {
 	WaitAllTestWatcherOK(watchers[:firstRunNum])
 
 	moon := watchers[0].moon
-	bucket := infos.GenBucketInfo("test", "default", "test")
 	_, err := moon.ProposeInfo(ctx, &moon2.ProposeInfoRequest{
-		Operate:  moon2.ProposeInfoRequest_ADD,
-		Id:       bucket.GetID(),
-		BaseInfo: bucket.BaseInfo(),
+		Operate: moon2.ProposeInfoRequest_ADD,
+		Id:      "test_task",
+		BaseInfo: &infos.BaseInfo{
+			Info: &infos.BaseInfo_TaskInfo{
+				TaskInfo: &infos.TaskInfo{
+					UserIp: "127.0.0.1",
+				},
+			},
+		},
 	})
 	if err != nil {
-		t.Errorf("propose bucket error: %v", err)
+		t.Errorf("propose info error: %v", err)
 	}
 
 	t.Run("add left half", func(t *testing.T) {
-		RunAllTestWatcher(watchers[firstRunNum:])
-		WaitAllTestWatcherOK(watchers)
+		RunAllTestWatcher(watchers[firstRunNum : len(watchers)-1])
+		WaitAllTestWatcherOK(watchers[:len(watchers)-1])
 		// test node
 	})
 
 	t.Cleanup(func() {
-		for i := 0; i < nodeNum; i++ {
+		for i := 0; i < len(watchers); i++ {
 			watchers[i].moon.Stop()
 			rpcServers[i].Stop()
 		}
 		_ = os.RemoveAll(basePath)
 	})
 
+	t.Logf("watcher leader info %v", watchers[0].moon.GetLeaderID())
+
 	t.Run("remove a node", func(t *testing.T) {
-		watchers[nodeNum-1].moon.Stop()
-		watchers[nodeNum-1].cancelFunc()
-		rpcServers[nodeNum-1].Stop()
-		WaitAllTestWatcherOK(watchers[:nodeNum-1])
+		watchers[len(watchers)-1].moon.Stop()
+		watchers[len(watchers)-1].cancelFunc()
+		rpcServers[len(watchers)-1].Stop()
+		watchers = watchers[:len(watchers)-1]
+		rpcServers = rpcServers[:len(rpcServers)-1]
+		WaitAllTestWatcherOK(watchers[:len(watchers)-1])
+	})
+
+	t.Run("leader fail", func(t *testing.T) {
+		leader = watchers[0].moon.GetLeaderID()
+		t.Logf("old leader %v", leader)
+		watchers[leader-1].moon.Stop()
+		watchers[leader-1].cancelFunc()
+		rpcServers[leader-1].Stop()
+		time.Sleep(5 * time.Second)
+		watchers = append(watchers[:leader-1], watchers[leader:len(watchers)-1]...)
+		rpcServers = append(rpcServers[:leader-1], rpcServers[leader:len(watchers)-1]...)
+		WaitAllTestWatcherOK(watchers[:len(watchers)-1])
+		leader = watchers[0].moon.GetLeaderID()
+		t.Logf("new leader %v", leader)
 	})
 }

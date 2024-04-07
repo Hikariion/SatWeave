@@ -1,247 +1,409 @@
 package worker
 
+/*
+	slot 中实际执行的 subtask(worker)
+*/
+
 import (
 	"context"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
-	"github.com/docker/go-connections/nat"
-	"io"
-	"os"
-	"path"
+	"github.com/google/uuid"
+	"satweave/cloud/sun"
 	"satweave/messenger"
-	satclient "satweave/shared/client"
-	"satweave/shared/service"
-	"satweave/shared/worker"
-	"satweave/utils/common"
+	"satweave/messenger/common"
+	"satweave/sat-node/operators"
+	common2 "satweave/utils/common"
+	"satweave/utils/errno"
 	"satweave/utils/logger"
-	"strings"
 	"sync"
+	"time"
 )
 
-// 该模块用于执行任务
+const (
+	lastFinishDataId uint64 = 5000 + iota
+	checkpointDataId
+)
 
 type Worker struct {
-	worker.UnimplementedWorkerServer
+	// satellite name
+	satelliteName string
+	// 算子名
+	clsName string
+	jobId   string
+	// 用 UUID 唯一标识这个 subtask
+	subtaskId       string
+	workerId        uint64
+	inputEndpoints  []*common.InputEndpoints
+	outputEndpoints []*common.OutputEndpoints
+	SubTaskName     string
+	partitionIdx    int64
 
-	// TODO(qiutb): 要不要加上worker的id ？
+	// 数据接收器
+	InputReceiver *InputReceiver
+	// 数据分发器
+	OutputDispenser *OutputDispenser
+
+	cls operators.OperatorBase
+
+	// 如果是 Source 算子，这个Channel用于接收Event
+	// 否则，这个 Channel 用于接收数据
+	InputChannel  chan *common.Record
+	OutputChannel chan *common.Record
+
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	// 任务队列, 用于接收任务
-	JobQueue chan *service.Job
-	// 配置
-	config *Config
-	mutex  sync.Mutex
+	mu sync.Mutex
+
+	CheckpointDir string
+
+	// job manager endpoint
+	jobManagerHost string
+	jobManagerPort uint64
+
+	// 初始化时的 state
+	state *common.File
+
+	// 存储迁移路径
+	pathNodes []string
+	YamlByte  []byte
 }
 
-// UploadAttachment 接收客户端上传的任务附件
-func (w *Worker) UploadAttachment(stream worker.Worker_UploadAttachmentServer) error {
-	var filename string
-	var file *os.File
-	logger.Infof("begin to receive attachment")
+// ----------------------------------- init for start subtask -----------------------------------
+
+// InitForStartService 用于初始化 Worker
+func (w *Worker) InitForStartService() {
+	if !w.isSourceOp() {
+		w.InputChannel = w.initInputReceiver(w.inputEndpoints)
+	} else {
+		// 如果是 SourceOp
+		//这个Channel 用来接收 checkpoint 等 event
+		w.InputChannel = make(chan *common.Record, 1000)
+	}
+	if !w.isSinkOp() {
+		w.OutputChannel = w.initOutputDispenser(w.outputEndpoints)
+	}
+}
+
+func (w *Worker) initInputReceiver(inputEndpoints []*common.InputEndpoints) chan *common.Record {
+	// TODO(qiu): 调整 channel 容量
+	inputChannel := make(chan *common.Record, 10000)
+	w.InputReceiver = NewInputReceiver(w.ctx, inputChannel, inputEndpoints)
+	return inputChannel
+}
+
+func (w *Worker) initOutputDispenser(outputEndpoints []*common.OutputEndpoints) chan *common.Record {
+	// TODO(qiu): 调整 channel 容量
+	outputChannel := make(chan *common.Record, 10000)
+	// TODO(qiu): 研究一下 PartitionIdx 的作用
+	w.OutputDispenser = NewOutputDispenser(w.ctx, outputChannel, outputEndpoints, w.SubTaskName, w.partitionIdx)
+	return outputChannel
+}
+
+// 判断是否为 source 算子
+func (w *Worker) isSourceOp() bool {
+	return w.cls.IsSourceOp()
+}
+
+// 判断是否为 sink 算子
+func (w *Worker) isSinkOp() bool {
+	return w.cls.IsSinkOp()
+}
+
+// 判断是否为 key 算子
+func (w *Worker) isKeyOp() bool {
+	return w.cls.IsKeyByOp()
+}
+
+// --------------------------- Compute Core ----------------------------
+
+func (w *Worker) ComputeCore() error {
+	// ------------------------ 具体执行逻辑 ------------------------
+
+	// 判断是否为 source 算子
+	isSourceOp := w.isSourceOp()
+	// 判断是否为 sink 算子
+	isSinkOp := w.isSinkOp()
+	// 判断是否为 key 算子
+	isKeyOp := w.isKeyOp()
+
+	taskInstance := w.cls
+	taskInstance.SetJobId(w.jobId)
+
+	initMap := make(map[string]interface{})
+	initMap["InputChannel"] = w.InputChannel
+	initMap["SunIp"] = w.jobManagerHost
+	initMap["SunPort"] = w.jobManagerPort
+	initMap["SatelliteName"] = w.satelliteName
+
+	err := taskInstance.RestoreFromCheckpoint(w.jobManagerHost, w.SubTaskName, w.jobManagerPort)
+	if err != nil {
+		logger.Errorf("RestoreFromCheckpoint Err: %v", err)
+		return err
+	}
+	taskInstance.Init(initMap)
+
 	for {
-		chunk, err := stream.Recv()
-		if err == io.EOF {
-			return stream.SendAndClose(&service.UploadAttachmentReply{
-				Success: true,
-			})
-		}
-		if err != nil {
-			logger.Errorf("Error while reading chunks: %v", err)
-			return err
-		}
+		flag := false
+		select {
+		case <-w.ctx.Done():
+			logger.Infof("finish cls %v", w.clsName)
+			return nil
+		default:
+			var partitionKey int64 = 0
+			var outputData []byte = nil
+			var err error = nil
 
-		if filename == "" {
-			filename = chunk.GetFilename()
-			// 创建附件的存储路径
-			logger.Infof("attachment path: %v", path.Join(w.config.AttachmentStoragePath, filename))
-			file, err = os.Create(path.Join(w.config.AttachmentStoragePath, filename))
-			if err != nil {
-				return err
+			dataType, inputData := w.getInputData(isSourceOp)
+
+			// TODO 1.31 都还没做 error 的处理
+			if dataType == common.DataType_BINARY {
+				outputData, partitionKey, err = w.BinaryDataProcess(taskInstance, isKeyOp, isSourceOp, inputData)
+				if err != nil {
+					logger.Errorf("Process BinaryData Err: %v, err")
+					return err
+				}
+			} else if dataType == common.DataType_CHECKPOINT {
+				data := w.checkpointEventProcess(isSinkOp)
+				if data != nil {
+					conn, err := messenger.GetRpcConn(w.jobManagerHost, w.jobManagerPort)
+					if err != nil {
+						logger.Errorf("GetRpcConn Err: %v", err)
+						return err
+					}
+					client := sun.NewSunClient(conn)
+					result, err := client.SaveSnapShot(context.Background(), &sun.SaveSnapShotRequest{
+						FilePath: w.SubTaskName,
+						State:    data,
+					})
+					if err != nil {
+						logger.Errorf("SaveSnapShot Err: %v", err)
+						return err
+					}
+					logger.Infof("SaveSnapShot result: %v", result)
+				}
+				if isSinkOp {
+					time.Sleep(2 * time.Second)
+					var nextId int
+					for i, _ := range w.pathNodes {
+						if w.pathNodes[i] == w.satelliteName {
+							nextId = (i + 1) % len(w.pathNodes)
+						}
+					}
+					nextSatelliteName := w.pathNodes[nextId]
+					conn, err := messenger.GetRpcConn(w.jobManagerHost, w.jobManagerPort)
+					if err != nil {
+						logger.Errorf("GetRpcConn Err: %v", err)
+						return err
+					}
+					client := sun.NewSunClient(conn)
+					_, err = client.SubmitJob(context.Background(), &sun.SubmitJobRequest{
+						JobId:         w.jobId,
+						YamlByte:      w.YamlByte,
+						SatelliteName: nextSatelliteName,
+						PathNodes:     w.pathNodes,
+					})
+					if err != nil {
+						logger.Errorf("Pre Migation Err: %v", err)
+						return err
+					}
+				}
+				continue
+			} else if dataType == common.DataType_FINISH {
+				_ = w.finishEventProcess(taskInstance, isSinkOp, inputData)
+				logger.Infof("%s finished successfully!", w.SubTaskName)
+				flag = true
+			} else {
+				logger.Errorf("Failed unknown data type")
+				return errno.UnknownDataType
 			}
-			defer file.Close()
-		}
 
-		_, writeErr := file.Write(chunk.GetData())
-		if writeErr != nil {
-			logger.Errorf("Error while writing to file: %v", writeErr)
-			return writeErr
+			w.pushOutputData(isSinkOp, outputData, dataType, partitionKey)
+		}
+		if flag {
+			break
 		}
 	}
-}
-
-// SubmitJob 客户端通过这个方法提交任务
-func (w *Worker) SubmitJob(ctx context.Context, request *worker.SubmitJobRequest) (*worker.SubmitJobReply, error) {
-	job := request.Job
-	//job.Status = service.JobStatus_ASSIGNED
-	w.JobQueue <- job
-	return &worker.SubmitJobReply{
-		Success: true,
-	}, nil
-}
-
-// ExecuteJob 执行任务
-func (w *Worker) ExecuteJob(ctx context.Context, job *service.Job) error {
-	// 执行任务
-	logger.Infof("begin to execute job: %v", job)
-
-	imageName := job.ImageName // 任务类型（镜像名）
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		logger.Errorf("Failed to create docker client", err)
-		return err
-	}
-	containerConfig := &container.Config{
-		Image: imageName,
-		Cmd:   strings.Split(job.Command, " "),
-		// 伪终端
-		Tty: true,
-	}
-
-	hostConfig := &container.HostConfig{
-		Binds: []string{
-			w.config.AttachmentStoragePath + ":/usr/src/app/data/attachment",
-			w.config.OutputPath + ":/usr/src/app/runs/detect/labels",
-		},
-		PortBindings: nat.PortMap{},
-	}
-
-	// 创建容器
-	resp, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, "")
-	if err != nil {
-		logger.Errorf("failed to create container", err)
-		return err
-	}
-
-	// 启动容器
-	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		logger.Errorf("Failed to start container", err)
-		return err
-	}
-
-	// Wait for container to finish
-	waitCh, _ := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
-	//if errC != nil {
-	//	logger.Errorf("Error waiting for container: %s", errC)
-	//}
-
-	// This will block until the container exits
-	res := <-waitCh
-
-	if res.Error != nil {
-		logger.Errorf("Error from exited container: %s", res.Error.Message)
-	}
-
-	// 删除容器，但是不删除相关联的卷
-	if err := cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{RemoveVolumes: false}); err != nil {
-		logger.Errorf("failed to remove container %v", err)
-	}
-
-	// 将任务结果返回给客户端
-	logger.Infof("job %v", job)
-	err = w.sendFileToClient(ctx, job.ClientIp, job.ClientPort, w.config.OutputPath, job.ResultName)
-	if err != nil {
-		logger.Errorf("failed to send file to client %v", err)
-		return err
-	}
+	w.cancel()
 	return nil
 }
 
-func (w *Worker) Run() {
-	// 监控其他节点的状态，做迁移决策
-	// go XXXXXXX
-	for {
-		select {
-		case <-w.ctx.Done():
-			w.cleanup()
-			return
-		// 从任务队列里取任务
-		case job := <-w.JobQueue:
-			// TODO(qiu): 如果返回错误，要告诉客户端任务执行失败
-			go w.ExecuteJob(w.ctx, job)
+/* record.data
+如果record type 是 pickle，则 data 是 raw bytes
+如果record type 是 checkpoint，则 data 需要转成 checkpoint 结构体
+如果record type 是 finish，则 data 需要转成 finish 结构体
+/
+*/
+
+// -------------------- get input --------------------
+
+// 获取算子的输入数据，返回数据类型、内容、数据ID
+func (w *Worker) getInputData(isSourceOp bool) (common.DataType, []byte) {
+	// 不是 SourceOp, 从 inputChannel 正常获取数据
+	if !isSourceOp {
+		record := <-w.InputChannel
+		return record.DataType, record.Data
+	}
+
+	// 是SourceOp, 从 inputChannel 里获取 event
+	record := <-w.InputChannel
+	return record.DataType, record.Data
+}
+
+// -------------------- process data --------------------
+
+// BinaryDataProcess 处理序列化的二进制数据
+func (w *Worker) BinaryDataProcess(taskInstance operators.OperatorBase, isKeyOp bool, isSourceOp bool,
+	inputData []byte) ([]byte, int64, error) {
+	var outputData []byte = nil
+	var partitionKey int64 = -1
+	var err error = nil
+
+	// KeyOp 可以不管了，不会有这个类型
+	if isKeyOp {
+		// 如果是 Key Operator，outputData = inputData
+		// 获取 partitionKey
+		outputData = inputData
+		// TODO: 把 partitionKey 算子的 Compute 函数中 int64 转成 []byte 的操作统一
+		partitionKeyBytes, err := taskInstance.Compute(inputData)
+		if err != nil {
+			logger.Errorf("Compute error: %v", err)
+			return nil, 0, err
 		}
+		partitionKey = common2.BytesToInt64(partitionKeyBytes)
+	} else if isSourceOp {
+		// SourceOp 在这里处理
+		outputData = inputData
+	} else {
+		// 不是 partition key operator以及SourceOp, 计算 outputData
+		outputData, err = taskInstance.Compute(inputData)
 	}
+	return outputData, partitionKey, err
 }
 
-func (w *Worker) cleanup() {
-	logger.Infof("Worker cleanup")
+func (w *Worker) finishEventProcess(taskInstance operators.OperatorBase, isSinkOp bool, inputData []byte) error {
+	if isSinkOp {
+		return nil
+	}
+	w.PushFinishEventToOutputChannel()
+	return nil
 }
 
-func NewWorker(ctx context.Context, rpcServer *messenger.RpcServer, config *Config) *Worker {
-	ctx, cancel := context.WithCancel(ctx)
+// -------------------- push output --------------------
+func (w *Worker) pushOutputData(isSinkOp bool, outputData []byte, dataType common.DataType, partitionKey int64) {
+	if isSinkOp {
+		return
+	}
+	record := &common.Record{
+		DataType:     dataType,
+		Data:         outputData,
+		PartitionKey: partitionKey,
+	}
+	w.OutputChannel <- record
+}
 
-	w := &Worker{
-		ctx:      ctx,
-		cancel:   cancel,
-		JobQueue: make(chan *service.Job, 100),
-		config:   config,
+// PushRecord 用于处理 OutputDispatcher 的 Rpc 请求
+// 将数据写入 Worker 的 InputReceiver
+func (w *Worker) PushRecord(record *common.Record, fromSubTask string, partitionIdx int64) error {
+	preSubTask := fromSubTask
+	logger.Infof("Recv data(from=%s): %v", preSubTask, record)
+	w.InputReceiver.RecvData(partitionIdx, record)
+	return nil
+}
+
+func (w *Worker) PushEventRecordToOutputChannel(dataType common.DataType,
+	data []byte) {
+	if w.isSinkOp() {
+		return
+	}
+	record := &common.Record{
+		DataType:     dataType,
+		Data:         data,
+		PartitionKey: -1,
+	}
+	w.OutputChannel <- record
+}
+
+func (w *Worker) PushFinishEventToOutputChannel() {
+	w.PushEventRecordToOutputChannel(common.DataType_FINISH, nil)
+}
+
+// --------------------------- checkpoint ----------------------------
+func (w *Worker) checkpointEventProcess(isSinkOp bool) []byte {
+	data := w.cls.Checkpoint()
+	if isSinkOp {
+		return data
+	}
+	w.PushCheckpointEventToOutputChannel(w.OutputChannel)
+
+	return data
+}
+
+func (w *Worker) PushCheckpointEventToOutputChannel(outputChannel chan *common.Record) {
+	w.PushEventRecordToOutputChannel(common.DataType_CHECKPOINT, nil)
+}
+
+// --------------------------- Run ----------------------------
+
+// Run 启动 Worker
+func (w *Worker) Run() {
+	// TODO(qiu)：都还需要添加错误处理
+	// 启动 Receiver 和 Dispenser
+	if w.InputReceiver != nil {
+		w.InputReceiver.RunAllPartitionReceiver()
+		logger.Infof("subtask %v start input receiver finish...", w.SubTaskName)
 	}
 
-	worker.RegisterWorkerServer(rpcServer.Server, w)
+	if w.OutputDispenser != nil {
+		w.OutputDispenser.Run()
+		logger.Infof("subtask %v start output dispenser finish...", w.SubTaskName)
+	}
 
-	// 初始化路径
-	_ = common.InitPath(config.AttachmentStoragePath)
-	_ = common.InitPath(config.OutputPath)
-
-	return w
+	// 启动 worker 核心进程
+	err := w.ComputeCore()
+	if err != nil {
+		logger.Errorf("ComputeCore Err: %v", err)
+	}
+	//time.Sleep(60 * time.Second)
+	logger.Infof("%s start core compute process success...", w.SubTaskName)
 }
 
 func (w *Worker) Stop() {
 	w.cancel()
 }
 
-// 卫星向客户端发送文件
-func (w *Worker) sendFileToClient(ctx context.Context, clientIpAddr string, clientRpcPort uint64, fileDir, filename string) error {
-	// 客户端的rpc地址， 卫星ip + 端口
-	conn, err := messenger.GetRpcConn(clientIpAddr, clientRpcPort)
-	if err != nil {
-		logger.Errorf("did not connect: %v", err)
-		return err
-	}
-	defer conn.Close()
-	c := satclient.NewClientClient(conn)
+func NewWorker(satelliteName string, executeTask *common.ExecuteTask, jobManagerHost string, jobManagerPort uint64, jobId string,
+	pathNodes []string, yamlBytes []byte) *Worker {
+	// TODO(qiu): 这个 ctx 是否可以继承 task manager
+	workerCtx, cancel := context.WithCancel(context.Background())
+	worker := &Worker{
+		satelliteName:   satelliteName,
+		subtaskId:       uuid.New().String(),
+		clsName:         executeTask.ClsName,
+		inputEndpoints:  executeTask.InputEndpoints,
+		outputEndpoints: executeTask.OutputEndpoints,
+		SubTaskName:     executeTask.SubtaskName,
+		partitionIdx:    executeTask.PartitionIdx,
+		workerId:        executeTask.WorkerId,
 
-	logger.Infof("与客户端建立连接成功，开始发送文件")
+		InputReceiver:   nil,
+		OutputDispenser: nil,
 
-	file, err := os.Open(path.Join(fileDir, filename))
-	if err != nil {
-		logger.Errorf("Error while opening file: %v", err)
-		return err
-	}
-	defer file.Close()
+		ctx:    workerCtx,
+		cancel: cancel,
 
-	logger.Infof("开始发送文件: %v", filename)
-
-	stream, err := c.ReceiveFile(ctx)
-	if err != nil {
-		logger.Errorf("Error while opening stream: %v", err)
-		return err
-	}
-
-	buffer := make([]byte, 1024)
-	for {
-		n, err := file.Read(buffer)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			logger.Errorf("Error while reading chunk: %v", err)
-			return err
-		}
-		stream.Send(&satclient.ChunkBlock{
-			Filename: filename,
-			Data:     buffer[:n],
-		})
+		jobManagerHost: jobManagerHost,
+		jobManagerPort: jobManagerPort,
+		jobId:          jobId,
+		pathNodes:      pathNodes,
+		YamlByte:       yamlBytes,
 	}
 
-	res, err := stream.CloseAndRecv()
-	if err != nil {
-		logger.Errorf("Error while receiving response: %v", err)
-		return err
-	}
+	// init op
+	cls := operators.FactoryMap[worker.clsName]()
+	worker.cls = cls
 
-	logger.Infof("Response: %v", res)
+	// worker 初始化
+	worker.InitForStartService()
 
-	return nil
+	return worker
 }

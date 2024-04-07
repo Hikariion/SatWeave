@@ -5,7 +5,9 @@ import (
 	"net"
 	"os"
 	"path"
-	"satweave/sat-node/worker"
+	"satweave/sat-node/moon"
+	task_manager "satweave/sat-node/task-manager"
+	"satweave/sat-node/watcher"
 	"satweave/utils/common"
 	"satweave/utils/config"
 )
@@ -14,32 +16,40 @@ const rpcPort = 3267
 const httpPort = 3268
 
 type Config struct {
-	IpAddr       string        `json:"IpAddr"`
-	RpcPort      uint64        `json:"RpcPort"`
-	HttpPort     uint64        `json:"HttpPort"`
-	StoragePath  string        `json:"StoragePath"`
-	WorkerConfig worker.Config `json:"WorkerConfig"`
+	IpAddr      string `json:"IpAddr"`
+	RpcPort     uint64 `json:"RpcPort"`
+	HttpPort    uint64 `json:"HttpPort"`
+	StoragePath string `json:"StoragePath"`
+	//WorkerConfig  task_manager.Config `json:"WorkerConfig"`
+	MoonConfig        moon.Config         `json:"MoonConfig"`
+	WatcherConfig     watcher.Config      `json:"WatcherConfig"`
+	TaskManagerConfig task_manager.Config `json:"TaskManagerConfig"`
 }
 
 var DefaultConfig Config
 
 func init() {
 	// 初始化 ip
-	// TODO(qiu): 这里可能会有坑，会得到docker内部的地址，但是需要的是宿主机的ip 可以用主机模式
-	//docker run --network=host <image_name>
 	_, ipAddr := getSelfIpAddr()
 	DefaultConfig = Config{
-		IpAddr: ipAddr,
+		IpAddr:            ipAddr,
+		HttpPort:          httpPort,
+		MoonConfig:        moon.DefaultConfig,
+		WatcherConfig:     watcher.DefaultConfig,
+		TaskManagerConfig: task_manager.DefaultConfig,
+		StoragePath:       "./sat-data",
 	}
+	DefaultConfig.WatcherConfig.SelfNodeInfo.RpcPort = rpcPort
+	DefaultConfig.WatcherConfig.SelfNodeInfo.IpAddr = ipAddr
+	DefaultConfig.TaskManagerConfig.IpAddr = ipAddr
+	DefaultConfig.TaskManagerConfig.RpcPort = rpcPort
 }
 
 // InitConfig check config and init data dir and set some empty config value
 func InitConfig(conf *Config) error {
 	var defaultConfig Config
-	// TODO(qiu): 看看是啥意思
 	_ = config.GetDefaultConf(&defaultConfig)
 
-	// TODO(qiu): 为什么要检查ip？
 	// check ip address
 	//if !isAvailableIpAdder(conf.WatcherConfig.SelfNodeInfo.IpAddr) {
 	//	conf.WatcherConfig.SelfNodeInfo.IpAddr =

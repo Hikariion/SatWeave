@@ -18,3 +18,7 @@ func (m *Timestamp) Format(layout string) string {
 func (m *Timestamp) GetTime() time.Time {
 	return time.Unix(0, m.Nanos)
 }
+
+func GetTimeStamp() uint64 {
+	return uint64(time.Now().Unix())
+}

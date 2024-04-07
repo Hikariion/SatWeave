@@ -2,8 +2,22 @@
   "RpcPort": 3267,
   "HttpPort": 3268,
   "StoragePath": "/data/satweave/",
-  "WorkerConfig": {
-    "AttachmentStoragePath": "/data/satweave/worker/attachment/",
-    "OutputPath": "/data/satweave/worker/output/"
-  }
+  "WatcherConfig": {
+    "SunAddr": "satweave-cloud-dev:3267",
+    "ClusterInfo": {},
+    "NodeInfoCommitInterval": 22000000000,
+    "ClusterName": "satweave_k8s"
+  },
+   "MoonConfig": {
+     "ClusterInfo": {},
+     "RaftStoragePath": "/data/satweave/moon/raft/",
+     "RocksdbStoragePath": "/data/satweave/moon/rocksdb/"
+   },
+   "TaskManagerConfig": {
+     "SunAddr": "satweave-cloud-dev:3267",
+     "StoragePath": "data/satweave/taskmanager/",
+     "CloudAddr": "satweave-cloud-dev",
+     "CloudPort": 3267
+   }
+
 }

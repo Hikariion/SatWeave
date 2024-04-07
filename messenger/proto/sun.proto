@@ -10,12 +10,79 @@ service Sun {
   rpc MoonRegister(NodeInfo) returns (RegisterResult) {}
   rpc GetLeaderInfo(NodeInfo) returns (NodeInfo) {}
   rpc ReportClusterInfo(ClusterInfo) returns (Result) {}
+
+  // from user front client
+  rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse) {}
+
+  // from task manager
+  rpc RegisterTaskManager(RegisterTaskManagerRequest) returns (RegisterTaskManagerResponse) {}
+  rpc SaveSnapShot(SaveSnapShotRequest) returns (Result) {}
+  rpc RestoreFromCheckpoint(RestoreFromCheckpointRequest) returns (RestoreFromCheckpointResponse) {}
+  rpc ReceiverStreamData(ReceiverStreamDataRequest) returns(Result) {}
 }
 
+message ReceiverStreamDataRequest {
+  string job_id = 1;
+  string dataId = 2;
+  string res = 3;
+}
+
+message RestoreFromCheckpointRequest {
+  string  subtask_name = 1;
+}
+
+message RestoreFromCheckpointResponse {
+  bool success = 1;
+  bytes state = 2;
+}
+
+message SaveSnapShotRequest {
+  string file_path = 1;
+  bytes state = 2;
+}
+
+message RegisterTaskManagerResponse {
+  bool success = 1;
+}
+
+message RegisterTaskManagerRequest {
+  TaskManagerDescription task_manager_desc = 1;
+}
+
+message TriggerCheckpointRequest {
+  string job_id = 1;
+  bool cancel_job = 2;
+}
+
+
+message SubmitJobResponse {
+  bool success = 1;
+}
+
+message SubmitJobRequest {
+  string job_id = 1;
+  string satellite_name = 2;
+  bytes yaml_byte = 3;
+  repeated string pathNodes = 4;
+};
+
+message TaskManagerResult {
+  map<uint64, TaskManagerDescription> task_manager_table = 1;
+}
 
 message RegisterResult {
   Result result = 1;
   uint64 raft_id = 2;
   bool has_leader = 3;
   ClusterInfo cluster_info = 4;
+}
+
+
+
+message AcknowledgeCheckpointRequest {
+  Status status = 1;
+  string subtask_name = 2;
+  string job_id = 3;
+  int64 checkpoint_id = 4;
+  File state = 5;
 }

@@ -173,5 +173,5 @@ var Worker_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "worker.proto",
+	Metadata: "task-manager.proto",
 }
