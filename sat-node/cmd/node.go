@@ -87,7 +87,7 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 	// Gen TaskManager
 	taskManagerConfig := &conf.TaskManagerConfig
 	satelliteName := os.Getenv("SATELLITE_NAME")
-	taskManager := task_manager.NewTaskManager(ctx, taskManagerConfig, satelliteName, rpc, taskManagerConfig.SlotNum, taskManagerConfig.CloudAddr, taskManagerConfig.RpcPort)
+	taskManager := task_manager.NewTaskManager(ctx, taskManagerConfig, satelliteName, rpc, taskManagerConfig.SlotNum, taskManagerConfig.IpAddr, taskManagerConfig.RpcPort)
 
 	// Run
 	go func() {

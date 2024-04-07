@@ -88,9 +88,11 @@ spec:
     - name: http-cloud
       protocol: TCP
       port: 3268
+      nodePort: 53268
       targetPort: 3268
     - name: grpc-cloud
       protocol: TCP
       port: 3267
+      nodePort: 53267
       targetPort: 3267
 
