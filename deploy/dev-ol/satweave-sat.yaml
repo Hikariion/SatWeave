@@ -38,8 +38,8 @@ spec:
             - run
           resources:
             limits:
-              cpu: '8'
-              memory: 8192Mi
+              cpu: '4'
+              memory: 2048Mi
           ports:
             - name: http-edge
               protocol: TCP
