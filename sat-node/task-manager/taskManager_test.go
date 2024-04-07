@@ -2,10 +2,12 @@ package task_manager
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"satweave/cloud/sun"
 	"satweave/messenger"
+	"satweave/utils/logger"
 	"testing"
 	"time"
 )
@@ -58,5 +60,24 @@ func testTaskManager(t *testing.T) {
 
 		time.Sleep(time.Second * 100)
 	})
+}
 
+func TestReal(t *testing.T) {
+	yamlBytes, err := os.ReadFile("./test-files/FFT_config.yaml")
+
+	pathNodes := make([]string, 0)
+
+	pathNodes = append(pathNodes, "satellite-0", "satellite-1", "satellite-2")
+
+	request := &sun.SubmitJobRequest{
+		JobId:         "cb5f6a1d-16bc-42c1-882a-e62bfd56ea3c",
+		YamlByte:      yamlBytes,
+		SatelliteName: "satellite1",
+		PathNodes:     pathNodes,
+	}
+
+	jsonData, err := json.Marshal(request)
+	assert.NoError(t, err)
+
+	logger.Infof("json data: %v", string(jsonData))
 }

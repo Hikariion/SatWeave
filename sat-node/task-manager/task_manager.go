@@ -144,7 +144,7 @@ func (t *TaskManager) Stop() {
 }
 
 func NewTaskManager(ctx context.Context, config *Config, satelliteName string, server *messenger.RpcServer,
-	slotNum uint64, host string, port uint64) *TaskManager {
+	slotNum uint64, host string, RpcPort uint64) *TaskManager {
 	taskManagerCtx, cancelFunc := context.WithCancel(ctx)
 
 	taskManager := &TaskManager{
@@ -156,7 +156,7 @@ func NewTaskManager(ctx context.Context, config *Config, satelliteName string, s
 	}
 
 	taskManager.slotTable = NewSlotTable(satelliteName, slotNum, taskManager.config.CloudAddr, taskManager.config.CloudPort)
-	taskManager.selfDescription = taskManager.newSelfDescription(satelliteName, slotNum, host, port)
+	taskManager.selfDescription = taskManager.newSelfDescription(satelliteName, slotNum, host, RpcPort)
 
 	task_manager.RegisterTaskManagerServiceServer(server, taskManager)
 	return taskManager

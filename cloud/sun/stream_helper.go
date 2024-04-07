@@ -153,6 +153,7 @@ func (s *StreamHelper) RegisterTaskManager(_ context.Context, request *RegisterT
 			Success: false,
 		}, status.Errorf(codes.Internal, "register task manager failed: %v", err)
 	}
+	logger.Infof("Register task manager success: %v", request.TaskManagerDesc)
 	return &RegisterTaskManagerResponse{
 		Success: true,
 	}, nil
