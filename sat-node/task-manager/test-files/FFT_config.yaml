@@ -5,15 +5,15 @@ tasks:
     currency: 1
     input_tasks:
       - SimpleFFTSource
-  - cls: HaFilterOp
+  - cls: LaFilterOp
     currency: 1
     input_tasks:
       - FFTOp
-  - cls: HaSumOp
+  - cls: LaSumOp
     currency: 1
     input_tasks:
-      - HaFilterOp
+      - LaFilterOp
   - cls: SimpleFFTSink
     currency: 1
     input_tasks:
-      - HaSumOp
+      - LaSumOp

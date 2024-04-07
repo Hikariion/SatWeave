@@ -1,8 +1,12 @@
 package operators
 
 import (
+	"context"
 	"math/cmplx"
+	"satweave/cloud/sun"
+	"satweave/messenger"
 	"satweave/utils/common"
+	"satweave/utils/logger"
 )
 
 // LaSumOp 是低通聚合算子
@@ -16,7 +20,6 @@ func (op *LaSumOp) SetJobId(JobId string) {
 }
 
 func (op *LaSumOp) Init(initMap map[string]interface{}) {
-	op.counter = initMap["counter"].(uint64)
 }
 
 func (op *LaSumOp) Compute(data []byte) ([]byte, error) {
@@ -50,10 +53,29 @@ func (op *LaSumOp) IsKeyByOp() bool {
 }
 
 func (op *LaSumOp) Checkpoint() []byte {
-	// TODO: checkpoint
-	return nil
+	data := common.Uint64ToBytes(op.counter)
+	return data
 }
 
 func (op *LaSumOp) RestoreFromCheckpoint(SunIp, ClsName string, SunPort uint64) error {
+	conn, err := messenger.GetRpcConn(SunIp, SunPort)
+	if err != nil {
+		logger.Errorf("Fail to get rpc conn on TaskManager %v", SunIp)
+		return err
+	}
+	client := sun.NewSunClient(conn)
+	result, err := client.RestoreFromCheckpoint(context.Background(),
+		&sun.RestoreFromCheckpointRequest{
+			SubtaskName: ClsName,
+		})
+	if err != nil {
+		return err
+	}
+	state := result.State
+	if state == nil {
+		op.counter = 0
+	} else {
+		op.counter = common.BytesToUint64(state)
+	}
 	return nil
 }
