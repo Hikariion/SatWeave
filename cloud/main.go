@@ -2,17 +2,30 @@ package main
 
 import (
 	"context"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"satweave/cloud/sun"
 	"satweave/messenger"
 	"satweave/utils/logger"
+	"time"
 )
 
 var Sun *sun.Sun
 
 func NewRouter() *gin.Engine {
 	router := gin.Default()
+
+	// 配置CORS中间件
+	config := cors.Config{
+		AllowAllOrigins:  true,
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}
+	router.Use(cors.New(config))
+
 	router.GET("/", hello)
 	router.POST("/submit-stream-job", SubmitStreamJob)
 	return router
