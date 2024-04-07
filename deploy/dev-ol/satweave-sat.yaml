@@ -77,7 +77,7 @@ spec:
           - ReadWriteOnce
         resources:
           requests:
-            storage: 10Gi
+            storage: 3Gi
       metadata:
         name: satweave-sat-storage
         namespace: satweave
