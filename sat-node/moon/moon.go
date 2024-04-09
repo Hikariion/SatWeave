@@ -91,23 +91,35 @@ func (m *Moon) ProposeInfo(ctx context.Context, request *moon.ProposeInfoRequest
 		logger.Errorf("receive unmarshalled propose info request: %v", request.Id)
 		return nil, err
 	}
-
-	// 注册
-	ch := m.w.Register(opID)
-	m.raft.ProposeC <- data
-
-	// wait propose apply
-	select {
-	case <-ch:
+	if request.BaseInfo.GetInfoType() == infos.InfoType_NODE_INFO {
+		m.NodeInfoChanged(request.BaseInfo.GetNodeInfo())
+		m.raft.ProposeC <- data
 		logger.Infof("propose info request: %v SUCCESS", request.Id)
+		return &moon.ProposeInfoReply{
+			Result: &common.Result{
+				Status: 0,
+			},
+			LeaderInfo: nil,
+		}, err
+	} else {
+		// 注册
+		ch := m.w.Register(opID)
+		m.raft.ProposeC <- data
+
+		// wait propose apply
+		select {
+		case <-ch:
+			logger.Infof("propose info request: %v SUCCESS", request.Id)
+		}
+
+		return &moon.ProposeInfoReply{
+			Result: &common.Result{
+				Status: 0,
+			},
+			LeaderInfo: nil,
+		}, err
 	}
 
-	return &moon.ProposeInfoReply{
-		Result: &common.Result{
-			Status: 0,
-		},
-		LeaderInfo: nil,
-	}, err
 }
 
 func (m *Moon) loadSnapshot() (*raftpb.Snapshot, error) {
@@ -237,13 +249,11 @@ func (m *Moon) ProposeConfChangeAddNode(ctx context.Context, nodeInfo *infos.Nod
 
 	ch := m.w.Register((1 << 8) + nodeInfo.RaftId)
 	timer := time.NewTimer(time.Second * 10)
-	for {
-		select {
-		case <-ch:
-			return nil
-		case <-timer.C:
-			return errors.New("add node timeout")
-		}
+	select {
+	case <-ch:
+		return nil
+	case <-timer.C:
+		return errors.New("add node timeout")
 	}
 }
 

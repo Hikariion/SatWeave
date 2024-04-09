@@ -7,13 +7,9 @@ option go_package = "satweave/sat-node/infos";
 enum InfoType {
   INVALID = 0;
   NODE_INFO = 1;
-  BUCKET_INFO = 2;
-  CLUSTER_INFO = 3;
-  USER_INFO = 4;
-  GROUP_INFO = 5;
-  VOLUME_INFO = 6;
-  ACCESS_INFO = 7;
-  TASK_INFO = 8;
+  CLUSTER_INFO = 2;
+  GROUP_INFO = 3;
+  TASK_INFO = 4;
 }
 
 // BaseInfo collect all type of info
@@ -21,23 +17,9 @@ message BaseInfo {
   oneof info{
     NodeInfo node_info = 1;
     ClusterInfo cluster_info = 2;
-    UserInfo user_info = 3;
-    GroupInfo group_info = 4;
-    AccessInfo access_info = 5;
-    TaskInfo task_info = 6;
+    GroupInfo group_info = 3;
+    TaskInfo task_info = 4;
   }
-}
-
-// UserInfo is the info of SatWeave user
-message UserInfo {
-  string user_id = 1;
-  string user_name = 2;
-  string user_group = 3;
-  string user_email = 4;
-  string user_password = 5;
-  string user_status = 6;
-  Timestamp user_created_at = 7;
-  Timestamp user_updated_at = 8;
 }
 
 message GroupInfo {
@@ -46,12 +28,6 @@ message GroupInfo {
   string group_description = 3;
   Timestamp group_created_at = 4;
   Timestamp group_updated_at = 5;
-}
-
-message AccessInfo {
-  string access_key = 1;
-  string access_secret = 2;
-  string user_id = 3;
 }
 
 message ClusterInfo{

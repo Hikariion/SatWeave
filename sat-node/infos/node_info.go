@@ -2,8 +2,9 @@ package infos
 
 import (
 	"github.com/google/uuid"
-	"github.com/sincerexia/gocrush"
+	"net"
 	"strconv"
+	"strings"
 )
 
 func (m *NodeInfo) GetInfoType() InfoType {
@@ -18,91 +19,47 @@ func (m *NodeInfo) GetID() string {
 	return strconv.FormatUint(m.RaftId, 10)
 }
 
+func getSelfIpAddr() (error, string) {
+	selfIp := "127.0.0.1"
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return err, selfIp
+	}
+	for _, inter := range interfaces {
+		if strings.Contains(inter.Name, "docker") {
+			continue
+		}
+		if strings.Contains(inter.Name, "lo") {
+			continue
+		}
+		if strings.Contains(inter.Name, "br") {
+			continue
+		}
+		address, _ := inter.Addrs()
+		for _, addr := range address {
+			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+				if ipnet.IP.To4() != nil {
+					selfIp = ipnet.IP.String()
+				}
+			}
+		}
+	}
+	return nil, selfIp
+}
+
 // NewSelfInfo Generate new nodeInfo
 // ** just for test **
 func NewSelfInfo(raftID uint64, ipaddr string, rpcPort uint64) *NodeInfo {
+	err, ip := getSelfIpAddr()
+	if err != nil {
+		ip = ipaddr
+	}
 	selfInfo := &NodeInfo{
 		RaftId:   raftID,
 		Uuid:     uuid.New().String(),
-		IpAddr:   ipaddr,
+		IpAddr:   ip,
 		RpcPort:  rpcPort,
 		Capacity: 10,
 	}
 	return selfInfo
-}
-
-type EcosNode struct {
-	*NodeInfo
-	Type     int
-	Failed   bool
-	Selector gocrush.Selector
-	Root     *EcosNode
-	Children []gocrush.Node
-}
-
-const (
-	RootNodeType int = iota
-	LeafNodeType
-)
-
-func NewRootNode() *EcosNode {
-	// defaultRootNode is used as the default root of implicit condition
-	return &EcosNode{
-		NodeInfo: &NodeInfo{
-			RaftId:  0,
-			Uuid:    uuid.New().String(),
-			IpAddr:  "0.0.0.0",
-			RpcPort: 0,
-		},
-		Type:   RootNodeType,
-		Failed: false,
-	}
-}
-
-func (x *EcosNode) GetChildren() []gocrush.Node {
-	return x.Children
-}
-
-func (x *EcosNode) GetType() int {
-	return 1
-}
-
-func (x *EcosNode) GetWeight() int64 {
-	return int64(x.Capacity)
-}
-
-func (x *EcosNode) GetId() string {
-	return x.GetUuid()
-}
-
-func (x *EcosNode) IsFailed() bool {
-	return x.Failed
-}
-
-func (x *EcosNode) GetSelector() gocrush.Selector {
-	return x.Selector
-}
-
-func (x *EcosNode) SetSelector(selector gocrush.Selector) {
-	x.Selector = selector
-}
-
-func (x *EcosNode) GetParent() gocrush.Node {
-	if x == x.Root {
-		return nil
-	} else {
-		return x.Root
-	}
-}
-
-func (x *EcosNode) IsLeaf() bool {
-	return x != x.Root
-}
-
-func (x *EcosNode) Select(input int64, round int64) gocrush.Node {
-	return x.GetSelector().Select(input, round)
-}
-
-func (x *EcosNode) GetRaftId() uint64 {
-	return x.RaftId
 }

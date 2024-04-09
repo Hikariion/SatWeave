@@ -317,7 +317,7 @@ func (rc *RaftNode) publishSnapshot(snapshotToSave raftpb.Snapshot) {
 	rc.appliedIndex = snapshotToSave.Metadata.Index
 }
 
-var snapshotCatchUpEntriesN uint64 = 2000 // set 100 for test
+var snapshotCatchUpEntriesN uint64 = 20000 // set 100 for test
 
 func (rc *RaftNode) maybeTriggerSnapshot(applyDoneC <-chan struct{}) {
 	if rc.appliedIndex-rc.snapshotIndex <= rc.snapCount {
