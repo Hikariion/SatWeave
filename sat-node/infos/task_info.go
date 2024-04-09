@@ -9,7 +9,7 @@ func (m *TaskInfo) BaseInfo() *BaseInfo {
 }
 
 func (m *TaskInfo) GetID() string {
-	return m.TaskId
+	return m.TaskUuid
 }
 
 func (m *TaskInfo) GetSelfTask() []*TaskInfo {
