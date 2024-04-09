@@ -60,7 +60,6 @@ func (s *StatusReporter) GetReports() []Report {
 				State:     infos.NodeState_ONLINE,
 				Role:      0,
 			},
-			PipelineReport: nil,
 		},
 	}
 }

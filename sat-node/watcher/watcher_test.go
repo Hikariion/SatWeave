@@ -47,9 +47,7 @@ func testWatcher(t *testing.T) {
 		Id:      "test_task",
 		BaseInfo: &infos.BaseInfo{
 			Info: &infos.BaseInfo_TaskInfo{
-				TaskInfo: &infos.TaskInfo{
-					UserIp: "127.0.0.1",
-				},
+				TaskInfo: &infos.TaskInfo{},
 			},
 		},
 	})

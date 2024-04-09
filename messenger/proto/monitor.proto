@@ -29,7 +29,6 @@ message NodeStatusReport {
     LEARNER = 3;
   }
   Role role = 6;
-  repeated PipelineReport pipelines = 7;
 }
 
 message NodeStatus {
@@ -43,21 +42,6 @@ message NodeStatus {
   uint64 block_count = 8;
   uint64 meta_count = 9;
   uint64 goroutine_count = 10;
-  uint64 meta_pipeline_count = 11;
-}
-
-message PipelineReport {
-  uint64 pg_id = 1;
-  repeated uint64 node_ids = 2;
-  uint64 leader_id = 3;
-  enum State {
-    UNKNOWN = 0;
-    OK = 1;
-    DOWN_GRADE = 2;
-    CHANGING = 3;
-    ERROR = 4;
-  }
-  State state = 4;
 }
 
 message ClusterReport {
@@ -70,7 +54,6 @@ message ClusterReport {
   ClusterState state = 1;
   ClusterInfo cluster_info = 2;
   repeated NodeStatusReport nodes = 3;
-  repeated PipelineReport pipelines = 4;
 }
 
 message StateRequest {}

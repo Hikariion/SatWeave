@@ -36,9 +36,8 @@ const (
 )
 
 type Report struct {
-	ReportType     ReportType
-	NodeReport     *NodeStatusReport
-	PipelineReport *PipelineReport
+	ReportType ReportType
+	NodeReport *NodeStatusReport
 }
 
 type Reporter interface {
@@ -48,18 +47,16 @@ type Reporter interface {
 
 type NodeMonitor struct {
 	UnimplementedMonitorServer
-	ctx             context.Context
-	cancel          context.CancelFunc
-	timer           *time.Ticker
-	clusterReport   *ClusterReport
-	clusterPipeline sync.Map
+	ctx           context.Context
+	cancel        context.CancelFunc
+	timer         *time.Ticker
+	clusterReport *ClusterReport
 
 	nodeStatusMap sync.Map
 	reportTimers  sync.Map
 
 	selfNodeStatusMutex sync.Mutex
 	selfNodeStatus      *NodeStatusReport
-	selfPipeline        map[uint64]*PipelineReport
 	watcher             *Watcher
 
 	reportersMap sync.Map
@@ -88,7 +85,7 @@ func (m *NodeMonitor) collectNodes() {
 				time.Sleep(time.Second * 3)
 				continue
 			}
-			logger.Tracef("Node: %v start collect node report", m.watcher.GetSelfInfo().GetID())
+			logger.Debugf("Node: %v start collect node report", m.watcher.GetSelfInfo().GetID())
 
 			m.watcher.GetCurrentClusterInfo()
 			nodeInfoStorage := m.watcher.register.GetStorage(infos.InfoType_NODE_INFO)
@@ -134,9 +131,6 @@ func (m *NodeMonitor) collectNodes() {
 						}
 					}
 					m.nodeStatusMap.Store(report.NodeId, report)
-					for _, p := range report.Pipelines {
-						m.clusterPipeline.Store(p.PgId, p)
-					}
 
 					logger.Tracef("Node: %v get node report from: %v", m.watcher.GetSelfInfo().GetID(), nodeInfo.RaftId)
 				}(nodeInfo)
@@ -186,9 +180,6 @@ func (m *NodeMonitor) Report(_ context.Context, report *NodeStatusReport) (*comm
 		}
 	}
 	m.nodeStatusMap.Store(report.NodeId, report)
-	for _, p := range report.Pipelines {
-		m.clusterPipeline.Store(p.PgId, p)
-	}
 	return &common.Result{}, nil
 }
 
@@ -220,17 +211,7 @@ func (m *NodeMonitor) GetNodeReport(nodeID uint64) *NodeStatusReport {
 
 func (m *NodeMonitor) GetClusterReport(context.Context, *emptypb.Empty) (*ClusterReport, error) {
 	reports := m.GetAllNodeReports()
-	var pipelines []*PipelineReport
-	// 生成集群 pipeline 列表
 	clusterState := ClusterReport_HEALTH_OK
-
-	m.clusterPipeline.Range(func(key, value interface{}) bool {
-		pipelines = append(pipelines, value.(*PipelineReport))
-		if value.(*PipelineReport).State != PipelineReport_OK {
-			clusterState = ClusterReport_HEALTH_ERR
-		}
-		return true
-	})
 
 	// 获取最新集群信息
 	clusterInfo := m.watcher.GetCurrentClusterInfo()
@@ -239,7 +220,6 @@ func (m *NodeMonitor) GetClusterReport(context.Context, *emptypb.Empty) (*Cluste
 		State:       clusterState,
 		ClusterInfo: &clusterInfo,
 		Nodes:       reports,
-		Pipelines:   pipelines,
 	}, nil
 }
 
@@ -266,27 +246,14 @@ func (m *NodeMonitor) collectReports() {
 			return true
 		}
 		reports := reporter.GetReports()
-		m.selfPipeline = make(map[uint64]*PipelineReport)
 
 		for _, report := range reports {
 			if report.NodeReport != nil {
 				m.selfNodeStatus = report.NodeReport
 			}
-			if report.PipelineReport != nil {
-				m.selfPipeline[report.PipelineReport.PgId] = report.PipelineReport
-			}
 		}
 		return true
 	})
-	m.selfNodeStatus.Pipelines = m.getAllPipelineReports()
-}
-
-func (m *NodeMonitor) getAllPipelineReports() []*PipelineReport {
-	var reports []*PipelineReport
-	for _, v := range m.selfPipeline {
-		reports = append(reports, v)
-	}
-	return reports
 }
 
 func (m *NodeMonitor) runReport() {
@@ -300,20 +267,6 @@ func (m *NodeMonitor) runReport() {
 			if leaderID == 0 {
 				continue
 			}
-			// 推送模型
-			/*
-				leaderInfo, err := m.watcher.GetMoon().GetInfoDirect(infos.InfoType_NODE_INFO, strconv.FormatUint(leaderID, 10))
-				if err != nil || leaderInfo.BaseInfo().GetNodeInfo() == nil {
-					logger.Warningf("node: %v get leader info: %v failed: %v", m.watcher.GetSelfInfo().GetID(), leaderID, err)
-					continue
-				}
-				conn, _ := messenger.GetRpcConnByNodeInfo(leaderInfo.BaseInfo().GetNodeInfo())
-				client := NewMonitorClient(conn)
-				_, err = client.Report(m.ctx, m.selfNodeStatus)
-				if err != nil {
-					logger.Errorf("runReport node status failed: %v", err)
-				}
-			*/
 		}
 	}
 }
@@ -337,7 +290,6 @@ func NewMonitor(ctx context.Context, w *Watcher, rpcServer *messenger.RpcServer)
 		nodeStatusMap: sync.Map{},
 		watcher:       w,
 		eventChannel:  make(chan *Event, 5),
-		selfPipeline:  make(map[uint64]*PipelineReport),
 	}
 	RegisterMonitorServer(rpcServer, monitor)
 	return monitor
