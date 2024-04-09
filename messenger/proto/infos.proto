@@ -39,22 +39,9 @@ message ClusterInfo{
 }
 
 message TaskInfo{
-  // 任务 id
-  string task_id = 1;
-  // 客户端的ip
-  string user_ip = 2;
-  // 客户端的rpc端口
-  string user_port = 3;
-  // 任务的文件路径，可以为空
-  string file_path = 4;
-  // 需要运行的任务镜像名
-  string image_name = 5;
-  // 任务当前的状态
-  TaskState state = 6;
-  // 任务类型
-  TaskType type = 7;
-  // 实际被调度到的节点信息
-  NodeInfo worker_info = 8;
+  string task_uuid = 1;
+  string image_name = 2;
+  string schedule_satellite_name = 3;
 }
 
 message InfoStorageState {

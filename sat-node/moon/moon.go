@@ -395,7 +395,7 @@ func (m *Moon) Set(selfInfo, leaderInfo *infos.NodeInfo, peersInfo []*infos.Node
 
 	m.infoMap.Store(m.SelfInfo.RaftId, m.SelfInfo)
 
-	logger.Tracef("leaderInfo: %v", leaderInfo)
+	logger.Tracef("leader Info: %v", leaderInfo)
 
 	if leaderInfo != nil { // 集群中现在已经有成员，peers 只需要填写 leader
 		peers = []raft.Peer{

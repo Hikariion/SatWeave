@@ -2,6 +2,7 @@ package moon
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path"
@@ -59,10 +60,10 @@ func testMoon(t *testing.T) {
 	// 等待选主
 	t.Run("get leader", func(t *testing.T) {
 		leader = waitMoonsOK(moons)
-		t.Logf("leader: %v", leader)
+		logger.Infof("leader: %v", leader)
 	})
 
-	// 发送一个待同步的 info
+	// 发送一个待同步的 cluster info
 	t.Run("propose info", func(t *testing.T) {
 		for i := 0; i < 100; i++ {
 			moon := moons[leader-1]
@@ -102,9 +103,9 @@ func testMoon(t *testing.T) {
 				BaseInfo: &infos.BaseInfo{
 					Info: &infos.BaseInfo_TaskInfo{
 						TaskInfo: &infos.TaskInfo{
-							TaskId:    "task" + strconv.Itoa(i),
-							UserIp:    "192.168.1.1",
-							ImageName: "yolov5",
+							TaskUuid:              uuid.New().String(),
+							ImageName:             "PCA",
+							ScheduleSatelliteName: "satellite-1",
 						},
 					},
 				},
@@ -131,15 +132,15 @@ func testMoon(t *testing.T) {
 
 	t.Run("test leader fail", func(t *testing.T) {
 		// 测试 Leader fail
+		timeStamp := timestamp.Now()
+		logger.Infof("leader fail time: %v", timeStamp)
 		moons[leader-1].Stop()
 		rpcServers[leader-1].Stop()
-		time.Sleep(3 * time.Second)
 		moons = append(moons[:leader-1], moons[leader:]...)
 		rpcServers = append(rpcServers[:leader-1], rpcServers[leader:]...)
 		leader = waitMoonsOK(moons)
-		t.Logf("new leader: %v", leader)
+		logger.Infof("new leader: %v, time: %v", leader, timestamp.Now())
 	})
-
 }
 
 func waitMoonsOK(moons []InfoController) int {
@@ -185,7 +186,7 @@ func createMoons(ctx context.Context, num int, basePath string) ([]InfoControlle
 			UpdateTimestamp: timestamp.Now(),
 		}
 		moonConfig.RaftStoragePath = path.Join(basePath, "raft", strconv.Itoa(i+1))
-		moonConfig.RocksdbStoragePath = path.Join(basePath, "rocksdb", strconv.Itoa(i+1))
+		//moonConfig.RocksdbStoragePath = path.Join(basePath, "rocksdb", strconv.Itoa(i+1))
 		moonConfigs = append(moonConfigs, &moonConfig)
 	}
 
