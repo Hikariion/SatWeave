@@ -17,3 +17,11 @@ func (m *TaskInfo) GetSelfTask() []*TaskInfo {
 	// TODO(qiu): here to get self task to process
 	return tasks
 }
+
+func GenTaskInfo(taskUUID, imageName, satelliteName string) *TaskInfo {
+	return &TaskInfo{
+		TaskUuid:              taskUUID,
+		ImageName:             imageName,
+		ScheduleSatelliteName: satelliteName,
+	}
+}

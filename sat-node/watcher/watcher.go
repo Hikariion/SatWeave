@@ -73,13 +73,13 @@ func (w *Watcher) AddNewNodeToCluster(_ context.Context, info *infos.NodeInfo) (
 		_, err := w.moon.ProposeInfo(w.ctx, request)
 		logger.Infof("propose New nodeInfo: %v", info.RaftId)
 		if err != nil {
-			// TODO(qiu)
+			// TODO
 			return nil, err
 		}
 		err = w.moon.ProposeConfChangeAddNode(w.ctx, info)
 		logger.Infof("propose conf change to add node: %v", info.RaftId)
 		if err != nil {
-			// TODO(qiu)
+			// TODO
 			return nil, err
 		}
 	}
@@ -148,7 +148,7 @@ func (w *Watcher) GetCurrentTerm() uint64 {
 	return w.GetCurrentClusterInfo().Term
 }
 
-// GetCurrentPeerInfo 获取所有对等点的信息，该信息保证通信节点真实有效
+// 获取所有对等点的信息，该信息保证通信节点真实有效
 func (w *Watcher) GetCurrentPeerInfo() []*infos.NodeInfo {
 	nodeInfoStorage := w.register.GetStorage(infos.InfoType_NODE_INFO)
 	nodeInfos, err := nodeInfoStorage.GetAll()
@@ -291,6 +291,7 @@ func (w *Watcher) GetMoon() moon.InfoController {
 }
 
 func (w *Watcher) AskSky() (leaderInfo *infos.NodeInfo, err error) {
+	// TODO(qiu): Init RaftId by satellite name
 	if w.Config.SunAddr == "" {
 		logger.Errorf("sun addr is empty")
 		return nil, errno.ConnectSunFail
@@ -327,7 +328,6 @@ func (w *Watcher) Run() {
 		err = w.RequestJoinCluster(leaderInfo)
 		if err != nil {
 			logger.Errorf("watcher request join to cluster err: %v", err)
-			// TODO(qiu): 如果节点加入不成功，增加错误处理
 		}
 	}
 	logger.Infof("%v request join to cluster success", w.GetSelfInfo().RaftId)
@@ -349,21 +349,20 @@ func (w *Watcher) processMonitor() {
 			return
 		case <-c:
 			logger.Warningf("watcher receive Monitor event")
+			// TODO(qiu): Process Monitor event
 			w.nodeInfoChanged(nil)
 		}
 	}
 }
 
-// TODO(qiu)L initCluster 需要修改
 func (w *Watcher) initCluster() {
-	_, err := w.moon.ProposeInfo(w.ctx, &moon2.ProposeInfoRequest{
-		Operate: moon2.ProposeInfoRequest_ADD,
-		//Id:       rootDefaultBucket.GetID(),
-		//BaseInfo: rootDefaultBucket.BaseInfo(),
-	})
-	if err != nil {
-		logger.Errorf("init cluster fail: %v", err)
-	}
+	//_, err := w.moon.ProposeInfo(w.ctx, &moon2.ProposeInfoRequest{
+	//	Operate: moon2.ProposeInfoRequest_ADD,
+	//})
+	//if err != nil {
+	//	logger.Errorf("init cluster fail: %v", err)
+	//}
+	return
 }
 
 func (w *Watcher) proposeClusterInfo(clusterInfo *infos.ClusterInfo) {
