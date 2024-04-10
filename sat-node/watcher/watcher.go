@@ -21,14 +21,15 @@ import (
 )
 
 type Watcher struct {
-	ctx          context.Context
-	selfNodeInfo *infos.NodeInfo
-	moon         moon.InfoController
-	Monitor      Monitor
-	register     *infos.StorageRegister
-	timer        *time.Timer
-	timerMutex   sync.Mutex
-	Config       *Config
+	ctx           context.Context
+	selfNodeInfo  *infos.NodeInfo
+	satelliteName string
+	moon          moon.InfoController
+	Monitor       Monitor
+	register      *infos.StorageRegister
+	timer         *time.Timer
+	timerMutex    sync.Mutex
+	Config        *Config
 
 	addNodeMutex sync.Mutex
 
@@ -351,6 +352,47 @@ func (w *Watcher) processMonitor() {
 			logger.Warningf("watcher receive Monitor event")
 			// TODO(qiu): Process Monitor event
 			w.nodeInfoChanged(nil)
+		}
+	}
+}
+
+func (w *Watcher) processTask() {
+	for {
+		select {
+		case <-w.ctx.Done():
+			return
+		default:
+			m := w.GetMoon()
+			reply, err := m.ListInfo(w.ctx, &moon2.ListInfoRequest{
+				InfoType: infos.InfoType_TASK_INFO,
+			})
+			if err != nil {
+				logger.Errorf("list task info err: %v", err)
+				continue
+			}
+			for _, info := range reply.BaseInfos {
+				taskInfo := info.GetTaskInfo()
+				if taskInfo.ScheduleSatelliteName == w.satelliteName {
+					// TODO: (refactor) process task use k8s client
+
+					// update task info
+					taskInfo.Phase = infos.TaskInfo_Finished
+					_, err := m.ProposeInfo(w.ctx, &moon2.ProposeInfoRequest{
+						Operate: moon2.ProposeInfoRequest_UPDATE,
+						Id:      taskInfo.TaskUuid,
+						BaseInfo: &infos.BaseInfo{
+							Info: &infos.BaseInfo_TaskInfo{
+								TaskInfo: taskInfo,
+							},
+						},
+					})
+
+					if err != nil {
+						logger.Errorf("delete task info err: %v", err)
+						continue
+					}
+				}
+			}
 		}
 	}
 }
