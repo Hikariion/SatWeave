@@ -531,6 +531,63 @@ func (w *Watcher) WaitClusterOK() (ok bool) {
 	}
 }
 
+func (w *Watcher) SubmitGeoUnSensitiveTask(_ context.Context, request *GeoUnSensitiveTaskRequest) (*common.Result, error) {
+	if w.moon.IsLeader() {
+		// TODO upload file
+		// propose task info to TCS
+		m := w.GetMoon()
+		// search one node which has the least task
+		reply, err := m.ListInfo(w.ctx, &moon2.ListInfoRequest{
+			InfoType: infos.InfoType_TASK_INFO,
+		})
+		if err != nil {
+			logger.Errorf("list task info err: %v", err)
+			return nil, err
+		}
+		nodeTaskCountMap := make(map[uint64]int)
+		for _, info := range reply.BaseInfos {
+			taskInfo := info.GetTaskInfo()
+			nodeTaskCountMap[taskInfo.ScheduleSatelliteId]++
+		}
+		minTaskCount := 0
+		minTaskNode := uint64(0)
+		for node, count := range nodeTaskCountMap {
+			if minTaskCount == 0 || count < minTaskCount {
+				minTaskCount = count
+				minTaskNode = node
+			}
+		}
+		_, err = m.ProposeInfo(w.ctx, &moon2.ProposeInfoRequest{
+			Operate: moon2.ProposeInfoRequest_ADD,
+			Id:      request.TaskUuid,
+			BaseInfo: &infos.BaseInfo{
+				Info: &infos.BaseInfo_TaskInfo{
+					TaskInfo: &infos.TaskInfo{
+						TaskUuid:            request.TaskUuid,
+						Phase:               infos.TaskInfo_Created,
+						ImageName:           request.ImageName,
+						ScheduleSatelliteId: minTaskNode,
+					},
+				},
+			},
+		})
+		if err != nil {
+			logger.Errorf("propose task info err: %v", err)
+			return nil, err
+		}
+	} else {
+		leaderInfo := w.GetCurrentClusterInfo().LeaderInfo
+		conn, err := messenger.GetRpcConnByNodeInfo(leaderInfo)
+		if err != nil {
+			return nil, err
+		}
+		client := NewWatcherClient(conn)
+		return client.SubmitGeoUnSensitiveTask(w.ctx, request)
+	}
+
+	return nil, nil
+}
+
 func NewWatcher(ctx context.Context, config *Config, server *messenger.RpcServer,
 	m moon.InfoController, register *infos.StorageRegister) *Watcher {
 	watcherCtx, cancelFunc := context.WithCancel(ctx)

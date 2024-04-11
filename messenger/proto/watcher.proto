@@ -13,6 +13,7 @@ service Watcher {
   // GetClusterInfo return requested cluster info to rpc client,
   // if GetClusterInfoRequest.Term == 0, it will return current cluster info.
   rpc GetClusterInfo(GetClusterInfoRequest) returns (GetClusterInfoReply) {}
+  rpc SubmitGeoUnSensitiveTask(GeoUnSensitiveTaskRequest) returns (Result) {}
 }
 
 message AddNodeReply {
@@ -30,3 +31,8 @@ message GetClusterInfoReply {
   ClusterInfo cluster_info = 2;
 }
 
+message GeoUnSensitiveTaskRequest {
+  string task_uuid = 1;
+  string image_name = 2;
+  bytes file_content = 3;
+}
