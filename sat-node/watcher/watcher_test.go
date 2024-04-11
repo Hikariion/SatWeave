@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"satweave/messenger"
 	"satweave/sat-node/infos"
 	moon2 "satweave/shared/moon"
@@ -42,7 +43,7 @@ func testWatcher(t *testing.T) {
 
 	moon := watchers[0].moon
 
-	task := infos.GenTaskInfo(uuid.New().String(), "PCA", "Satellite-1")
+	task := infos.GenTaskInfo(uuid.New().String(), "PCA", 0)
 	_, err := moon.ProposeInfo(ctx, &moon2.ProposeInfoRequest{
 		Operate:  moon2.ProposeInfoRequest_ADD,
 		Id:       task.GetID(),
@@ -63,6 +64,7 @@ func testWatcher(t *testing.T) {
 		for i := 0; i < nodeNum; i++ {
 			watchers[i].moon.Stop()
 			rpcServers[i].Stop()
+			os.RemoveAll(basePath)
 		}
 	})
 

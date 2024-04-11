@@ -18,10 +18,10 @@ func (m *TaskInfo) GetSelfTask() []*TaskInfo {
 	return tasks
 }
 
-func GenTaskInfo(taskUUID, imageName, satelliteName string) *TaskInfo {
+func GenTaskInfo(taskUUID, imageName string, satelliteId uint64) *TaskInfo {
 	return &TaskInfo{
-		TaskUuid:              taskUUID,
-		ImageName:             imageName,
-		ScheduleSatelliteName: satelliteName,
+		TaskUuid:            taskUUID,
+		ImageName:           imageName,
+		ScheduleSatelliteId: satelliteId,
 	}
 }
