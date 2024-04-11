@@ -41,7 +41,7 @@ message ClusterInfo{
 message TaskInfo{
   string task_uuid = 1;
   string image_name = 2;
-  string schedule_satellite_name = 3;
+  uint64 schedule_satellite_id = 3;
   enum Phase {
     Created = 0;
     Finished = 1;

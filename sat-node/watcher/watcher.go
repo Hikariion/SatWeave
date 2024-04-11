@@ -21,15 +21,14 @@ import (
 )
 
 type Watcher struct {
-	ctx           context.Context
-	selfNodeInfo  *infos.NodeInfo
-	satelliteName string
-	moon          moon.InfoController
-	Monitor       Monitor
-	register      *infos.StorageRegister
-	timer         *time.Timer
-	timerMutex    sync.Mutex
-	Config        *Config
+	ctx          context.Context
+	selfNodeInfo *infos.NodeInfo
+	moon         moon.InfoController
+	Monitor      Monitor
+	register     *infos.StorageRegister
+	timer        *time.Timer
+	timerMutex   sync.Mutex
+	Config       *Config
 
 	addNodeMutex sync.Mutex
 
@@ -348,10 +347,58 @@ func (w *Watcher) processMonitor() {
 		select {
 		case <-w.ctx.Done():
 			return
-		case <-c:
+		case reportEvent := <-c:
 			logger.Warningf("watcher receive Monitor event")
-			// TODO(qiu): Process Monitor event
+			// Process Monitor event
 			w.nodeInfoChanged(nil)
+			nodeId := reportEvent.Report.NodeId
+			if reportEvent.Report.State == infos.NodeState_OFFLINE {
+				// Migrate Task
+				onlineNodesId := make([]uint64, 0)
+				for _, nodeInfo := range w.GetCurrentPeerInfo() {
+					if nodeInfo.State == infos.NodeState_ONLINE {
+						if nodeId != nodeInfo.RaftId {
+							onlineNodesId = append(onlineNodesId, nodeInfo.RaftId)
+						}
+					}
+				}
+
+				m := w.GetMoon()
+				reply, err := m.ListInfo(w.ctx, &moon2.ListInfoRequest{
+					InfoType: infos.InfoType_TASK_INFO,
+				})
+				if err != nil {
+					logger.Errorf("list task info err: %v", err)
+					continue
+				}
+				cur := 0
+				for _, info := range reply.BaseInfos {
+					taskInfo := info.GetTaskInfo()
+					if taskInfo.ScheduleSatelliteId == w.selfNodeInfo.RaftId {
+						if taskInfo.Phase != infos.TaskInfo_Finished {
+							// Process Migrate Task
+							taskInfo.ScheduleSatelliteId = onlineNodesId[cur]
+							cur = (cur + 1) % len(onlineNodesId)
+							_, err = m.ProposeInfo(w.ctx, &moon2.ProposeInfoRequest{
+								Operate: moon2.ProposeInfoRequest_UPDATE,
+								Id:      taskInfo.TaskUuid,
+								BaseInfo: &infos.BaseInfo{
+									Info: &infos.BaseInfo_TaskInfo{
+										TaskInfo: taskInfo,
+									},
+								},
+							})
+							if err != nil {
+								logger.Errorf("migrate task info err: %v", err)
+								continue
+							}
+							logger.Infof("migrate task info success, taskUUID: %v from node: %v to node: %v",
+								taskInfo.TaskUuid, nodeId, taskInfo.ScheduleSatelliteId)
+						}
+
+					}
+				}
+			}
 		}
 	}
 }
@@ -372,7 +419,7 @@ func (w *Watcher) processTask() {
 			}
 			for _, info := range reply.BaseInfos {
 				taskInfo := info.GetTaskInfo()
-				if taskInfo.ScheduleSatelliteName == w.satelliteName {
+				if taskInfo.ScheduleSatelliteId == w.selfNodeInfo.RaftId {
 					// TODO: (refactor) process task use k8s client
 
 					// update task info
