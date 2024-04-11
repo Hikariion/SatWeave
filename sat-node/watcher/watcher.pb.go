@@ -24,6 +24,108 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
+type GetTaskFileRequest struct {
+	TaskFileName         string   `protobuf:"bytes,1,opt,name=task_file_name,json=taskFileName,proto3" json:"task_file_name,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GetTaskFileRequest) Reset()         { *m = GetTaskFileRequest{} }
+func (m *GetTaskFileRequest) String() string { return proto.CompactTextString(m) }
+func (*GetTaskFileRequest) ProtoMessage()    {}
+func (*GetTaskFileRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f367c5ca26d9ac38, []int{0}
+}
+func (m *GetTaskFileRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetTaskFileRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetTaskFileRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetTaskFileRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetTaskFileRequest.Merge(m, src)
+}
+func (m *GetTaskFileRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetTaskFileRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetTaskFileRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetTaskFileRequest proto.InternalMessageInfo
+
+func (m *GetTaskFileRequest) GetTaskFileName() string {
+	if m != nil {
+		return m.TaskFileName
+	}
+	return ""
+}
+
+type GetTaskFileReply struct {
+	Result               *common.Result `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
+	File                 *common.File   `protobuf:"bytes,2,opt,name=file,proto3" json:"file,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *GetTaskFileReply) Reset()         { *m = GetTaskFileReply{} }
+func (m *GetTaskFileReply) String() string { return proto.CompactTextString(m) }
+func (*GetTaskFileReply) ProtoMessage()    {}
+func (*GetTaskFileReply) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f367c5ca26d9ac38, []int{1}
+}
+func (m *GetTaskFileReply) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetTaskFileReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetTaskFileReply.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetTaskFileReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetTaskFileReply.Merge(m, src)
+}
+func (m *GetTaskFileReply) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetTaskFileReply) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetTaskFileReply.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetTaskFileReply proto.InternalMessageInfo
+
+func (m *GetTaskFileReply) GetResult() *common.Result {
+	if m != nil {
+		return m.Result
+	}
+	return nil
+}
+
+func (m *GetTaskFileReply) GetFile() *common.File {
+	if m != nil {
+		return m.File
+	}
+	return nil
+}
+
 type AddNodeReply struct {
 	Result               *common.Result    `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
 	LeaderInfo           *infos.NodeInfo   `protobuf:"bytes,2,opt,name=leader_info,json=leaderInfo,proto3" json:"leader_info,omitempty"`
@@ -37,7 +139,7 @@ func (m *AddNodeReply) Reset()         { *m = AddNodeReply{} }
 func (m *AddNodeReply) String() string { return proto.CompactTextString(m) }
 func (*AddNodeReply) ProtoMessage()    {}
 func (*AddNodeReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f367c5ca26d9ac38, []int{0}
+	return fileDescriptor_f367c5ca26d9ac38, []int{2}
 }
 func (m *AddNodeReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -98,7 +200,7 @@ func (m *GetClusterInfoRequest) Reset()         { *m = GetClusterInfoRequest{} }
 func (m *GetClusterInfoRequest) String() string { return proto.CompactTextString(m) }
 func (*GetClusterInfoRequest) ProtoMessage()    {}
 func (*GetClusterInfoRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f367c5ca26d9ac38, []int{1}
+	return fileDescriptor_f367c5ca26d9ac38, []int{3}
 }
 func (m *GetClusterInfoRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -146,7 +248,7 @@ func (m *GetClusterInfoReply) Reset()         { *m = GetClusterInfoReply{} }
 func (m *GetClusterInfoReply) String() string { return proto.CompactTextString(m) }
 func (*GetClusterInfoReply) ProtoMessage()    {}
 func (*GetClusterInfoReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f367c5ca26d9ac38, []int{2}
+	return fileDescriptor_f367c5ca26d9ac38, []int{4}
 }
 func (m *GetClusterInfoReply) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -190,19 +292,19 @@ func (m *GetClusterInfoReply) GetClusterInfo() *infos.ClusterInfo {
 }
 
 type GeoUnSensitiveTaskRequest struct {
-	TaskUuid             string   `protobuf:"bytes,1,opt,name=task_uuid,json=taskUuid,proto3" json:"task_uuid,omitempty"`
-	ImageName            string   `protobuf:"bytes,2,opt,name=image_name,json=imageName,proto3" json:"image_name,omitempty"`
-	FileContent          []byte   `protobuf:"bytes,3,opt,name=file_content,json=fileContent,proto3" json:"file_content,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	TaskUuid             string       `protobuf:"bytes,1,opt,name=task_uuid,json=taskUuid,proto3" json:"task_uuid,omitempty"`
+	ImageName            string       `protobuf:"bytes,2,opt,name=image_name,json=imageName,proto3" json:"image_name,omitempty"`
+	FileContent          *common.File `protobuf:"bytes,3,opt,name=file_content,json=fileContent,proto3" json:"file_content,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
+	XXX_unrecognized     []byte       `json:"-"`
+	XXX_sizecache        int32        `json:"-"`
 }
 
 func (m *GeoUnSensitiveTaskRequest) Reset()         { *m = GeoUnSensitiveTaskRequest{} }
 func (m *GeoUnSensitiveTaskRequest) String() string { return proto.CompactTextString(m) }
 func (*GeoUnSensitiveTaskRequest) ProtoMessage()    {}
 func (*GeoUnSensitiveTaskRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f367c5ca26d9ac38, []int{3}
+	return fileDescriptor_f367c5ca26d9ac38, []int{5}
 }
 func (m *GeoUnSensitiveTaskRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -245,7 +347,7 @@ func (m *GeoUnSensitiveTaskRequest) GetImageName() string {
 	return ""
 }
 
-func (m *GeoUnSensitiveTaskRequest) GetFileContent() []byte {
+func (m *GeoUnSensitiveTaskRequest) GetFileContent() *common.File {
 	if m != nil {
 		return m.FileContent
 	}
@@ -253,6 +355,8 @@ func (m *GeoUnSensitiveTaskRequest) GetFileContent() []byte {
 }
 
 func init() {
+	proto.RegisterType((*GetTaskFileRequest)(nil), "messenger.GetTaskFileRequest")
+	proto.RegisterType((*GetTaskFileReply)(nil), "messenger.GetTaskFileReply")
 	proto.RegisterType((*AddNodeReply)(nil), "messenger.AddNodeReply")
 	proto.RegisterType((*GetClusterInfoRequest)(nil), "messenger.GetClusterInfoRequest")
 	proto.RegisterType((*GetClusterInfoReply)(nil), "messenger.GetClusterInfoReply")
@@ -262,35 +366,125 @@ func init() {
 func init() { proto.RegisterFile("watcher.proto", fileDescriptor_f367c5ca26d9ac38) }
 
 var fileDescriptor_f367c5ca26d9ac38 = []byte{
-	// 441 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x53, 0xc1, 0x6e, 0xd4, 0x30,
-	0x10, 0xdd, 0xb0, 0x55, 0x21, 0x93, 0x14, 0x84, 0x57, 0xc0, 0x36, 0x88, 0x28, 0x44, 0x1c, 0x8a,
-	0x2a, 0xb6, 0x52, 0xe1, 0x82, 0x38, 0x41, 0x85, 0x2a, 0x2e, 0x3d, 0xb8, 0xbb, 0x42, 0xe2, 0x12,
-	0xb9, 0xc9, 0x6c, 0xb1, 0x1a, 0xdb, 0x4b, 0xec, 0x74, 0x05, 0xfc, 0x08, 0x1f, 0xc1, 0x87, 0x70,
-	0xe4, 0x13, 0xd0, 0xf2, 0x1d, 0x48, 0xc8, 0xf6, 0x16, 0x52, 0xda, 0x45, 0xea, 0x2d, 0xf3, 0xfc,
-	0xde, 0xcb, 0xf8, 0xcd, 0x18, 0x36, 0xe6, 0xcc, 0x94, 0xef, 0xb1, 0x19, 0xcd, 0x1a, 0x65, 0x14,
-	0x09, 0x05, 0x6a, 0x8d, 0xf2, 0x18, 0x9b, 0x24, 0x2e, 0x95, 0x10, 0x4a, 0xfa, 0x83, 0x24, 0xe2,
-	0x72, 0xaa, 0xb4, 0x2f, 0xf2, 0xaf, 0x01, 0xc4, 0x2f, 0xab, 0xea, 0x40, 0x55, 0x48, 0x71, 0x56,
-	0x7f, 0x24, 0x8f, 0x61, 0xbd, 0x41, 0xdd, 0xd6, 0x66, 0x18, 0x64, 0xc1, 0x56, 0xb4, 0x7b, 0x7b,
-	0xf4, 0xc7, 0x67, 0x44, 0xdd, 0x01, 0x5d, 0x12, 0xc8, 0x33, 0x88, 0x6a, 0x64, 0x15, 0x36, 0x85,
-	0x75, 0x1c, 0x5e, 0x73, 0xfc, 0x41, 0x87, 0x6f, 0x5d, 0xdf, 0xc8, 0xa9, 0xa2, 0xe0, 0x79, 0xf6,
-	0x9b, 0xbc, 0x80, 0x5b, 0x33, 0xc4, 0x46, 0x17, 0x52, 0x55, 0xe8, 0x95, 0xfd, 0xac, 0xbf, 0x4a,
-	0xb9, 0xe1, 0xb8, 0x67, 0x65, 0xbe, 0x0d, 0x77, 0xf6, 0xd1, 0xec, 0xd5, 0xad, 0x36, 0xde, 0x8e,
-	0xe2, 0x87, 0x16, 0xb5, 0x21, 0x04, 0xd6, 0x0c, 0x36, 0xc2, 0x35, 0xbd, 0x46, 0xdd, 0x77, 0xfe,
-	0x19, 0x06, 0xff, 0x92, 0xaf, 0x78, 0xc3, 0xe7, 0x10, 0x97, 0x5e, 0xde, 0xbd, 0xe2, 0xdd, 0x8e,
-	0xa0, 0xeb, 0x1e, 0x95, 0x7f, 0x8b, 0xfc, 0x13, 0x6c, 0xee, 0xa3, 0x9a, 0xc8, 0x43, 0x94, 0x9a,
-	0x1b, 0x7e, 0x8a, 0x63, 0xa6, 0x4f, 0xce, 0xba, 0xbd, 0x0f, 0xa1, 0x61, 0xfa, 0xa4, 0x68, 0x5b,
-	0x5e, 0xb9, 0x2e, 0x42, 0x7a, 0xc3, 0x02, 0x93, 0x96, 0x57, 0xe4, 0x01, 0x00, 0x17, 0xec, 0x18,
-	0x0b, 0xc9, 0x04, 0xba, 0x5f, 0x86, 0x34, 0x74, 0xc8, 0x01, 0x13, 0x48, 0x1e, 0x42, 0x3c, 0xe5,
-	0x35, 0x16, 0xa5, 0x92, 0x06, 0xa5, 0x19, 0xf6, 0xb3, 0x60, 0x2b, 0xa6, 0x91, 0xc5, 0xf6, 0x3c,
-	0xb4, 0xfb, 0x2b, 0x80, 0xeb, 0x6f, 0xfd, 0x32, 0x90, 0xd7, 0x30, 0xb0, 0xf3, 0xc5, 0xb9, 0xcd,
-	0x70, 0xac, 0x96, 0xfd, 0x92, 0xcb, 0xc2, 0x4e, 0xee, 0x75, 0xc0, 0xee, 0x52, 0xe4, 0x3d, 0x32,
-	0x86, 0x9b, 0xe7, 0xb3, 0x24, 0x59, 0x87, 0x7c, 0xe9, 0x4c, 0x92, 0xf4, 0x3f, 0x0c, 0xef, 0x3a,
-	0x81, 0xe1, 0x61, 0x7b, 0x24, 0xb8, 0xb9, 0x18, 0x15, 0x79, 0x74, 0x4e, 0xbd, 0x22, 0xc9, 0xe4,
-	0xe2, 0xf0, 0xf2, 0xde, 0xab, 0xed, 0x6f, 0x8b, 0x34, 0xf8, 0xbe, 0x48, 0x83, 0x1f, 0x8b, 0x34,
-	0xf8, 0xf2, 0x33, 0xed, 0xbd, 0xdb, 0xd4, 0xcc, 0xcc, 0x91, 0x9d, 0xe2, 0x8e, 0x66, 0xe6, 0x89,
-	0xdd, 0xbc, 0x9d, 0xe5, 0x6b, 0x39, 0x5a, 0x77, 0x0f, 0xe1, 0xe9, 0xef, 0x00, 0x00, 0x00, 0xff,
-	0xff, 0x0f, 0x77, 0xf3, 0xbe, 0x3f, 0x03, 0x00, 0x00,
+	// 519 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0xc1, 0x6e, 0xd3, 0x40,
+	0x10, 0x8d, 0x9b, 0xa8, 0x90, 0xb1, 0xdb, 0xc2, 0x46, 0x40, 0xea, 0xaa, 0x56, 0x64, 0x7a, 0x00,
+	0x55, 0xa4, 0x52, 0xe8, 0x05, 0x38, 0x41, 0x05, 0x11, 0x42, 0xea, 0xc1, 0x49, 0x84, 0xc4, 0x25,
+	0xda, 0xd8, 0x93, 0x62, 0xd5, 0xde, 0x0d, 0xde, 0x75, 0x23, 0xc4, 0x85, 0x3b, 0x3f, 0xc0, 0x47,
+	0xf0, 0x21, 0x1c, 0xf9, 0x04, 0x14, 0x7e, 0x04, 0xed, 0xae, 0x03, 0x4e, 0x9a, 0x54, 0xca, 0x6d,
+	0x77, 0xe7, 0xbd, 0xd9, 0x99, 0x37, 0x6f, 0x17, 0x76, 0xa6, 0x54, 0x86, 0x1f, 0x31, 0x6b, 0x4f,
+	0x32, 0x2e, 0x39, 0xa9, 0xa7, 0x28, 0x04, 0xb2, 0x0b, 0xcc, 0x5c, 0x27, 0xe4, 0x69, 0xca, 0x99,
+	0x09, 0xb8, 0x76, 0xcc, 0xc6, 0x5c, 0x98, 0x8d, 0xff, 0x1c, 0x48, 0x17, 0x65, 0x9f, 0x8a, 0xcb,
+	0x37, 0x71, 0x82, 0x01, 0x7e, 0xca, 0x51, 0x48, 0x72, 0x04, 0xbb, 0x92, 0x8a, 0xcb, 0xe1, 0x38,
+	0x4e, 0x70, 0xc8, 0x68, 0x8a, 0x4d, 0xab, 0x65, 0x3d, 0xaa, 0x07, 0x8e, 0x2c, 0x80, 0xe7, 0x34,
+	0x45, 0x7f, 0x04, 0x77, 0x16, 0xb8, 0x93, 0xe4, 0x33, 0x79, 0x0c, 0xdb, 0x19, 0x8a, 0x3c, 0x91,
+	0x9a, 0x61, 0x77, 0xee, 0xb6, 0xff, 0x95, 0xd1, 0x0e, 0x74, 0x20, 0x28, 0x00, 0xe4, 0x21, 0xd4,
+	0x54, 0xfe, 0xe6, 0x96, 0x06, 0xee, 0x95, 0x80, 0x3a, 0x9d, 0x0e, 0xfa, 0x3f, 0x2c, 0x70, 0x5e,
+	0x46, 0xd1, 0x39, 0x8f, 0x36, 0xbf, 0xe0, 0x14, 0xec, 0x04, 0x69, 0x84, 0xd9, 0x50, 0x75, 0x5c,
+	0xdc, 0xd3, 0x28, 0xe1, 0x55, 0xd6, 0xb7, 0x6c, 0xcc, 0x03, 0x30, 0x38, 0xb5, 0x26, 0x2f, 0x60,
+	0x6f, 0x82, 0x98, 0x89, 0x21, 0xe3, 0x11, 0x1a, 0x66, 0xb5, 0x55, 0x5d, 0xc7, 0xdc, 0xd1, 0xd8,
+	0xf9, 0xd6, 0x3f, 0x86, 0x7b, 0x5d, 0x94, 0x67, 0x49, 0x2e, 0xa4, 0x49, 0x37, 0x57, 0x94, 0x40,
+	0x4d, 0x62, 0x96, 0xea, 0xa2, 0x6b, 0x81, 0x5e, 0xfb, 0x5f, 0xa0, 0xb1, 0x0c, 0xde, 0xb0, 0xc3,
+	0x67, 0xe0, 0x84, 0x86, 0x5e, 0x6e, 0xf1, 0x7e, 0x89, 0x50, 0xce, 0x6e, 0x87, 0xff, 0x37, 0xfe,
+	0x37, 0x0b, 0xf6, 0xbb, 0xc8, 0x07, 0xac, 0x87, 0x4c, 0xc4, 0x32, 0xbe, 0x42, 0x35, 0xc8, 0x79,
+	0xb9, 0x07, 0x50, 0xd7, 0x06, 0xc8, 0xf3, 0x38, 0x2a, 0x66, 0x7f, 0x5b, 0x1d, 0x0c, 0xf2, 0x38,
+	0x22, 0x87, 0x00, 0x71, 0x4a, 0x2f, 0x0a, 0x67, 0x6c, 0xe9, 0x68, 0x5d, 0x9f, 0x28, 0x5b, 0x90,
+	0x0e, 0x38, 0xda, 0x37, 0x21, 0x67, 0x12, 0x99, 0x6c, 0x56, 0x57, 0xcf, 0xd7, 0x56, 0xa0, 0x33,
+	0x83, 0xe9, 0x7c, 0xad, 0xc2, 0xad, 0xf7, 0xc6, 0xbe, 0xe4, 0x35, 0x34, 0xd4, 0xc4, 0x71, 0xaa,
+	0x54, 0xed, 0xf3, 0xa2, 0x03, 0xb2, 0x4a, 0x7e, 0xf7, 0x41, 0xe9, 0xb0, 0x6c, 0x13, 0xbf, 0x42,
+	0xfa, 0xb0, 0xbb, 0xa8, 0x2e, 0x69, 0x95, 0xc0, 0x2b, 0xa7, 0xe4, 0x7a, 0x37, 0x20, 0x4c, 0xd6,
+	0x01, 0x34, 0x7b, 0xf9, 0x28, 0x8d, 0xe5, 0x75, 0xed, 0xc8, 0xd1, 0x02, 0x7b, 0x8d, 0xb4, 0xee,
+	0xf5, 0x71, 0xfa, 0x15, 0x72, 0x0a, 0x4e, 0x8f, 0x1a, 0x9c, 0x12, 0x87, 0x2c, 0xab, 0xb5, 0x9a,
+	0xf5, 0x0e, 0xec, 0xd2, 0x03, 0x24, 0x87, 0x8b, 0xd5, 0x2f, 0x3d, 0x6a, 0xf7, 0x60, 0x5d, 0x58,
+	0x77, 0xf6, 0xea, 0xf8, 0xe7, 0xcc, 0xb3, 0x7e, 0xcd, 0x3c, 0xeb, 0xf7, 0xcc, 0xb3, 0xbe, 0xff,
+	0xf1, 0x2a, 0x1f, 0xf6, 0x05, 0x95, 0x53, 0xa4, 0x57, 0x78, 0x22, 0xa8, 0x7c, 0xa2, 0x9e, 0xc3,
+	0x49, 0xf1, 0xc5, 0x8c, 0xb6, 0xf5, 0xef, 0xf1, 0xf4, 0x6f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x5c,
+	0x93, 0x19, 0xdb, 0x74, 0x04, 0x00, 0x00,
+}
+
+func (m *GetTaskFileRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetTaskFileRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetTaskFileRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.TaskFileName) > 0 {
+		i -= len(m.TaskFileName)
+		copy(dAtA[i:], m.TaskFileName)
+		i = encodeVarintWatcher(dAtA, i, uint64(len(m.TaskFileName)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetTaskFileReply) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetTaskFileReply) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetTaskFileReply) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.File != nil {
+		{
+			size, err := m.File.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWatcher(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Result != nil {
+		{
+			size, err := m.Result.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWatcher(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *AddNodeReply) Marshal() (dAtA []byte, err error) {
@@ -465,10 +659,15 @@ func (m *GeoUnSensitiveTaskRequest) MarshalToSizedBuffer(dAtA []byte) (int, erro
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if len(m.FileContent) > 0 {
-		i -= len(m.FileContent)
-		copy(dAtA[i:], m.FileContent)
-		i = encodeVarintWatcher(dAtA, i, uint64(len(m.FileContent)))
+	if m.FileContent != nil {
+		{
+			size, err := m.FileContent.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWatcher(dAtA, i, uint64(size))
+		}
 		i--
 		dAtA[i] = 0x1a
 	}
@@ -500,6 +699,42 @@ func encodeVarintWatcher(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *GetTaskFileRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.TaskFileName)
+	if l > 0 {
+		n += 1 + l + sovWatcher(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetTaskFileReply) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Result != nil {
+		l = m.Result.Size()
+		n += 1 + l + sovWatcher(uint64(l))
+	}
+	if m.File != nil {
+		l = m.File.Size()
+		n += 1 + l + sovWatcher(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *AddNodeReply) Size() (n int) {
 	if m == nil {
 		return 0
@@ -575,8 +810,8 @@ func (m *GeoUnSensitiveTaskRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovWatcher(uint64(l))
 	}
-	l = len(m.FileContent)
-	if l > 0 {
+	if m.FileContent != nil {
+		l = m.FileContent.Size()
 		n += 1 + l + sovWatcher(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -590,6 +825,212 @@ func sovWatcher(x uint64) (n int) {
 }
 func sozWatcher(x uint64) (n int) {
 	return sovWatcher(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *GetTaskFileRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWatcher
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetTaskFileRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetTaskFileRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TaskFileName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWatcher
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWatcher
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWatcher
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TaskFileName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWatcher(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthWatcher
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetTaskFileReply) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWatcher
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetTaskFileReply: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetTaskFileReply: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Result", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWatcher
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWatcher
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWatcher
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Result == nil {
+				m.Result = &common.Result{}
+			}
+			if err := m.Result.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field File", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWatcher
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWatcher
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWatcher
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.File == nil {
+				m.File = &common.File{}
+			}
+			if err := m.File.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWatcher(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthWatcher
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *AddNodeReply) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -1038,7 +1479,7 @@ func (m *GeoUnSensitiveTaskRequest) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field FileContent", wireType)
 			}
-			var byteLen int
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowWatcher
@@ -1048,24 +1489,26 @@ func (m *GeoUnSensitiveTaskRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				byteLen |= int(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if byteLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthWatcher
 			}
-			postIndex := iNdEx + byteLen
+			postIndex := iNdEx + msglen
 			if postIndex < 0 {
 				return ErrInvalidLengthWatcher
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.FileContent = append(m.FileContent[:0], dAtA[iNdEx:postIndex]...)
 			if m.FileContent == nil {
-				m.FileContent = []byte{}
+				m.FileContent = &common.File{}
+			}
+			if err := m.FileContent.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
 			}
 			iNdEx = postIndex
 		default:

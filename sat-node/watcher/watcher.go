@@ -11,6 +11,7 @@ import (
 	"satweave/sat-node/infos"
 	"satweave/sat-node/moon"
 	moon2 "satweave/shared/moon"
+	common2 "satweave/utils/common"
 	"satweave/utils/errno"
 	"satweave/utils/logger"
 	"satweave/utils/timestamp"
@@ -351,6 +352,9 @@ func (w *Watcher) processMonitor() {
 			logger.Warningf("watcher receive Monitor event")
 			// Process Monitor event
 			w.nodeInfoChanged(nil)
+
+			// TODO: remove failed node away from raft config
+
 			nodeId := reportEvent.Report.NodeId
 			if reportEvent.Report.State == infos.NodeState_OFFLINE {
 				// Migrate Task
@@ -599,6 +603,11 @@ func NewWatcher(ctx context.Context, config *Config, server *messenger.RpcServer
 		selfNodeInfo: &config.SelfNodeInfo,
 		ctx:          watcherCtx,
 		cancelFunc:   cancelFunc,
+	}
+	err := common2.InitAndClearPath(config.TaskFileStoragePath)
+	if err != nil {
+		logger.Errorf("init task file storage path fail: %v", err)
+		return nil
 	}
 	monitor := NewMonitor(watcherCtx, watcher, server)
 	watcher.Monitor = monitor

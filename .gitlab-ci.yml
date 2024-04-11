@@ -89,6 +89,7 @@ satweave-docker-build:
     - mv ./build ./Dockerfile
     - mv ./conf ./Dockerfile
     - mv ./files ./Dockerfile
+    - mv $KUBE_CONFIG ./Dockerfile/config
     - cd Dockerfile
     - ls ./build/bin
     - echo "build satweave-sat-node docker image"

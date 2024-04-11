@@ -13,6 +13,7 @@ type Config struct {
 	ClusterName            string
 	CloudAddr              string
 	CloudPort              uint64
+	TaskFileStoragePath    string
 }
 
 var DefaultConfig Config

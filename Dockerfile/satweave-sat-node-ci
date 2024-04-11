@@ -5,7 +5,9 @@ WORKDIR /satweave
 COPY  build/bin/satweave-sat-node .
 COPY  conf/sat_node.json.sample ./sat_node.json
 COPY  files/signals.txt ./test-files/signals.txt
+COPY  config  /.kube/config
 
+ENV KUBECONFIG=/.kube/config
 ENTRYPOINT ["./satweave-sat-node", "node", "run"]
 EXPOSE 3267
 EXPOSE 3268

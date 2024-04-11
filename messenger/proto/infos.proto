@@ -42,11 +42,12 @@ message TaskInfo{
   string task_uuid = 1;
   string image_name = 2;
   uint64 schedule_satellite_id = 3;
+  repeated string file_storage = 4;
   enum Phase {
     Created = 0;
     Finished = 1;
   }
-  Phase phase = 4;
+  Phase phase = 5;
 }
 
 message InfoStorageState {
