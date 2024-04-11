@@ -14,6 +14,7 @@ type Config struct {
 	CloudAddr              string
 	CloudPort              uint64
 	TaskFileStoragePath    string
+	OssHost                string
 }
 
 var DefaultConfig Config
@@ -25,5 +26,6 @@ func init() {
 		SelfNodeInfo:           *infos.NewSelfInfo(1, "127.0.0.1", 0),
 		NodeInfoCommitInterval: time.Second * 2,
 		ClusterName:            "satweave_dev",
+		OssHost:                "http://192.168.6.100:60402",
 	}
 }

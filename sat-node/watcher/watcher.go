@@ -24,6 +24,7 @@ import (
 type Watcher struct {
 	ctx          context.Context
 	selfNodeInfo *infos.NodeInfo
+	selfTaskList []*infos.TaskInfo
 	moon         moon.InfoController
 	Monitor      Monitor
 	register     *infos.StorageRegister
@@ -31,13 +32,15 @@ type Watcher struct {
 	timerMutex   sync.Mutex
 	Config       *Config
 
-	addNodeMutex sync.Mutex
+	addNodeMutex  sync.Mutex
+	TaskListMutex sync.RWMutex
 
 	currentClusterInfo infos.ClusterInfo
 	clusterInfoMutex   sync.RWMutex
 
 	cancelFunc context.CancelFunc
 
+	ossClient *OssClient
 	UnimplementedWatcherServer
 }
 
@@ -407,7 +410,73 @@ func (w *Watcher) processMonitor() {
 	}
 }
 
-func (w *Watcher) processTask() {
+func (w *Watcher) processTaskInList() {
+	for {
+		select {
+		case <-w.ctx.Done():
+			return
+		default:
+			var processTaskInfo *infos.TaskInfo
+			w.TaskListMutex.RLock()
+			for _, task := range w.selfTaskList {
+				if task.Phase == infos.TaskInfo_Created {
+					// process task
+					processTaskInfo = task
+					w.TaskListMutex.RUnlock()
+					break
+				}
+			}
+			if processTaskInfo == nil {
+				// TODO: (refactor) process task use k8s client
+				err := CreateJob(processTaskInfo.TaskUuid, "satweave", processTaskInfo.ImageName, processTaskInfo.FileName)
+				if err != nil {
+					logger.Errorf("create job err: %v", err)
+					continue
+				}
+				// wait util task finish
+				taskFinished := false
+				for {
+					if taskFinished {
+						break
+					}
+					taskFinished, _ = w.ossClient.FileExists("result_" + processTaskInfo.FileName)
+					time.Sleep(10 * time.Second)
+				}
+
+				// if task finished
+				// update w.TaskList and TCS
+				processTaskInfo.Phase = infos.TaskInfo_Finished
+				m := w.GetMoon()
+				_, err = m.ProposeInfo(w.ctx, &moon2.ProposeInfoRequest{
+					Operate: moon2.ProposeInfoRequest_UPDATE,
+					Id:      processTaskInfo.TaskUuid,
+					BaseInfo: &infos.BaseInfo{
+						Info: &infos.BaseInfo_TaskInfo{
+							TaskInfo: processTaskInfo,
+						},
+					},
+				})
+
+				if err != nil {
+					logger.Errorf("delete task info err: %v", err)
+					continue
+				}
+			}
+
+		}
+	}
+}
+
+func ContainsTask(taskList []*infos.TaskInfo, task *infos.TaskInfo) bool {
+	for _, t := range taskList {
+		if t.TaskUuid == task.TaskUuid {
+			return true
+		}
+	}
+	return false
+}
+
+func (w *Watcher) processTaskListUpdate() {
 	for {
 		select {
 		case <-w.ctx.Done():
@@ -421,29 +490,19 @@ func (w *Watcher) processTask() {
 				logger.Errorf("list task info err: %v", err)
 				continue
 			}
+			w.TaskListMutex.Lock()
 			for _, info := range reply.BaseInfos {
 				taskInfo := info.GetTaskInfo()
-				if taskInfo.ScheduleSatelliteId == w.selfNodeInfo.RaftId {
-					// TODO: (refactor) process task use k8s client
-
-					// update task info
-					taskInfo.Phase = infos.TaskInfo_Finished
-					_, err := m.ProposeInfo(w.ctx, &moon2.ProposeInfoRequest{
-						Operate: moon2.ProposeInfoRequest_UPDATE,
-						Id:      taskInfo.TaskUuid,
-						BaseInfo: &infos.BaseInfo{
-							Info: &infos.BaseInfo_TaskInfo{
-								TaskInfo: taskInfo,
-							},
-						},
-					})
-
-					if err != nil {
-						logger.Errorf("delete task info err: %v", err)
-						continue
+				if taskInfo.Phase == infos.TaskInfo_Created {
+					if taskInfo.ScheduleSatelliteId == w.selfNodeInfo.RaftId {
+						if !ContainsTask(w.selfTaskList, taskInfo) {
+							w.selfTaskList = append(w.selfTaskList, taskInfo)
+						}
 					}
 				}
 			}
+			w.TaskListMutex.Unlock()
+			time.Sleep(30 * time.Second)
 		}
 	}
 }
@@ -537,7 +596,14 @@ func (w *Watcher) WaitClusterOK() (ok bool) {
 
 func (w *Watcher) SubmitGeoUnSensitiveTask(_ context.Context, request *GeoUnSensitiveTaskRequest) (*common.Result, error) {
 	if w.moon.IsLeader() {
-		// TODO upload file
+		// upload file
+		fileContent := request.File.Content
+		fileName := request.File.Name
+		_, err := w.ossClient.UploadFile(fileName, fileContent)
+		if err != nil {
+			logger.Errorf("upload file err: %v", err)
+			return nil, err
+		}
 		// propose task info to TCS
 		m := w.GetMoon()
 		// search one node which has the least task
@@ -611,6 +677,8 @@ func NewWatcher(ctx context.Context, config *Config, server *messenger.RpcServer
 	}
 	monitor := NewMonitor(watcherCtx, watcher, server)
 	watcher.Monitor = monitor
+	ossClient := NewOssClient(watcher.Config.OssHost)
+	watcher.ossClient = ossClient
 	nodeInfoStorage := watcher.register.GetStorage(infos.InfoType_NODE_INFO)
 	clusterInfoStorage := watcher.register.GetStorage(infos.InfoType_CLUSTER_INFO)
 	nodeInfoStorage.SetOnUpdate("watcher-"+watcher.selfNodeInfo.Uuid, watcher.nodeInfoChanged)

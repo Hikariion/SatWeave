@@ -12,7 +12,7 @@ import (
 )
 
 // CreateJob 创建Job
-func CreateJob(jobName, namespace, imageName string, args []string) error {
+func CreateJob(jobName, namespace, imageName string, fileName string) error {
 	config, err := clientcmd.BuildConfigFromFlags("", "")
 	if err != nil {
 		return err
@@ -34,7 +34,7 @@ func CreateJob(jobName, namespace, imageName string, args []string) error {
 						{
 							Name:  jobName,
 							Image: imageName,
-							Args:  args,
+							Args:  []string{fileName},
 						},
 					},
 					RestartPolicy: corev1.RestartPolicyNever,
