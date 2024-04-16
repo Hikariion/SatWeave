@@ -90,6 +90,21 @@ func (w *Watcher) AddNewNodeToCluster(_ context.Context, info *infos.NodeInfo) (
 		}
 	}
 
+	// 根据 RaftId 判断是否要转移Leader
+	if info.RaftId > w.selfNodeInfo.RaftId {
+		logger.Infof("New NodeId > self NodeId, start transfer leader")
+		m := w.GetMoon()
+		err := m.TransferLeaderShip(info.RaftId)
+		if err != nil {
+			logger.Errorf("transfer leader err: %v", err)
+			return &AddNodeReply{
+				Result: &common.Result{
+					Status: common.Result_FAIL,
+				},
+			}, err
+		}
+	}
+
 	return &AddNodeReply{
 		Result: &common.Result{
 			Status: common.Result_OK,

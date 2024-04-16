@@ -3,6 +3,7 @@ package moon
 import (
 	"context"
 	"errors"
+	"fmt"
 	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/pkg/v3/wait"
 	"go.etcd.io/etcd/raft/v3"
@@ -28,6 +29,7 @@ type InfoController interface {
 	ProposeRemoveNodes(NodeIDs []uint64) error
 	NodeInfoChanged(nodeInfo *infos.NodeInfo)
 	IsLeader() bool
+	TransferLeaderShip(uint642 uint64) error
 	Set(selfInfo, leaderInfo *infos.NodeInfo, peersInfo []*infos.NodeInfo)
 	GetLeaderID() uint64
 	Stop()
@@ -564,4 +566,13 @@ func (m *Moon) ProposeRemoveNodes(NodeIDs []uint64) error {
 		}
 	}
 	return nil
+}
+
+func (m *Moon) TransferLeaderShip(id uint64) error {
+	if m.IsLeader() {
+		m.raft.Node.TransferLeadership(m.ctx, id, m.leaderID)
+		return nil
+	}
+
+	return fmt.Errorf("%d not leader", m.id)
 }
