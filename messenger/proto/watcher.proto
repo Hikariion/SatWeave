@@ -17,6 +17,8 @@ service Watcher {
   rpc SubmitGeoUnSensitiveTask(GeoUnSensitiveTaskRequest) returns (Result) {}
   rpc SaveTaskFile(File) returns (Result) {}
   rpc GetTaskFile(GetTaskFileRequest) returns (GetTaskFileReply) {}
+  // Request Quit Cluster, Only Leader can do this
+  rpc QuitCluster(QuitClusterRequest) returns (QuitClusterReply) {}
 }
 
 message GetTaskFileRequest {
@@ -26,6 +28,14 @@ message GetTaskFileRequest {
 message GetTaskFileReply {
   Result result = 1;
   File file = 2;
+}
+
+message QuitClusterRequest {
+  uint64 id = 1;
+}
+
+message QuitClusterReply {
+  Result result = 1;
 }
 
 message AddNodeReply {

@@ -25,6 +25,7 @@ type InfoController interface {
 
 	GetInfoDirect(infoType infos.InfoType, id string) (infos.Information, error)
 	ProposeConfChangeAddNode(ctx context.Context, nodeInfo *infos.NodeInfo) error
+	ProposeRemoveNodes(NodeIDs []uint64) error
 	NodeInfoChanged(nodeInfo *infos.NodeInfo)
 	IsLeader() bool
 	Set(selfInfo, leaderInfo *infos.NodeInfo, peersInfo []*infos.NodeInfo)
@@ -493,4 +494,74 @@ func (m *Moon) GetLeaderID() uint64 {
 		return 0
 	}
 	return m.raft.Node.Status().Lead
+}
+
+func (m *Moon) GetVotersID() (rs []uint64) {
+	for id := range m.raft.Node.Status().Config.Voters.IDs() {
+		rs = append(rs, id)
+	}
+	return rs
+}
+
+func (m *Moon) findVoter(id uint64) bool {
+	for _, v := range m.GetVotersID() {
+		logger.Infof("id: %v, voters: %v", id, m.GetVotersID())
+		if v == id {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *Moon) removeNode(id uint64) error {
+	logger.Infof("raft: %v propose conf change removeNode: %v", m.raft.ID, id)
+	ch := m.w.Register(id)
+	err := m.raft.Node.ProposeConfChange(m.ctx, raftpb.ConfChange{
+		Type:   raftpb.ConfChangeRemoveNode,
+		NodeID: id,
+	})
+	if err != nil {
+		logger.Infof("raft: %v propose conf change removeNode: %v fail, err: %v", m.raft.ID, id, err)
+		return err
+	}
+	select {
+	case <-ch:
+		logger.Infof("raft: %v remove node: %v success", m.raft.ID, id)
+	}
+	return nil
+}
+
+func (m *Moon) ProposeRemoveNodes(NodeIDs []uint64) error {
+	select {
+	case <-m.ctx.Done():
+		return nil
+	default:
+	}
+	if len(NodeIDs) == 0 {
+		return nil
+	}
+	removeSelf := false
+	for _, id := range NodeIDs {
+		if id == uint64(m.raft.ID) {
+			removeSelf = true
+			continue
+		}
+		for m.findVoter(id) {
+			logger.Infof("raft: %v  do not success remove node: %v", m.raft.ID, id)
+			m.removeNode(id)
+		}
+	}
+	if removeSelf {
+		logger.Infof("raft: %v  propose conf change remove self", m.raft.ID)
+		ch := m.w.Register(uint64(m.raft.ID))
+		_ = m.raft.Node.ProposeConfChange(m.ctx, raftpb.ConfChange{
+			Type:   raftpb.ConfChangeRemoveNode,
+			NodeID: uint64(m.raft.ID),
+		})
+		select {
+		case <-ch:
+			logger.Infof("raft: %v remove self success", m.raft.ID)
+		}
+	}
+	return nil
 }

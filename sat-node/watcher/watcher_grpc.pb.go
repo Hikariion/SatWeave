@@ -26,6 +26,7 @@ const (
 	Watcher_SubmitGeoUnSensitiveTask_FullMethodName = "/messenger.Watcher/SubmitGeoUnSensitiveTask"
 	Watcher_SaveTaskFile_FullMethodName             = "/messenger.Watcher/SaveTaskFile"
 	Watcher_GetTaskFile_FullMethodName              = "/messenger.Watcher/GetTaskFile"
+	Watcher_QuitCluster_FullMethodName              = "/messenger.Watcher/QuitCluster"
 )
 
 // WatcherClient is the client API for Watcher service.
@@ -42,6 +43,8 @@ type WatcherClient interface {
 	SubmitGeoUnSensitiveTask(ctx context.Context, in *GeoUnSensitiveTaskRequest, opts ...grpc.CallOption) (*common.Result, error)
 	SaveTaskFile(ctx context.Context, in *common.File, opts ...grpc.CallOption) (*common.Result, error)
 	GetTaskFile(ctx context.Context, in *GetTaskFileRequest, opts ...grpc.CallOption) (*GetTaskFileReply, error)
+	// Request Quit Cluster, Only Leader can do this
+	QuitCluster(ctx context.Context, in *QuitClusterRequest, opts ...grpc.CallOption) (*QuitClusterReply, error)
 }
 
 type watcherClient struct {
@@ -97,6 +100,15 @@ func (c *watcherClient) GetTaskFile(ctx context.Context, in *GetTaskFileRequest,
 	return out, nil
 }
 
+func (c *watcherClient) QuitCluster(ctx context.Context, in *QuitClusterRequest, opts ...grpc.CallOption) (*QuitClusterReply, error) {
+	out := new(QuitClusterReply)
+	err := c.cc.Invoke(ctx, Watcher_QuitCluster_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WatcherServer is the server API for Watcher service.
 // All implementations must embed UnimplementedWatcherServer
 // for forward compatibility
@@ -111,6 +123,8 @@ type WatcherServer interface {
 	SubmitGeoUnSensitiveTask(context.Context, *GeoUnSensitiveTaskRequest) (*common.Result, error)
 	SaveTaskFile(context.Context, *common.File) (*common.Result, error)
 	GetTaskFile(context.Context, *GetTaskFileRequest) (*GetTaskFileReply, error)
+	// Request Quit Cluster, Only Leader can do this
+	QuitCluster(context.Context, *QuitClusterRequest) (*QuitClusterReply, error)
 	mustEmbedUnimplementedWatcherServer()
 }
 
@@ -132,6 +146,9 @@ func (UnimplementedWatcherServer) SaveTaskFile(context.Context, *common.File) (*
 }
 func (UnimplementedWatcherServer) GetTaskFile(context.Context, *GetTaskFileRequest) (*GetTaskFileReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTaskFile not implemented")
+}
+func (UnimplementedWatcherServer) QuitCluster(context.Context, *QuitClusterRequest) (*QuitClusterReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QuitCluster not implemented")
 }
 func (UnimplementedWatcherServer) mustEmbedUnimplementedWatcherServer() {}
 
@@ -236,6 +253,24 @@ func _Watcher_GetTaskFile_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Watcher_QuitCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QuitClusterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WatcherServer).QuitCluster(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Watcher_QuitCluster_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WatcherServer).QuitCluster(ctx, req.(*QuitClusterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Watcher_ServiceDesc is the grpc.ServiceDesc for Watcher service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -262,6 +297,10 @@ var Watcher_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTaskFile",
 			Handler:    _Watcher_GetTaskFile_Handler,
+		},
+		{
+			MethodName: "QuitCluster",
+			Handler:    _Watcher_QuitCluster_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

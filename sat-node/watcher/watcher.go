@@ -40,7 +40,8 @@ type Watcher struct {
 
 	cancelFunc context.CancelFunc
 
-	ossClient *OssClient
+	ossClient    *OssClient
+	TermForGroup uint64
 	UnimplementedWatcherServer
 }
 
@@ -656,6 +657,38 @@ func (w *Watcher) SubmitGeoUnSensitiveTask(_ context.Context, request *GeoUnSens
 	}
 
 	return nil, nil
+}
+
+func (w *Watcher) QuitCluster(_ context.Context, request *QuitClusterRequest) (*QuitClusterReply, error) {
+	if w.moon.IsLeader() {
+		removeNodeId := request.Id
+		m := w.GetMoon()
+		removeNodeList := make([]uint64, 0)
+		removeNodeList = append(removeNodeList, removeNodeId)
+		err := m.ProposeRemoveNodes(removeNodeList)
+		if err != nil {
+			logger.Errorf("propose remove node err: %v", err)
+			return &QuitClusterReply{
+				Result: &common.Result{
+					Status:  common.Result_FAIL,
+					Message: err.Error(),
+				},
+			}, err
+		}
+	} else {
+		leaderInfo := w.GetCurrentClusterInfo().LeaderInfo
+		conn, err := messenger.GetRpcConnByNodeInfo(leaderInfo)
+		if err != nil {
+			return nil, err
+		}
+		client := NewWatcherClient(conn)
+		return client.QuitCluster(w.ctx, request)
+	}
+	return &QuitClusterReply{
+		Result: &common.Result{
+			Status: common.Result_OK,
+		},
+	}, nil
 }
 
 func NewWatcher(ctx context.Context, config *Config, server *messenger.RpcServer,
