@@ -48,6 +48,7 @@ type Watcher struct {
 // AddNewNodeToCluster will propose a new NodeInfo in moon,
 // if success, it will propose a ConfChang, to add the raftNode into moon group
 func (w *Watcher) AddNewNodeToCluster(_ context.Context, info *infos.NodeInfo) (*AddNodeReply, error) {
+	// TODO: 判断节点的Term是否相等
 	logger.Infof("receive add new node to cluster: %v", info.RaftId)
 	w.addNodeMutex.Lock()
 	defer w.addNodeMutex.Unlock()
@@ -657,6 +658,36 @@ func (w *Watcher) SubmitGeoUnSensitiveTask(_ context.Context, request *GeoUnSens
 	}
 
 	return nil, nil
+}
+
+func (w *Watcher) ReGroup(termNodeList []*infos.NodeInfo) error {
+	// Quit Current Group
+	leader := w.GetCurrentClusterInfo().LeaderInfo
+	conn, err := messenger.GetRpcConnByNodeInfo(leader)
+	if err != nil {
+		logger.Errorf("get leader conn err: %v", err)
+		return err
+	}
+	client := NewWatcherClient(conn)
+	_, err = client.QuitCluster(w.ctx, &QuitClusterRequest{
+		Id: w.selfNodeInfo.RaftId,
+	})
+
+	// Join New Group
+	for _, nodeInfo := range termNodeList {
+		conn, err := messenger.GetRpcConnByNodeInfo(nodeInfo)
+		if err != nil {
+			logger.Errorf("get conn err: %v", err)
+			return err
+		}
+		client := NewWatcherClient(conn)
+		_, err = client.AddNewNodeToCluster(w.ctx, w.selfNodeInfo)
+		if err == nil {
+			break
+		}
+	}
+
+	return nil
 }
 
 func (w *Watcher) QuitCluster(_ context.Context, request *QuitClusterRequest) (*QuitClusterReply, error) {
