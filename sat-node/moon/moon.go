@@ -411,7 +411,7 @@ func (m *Moon) Set(selfInfo, leaderInfo *infos.NodeInfo, peersInfo []*infos.Node
 		})
 	}
 	readyC := make(chan bool)
-	logger.Infof("raft node %d start creat", m.id)
+	logger.Infof("raft node %d start create", m.id)
 	snapshotterReady, raftNode := eraft.NewRaftNode(int(m.id), m.ctx, peers, m.config.RaftStoragePath, readyC, m.infoStorageRegister.GetSnapshot)
 	m.raft = raftNode
 	logger.Infof("raft node %d creat success", m.id)

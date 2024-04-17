@@ -15,6 +15,7 @@ type Config struct {
 	CloudPort              uint64
 	TaskFileStoragePath    string
 	OssHost                string
+	GroupMap               map[uint64][][]uint64
 }
 
 var DefaultConfig Config
@@ -28,4 +29,5 @@ func init() {
 		ClusterName:            "satweave_dev",
 		OssHost:                "http://192.168.6.100:60402",
 	}
+	DefaultConfig.GroupMap = make(map[uint64][][]uint64)
 }

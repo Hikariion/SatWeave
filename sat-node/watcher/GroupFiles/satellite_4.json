@@ -1,0 +1,760 @@
+{
+    "clusters": {
+        "custom1-cluster-0": {
+            "name": "custom1-cluster-0",
+            "clusterId": "custom1-cluster-0",
+            "satellites": [
+                {
+                    "name": "satellite-117",
+                    "plane": 5,
+                    "index": 17,
+                    "satelliteId": "satellite-117"
+                },
+                {
+                    "name": "satellite-77",
+                    "plane": 3,
+                    "index": 17,
+                    "satelliteId": "satellite-77"
+                },
+                {
+                    "name": "satellite-33",
+                    "plane": 1,
+                    "index": 13,
+                    "satelliteId": "satellite-33"
+                },
+                {
+                    "name": "satellite-90",
+                    "plane": 4,
+                    "index": 10,
+                    "satelliteId": "satellite-90"
+                },
+                {
+                    "name": "satellite-17",
+                    "plane": 0,
+                    "index": 17,
+                    "satelliteId": "satellite-17"
+                },
+                {
+                    "name": "satellite-82",
+                    "plane": 4,
+                    "index": 2,
+                    "satelliteId": "satellite-82"
+                },
+                {
+                    "name": "satellite-108",
+                    "plane": 5,
+                    "index": 8,
+                    "satelliteId": "satellite-108"
+                },
+                {
+                    "name": "satellite-107",
+                    "plane": 5,
+                    "index": 7,
+                    "satelliteId": "satellite-107"
+                },
+                {
+                    "name": "satellite-42",
+                    "plane": 2,
+                    "index": 2,
+                    "satelliteId": "satellite-42"
+                },
+                {
+                    "name": "satellite-63",
+                    "plane": 3,
+                    "index": 3,
+                    "satelliteId": "satellite-63"
+                },
+                {
+                    "name": "satellite-3",
+                    "plane": 0,
+                    "index": 3,
+                    "satelliteId": "satellite-3"
+                },
+                {
+                    "name": "satellite-31",
+                    "plane": 1,
+                    "index": 11,
+                    "satelliteId": "satellite-31"
+                },
+                {
+                    "name": "satellite-60",
+                    "plane": 3,
+                    "index": 0,
+                    "satelliteId": "satellite-60"
+                },
+                {
+                    "name": "satellite-44",
+                    "plane": 2,
+                    "index": 4,
+                    "satelliteId": "satellite-44"
+                },
+                {
+                    "name": "satellite-118",
+                    "plane": 5,
+                    "index": 18,
+                    "satelliteId": "satellite-118"
+                },
+                {
+                    "name": "satellite-26",
+                    "plane": 1,
+                    "index": 6,
+                    "satelliteId": "satellite-26"
+                },
+                {
+                    "name": "satellite-65",
+                    "plane": 3,
+                    "index": 5,
+                    "satelliteId": "satellite-65"
+                },
+                {
+                    "name": "satellite-62",
+                    "plane": 3,
+                    "index": 2,
+                    "satelliteId": "satellite-62"
+                },
+                {
+                    "name": "satellite-114",
+                    "plane": 5,
+                    "index": 14,
+                    "satelliteId": "satellite-114"
+                },
+                {
+                    "name": "satellite-50",
+                    "plane": 2,
+                    "index": 10,
+                    "satelliteId": "satellite-50"
+                }
+            ]
+        },
+        "custom1-cluster-1": {
+            "name": "custom1-cluster-1",
+            "clusterId": "custom1-cluster-1",
+            "satellites": [
+                {
+                    "name": "satellite-97",
+                    "plane": 4,
+                    "index": 17,
+                    "satelliteId": "satellite-97"
+                },
+                {
+                    "name": "satellite-112",
+                    "plane": 5,
+                    "index": 12,
+                    "satelliteId": "satellite-112"
+                },
+                {
+                    "name": "satellite-47",
+                    "plane": 2,
+                    "index": 7,
+                    "satelliteId": "satellite-47"
+                },
+                {
+                    "name": "satellite-79",
+                    "plane": 3,
+                    "index": 19,
+                    "satelliteId": "satellite-79"
+                },
+                {
+                    "name": "satellite-22",
+                    "plane": 1,
+                    "index": 2,
+                    "satelliteId": "satellite-22"
+                },
+                {
+                    "name": "satellite-28",
+                    "plane": 1,
+                    "index": 8,
+                    "satelliteId": "satellite-28"
+                },
+                {
+                    "name": "satellite-9",
+                    "plane": 0,
+                    "index": 9,
+                    "satelliteId": "satellite-9"
+                },
+                {
+                    "name": "satellite-4",
+                    "plane": 0,
+                    "index": 4,
+                    "satelliteId": "satellite-4"
+                },
+                {
+                    "name": "satellite-92",
+                    "plane": 4,
+                    "index": 12,
+                    "satelliteId": "satellite-92"
+                },
+                {
+                    "name": "satellite-24",
+                    "plane": 1,
+                    "index": 4,
+                    "satelliteId": "satellite-24"
+                },
+                {
+                    "name": "satellite-36",
+                    "plane": 1,
+                    "index": 16,
+                    "satelliteId": "satellite-36"
+                },
+                {
+                    "name": "satellite-19",
+                    "plane": 0,
+                    "index": 19,
+                    "satelliteId": "satellite-19"
+                },
+                {
+                    "name": "satellite-35",
+                    "plane": 1,
+                    "index": 15,
+                    "satelliteId": "satellite-35"
+                },
+                {
+                    "name": "satellite-49",
+                    "plane": 2,
+                    "index": 9,
+                    "satelliteId": "satellite-49"
+                },
+                {
+                    "name": "satellite-43",
+                    "plane": 2,
+                    "index": 3,
+                    "satelliteId": "satellite-43"
+                },
+                {
+                    "name": "satellite-88",
+                    "plane": 4,
+                    "index": 8,
+                    "satelliteId": "satellite-88"
+                },
+                {
+                    "name": "satellite-29",
+                    "plane": 1,
+                    "index": 9,
+                    "satelliteId": "satellite-29"
+                },
+                {
+                    "name": "satellite-106",
+                    "plane": 5,
+                    "index": 6,
+                    "satelliteId": "satellite-106"
+                },
+                {
+                    "name": "satellite-48",
+                    "plane": 2,
+                    "index": 8,
+                    "satelliteId": "satellite-48"
+                },
+                {
+                    "name": "satellite-37",
+                    "plane": 1,
+                    "index": 17,
+                    "satelliteId": "satellite-37"
+                }
+            ]
+        },
+        "custom1-cluster-2": {
+            "name": "custom1-cluster-2",
+            "clusterId": "custom1-cluster-2",
+            "satellites": [
+                {
+                    "name": "satellite-51",
+                    "plane": 2,
+                    "index": 11,
+                    "satelliteId": "satellite-51"
+                },
+                {
+                    "name": "satellite-73",
+                    "plane": 3,
+                    "index": 13,
+                    "satelliteId": "satellite-73"
+                },
+                {
+                    "name": "satellite-11",
+                    "plane": 0,
+                    "index": 11,
+                    "satelliteId": "satellite-11"
+                },
+                {
+                    "name": "satellite-81",
+                    "plane": 4,
+                    "index": 1,
+                    "satelliteId": "satellite-81"
+                },
+                {
+                    "name": "satellite-96",
+                    "plane": 4,
+                    "index": 16,
+                    "satelliteId": "satellite-96"
+                },
+                {
+                    "name": "satellite-113",
+                    "plane": 5,
+                    "index": 13,
+                    "satelliteId": "satellite-113"
+                },
+                {
+                    "name": "satellite-41",
+                    "plane": 2,
+                    "index": 1,
+                    "satelliteId": "satellite-41"
+                },
+                {
+                    "name": "satellite-16",
+                    "plane": 0,
+                    "index": 16,
+                    "satelliteId": "satellite-16"
+                },
+                {
+                    "name": "satellite-52",
+                    "plane": 2,
+                    "index": 12,
+                    "satelliteId": "satellite-52"
+                },
+                {
+                    "name": "satellite-95",
+                    "plane": 4,
+                    "index": 15,
+                    "satelliteId": "satellite-95"
+                },
+                {
+                    "name": "satellite-110",
+                    "plane": 5,
+                    "index": 10,
+                    "satelliteId": "satellite-110"
+                },
+                {
+                    "name": "satellite-46",
+                    "plane": 2,
+                    "index": 6,
+                    "satelliteId": "satellite-46"
+                },
+                {
+                    "name": "satellite-2",
+                    "plane": 0,
+                    "index": 2,
+                    "satelliteId": "satellite-2"
+                },
+                {
+                    "name": "satellite-109",
+                    "plane": 5,
+                    "index": 9,
+                    "satelliteId": "satellite-109"
+                },
+                {
+                    "name": "satellite-119",
+                    "plane": 5,
+                    "index": 19,
+                    "satelliteId": "satellite-119"
+                },
+                {
+                    "name": "satellite-57",
+                    "plane": 2,
+                    "index": 17,
+                    "satelliteId": "satellite-57"
+                },
+                {
+                    "name": "satellite-72",
+                    "plane": 3,
+                    "index": 12,
+                    "satelliteId": "satellite-72"
+                },
+                {
+                    "name": "satellite-61",
+                    "plane": 3,
+                    "index": 1,
+                    "satelliteId": "satellite-61"
+                },
+                {
+                    "name": "satellite-21",
+                    "plane": 1,
+                    "index": 1,
+                    "satelliteId": "satellite-21"
+                },
+                {
+                    "name": "satellite-13",
+                    "plane": 0,
+                    "index": 13,
+                    "satelliteId": "satellite-13"
+                }
+            ]
+        },
+        "custom1-cluster-3": {
+            "name": "custom1-cluster-3",
+            "clusterId": "custom1-cluster-3",
+            "satellites": [
+                {
+                    "name": "satellite-84",
+                    "plane": 4,
+                    "index": 4,
+                    "satelliteId": "satellite-84"
+                },
+                {
+                    "name": "satellite-40",
+                    "plane": 2,
+                    "index": 0,
+                    "satelliteId": "satellite-40"
+                },
+                {
+                    "name": "satellite-101",
+                    "plane": 5,
+                    "index": 1,
+                    "satelliteId": "satellite-101"
+                },
+                {
+                    "name": "satellite-27",
+                    "plane": 1,
+                    "index": 7,
+                    "satelliteId": "satellite-27"
+                },
+                {
+                    "name": "satellite-78",
+                    "plane": 3,
+                    "index": 18,
+                    "satelliteId": "satellite-78"
+                },
+                {
+                    "name": "satellite-25",
+                    "plane": 1,
+                    "index": 5,
+                    "satelliteId": "satellite-25"
+                },
+                {
+                    "name": "satellite-53",
+                    "plane": 2,
+                    "index": 13,
+                    "satelliteId": "satellite-53"
+                },
+                {
+                    "name": "satellite-71",
+                    "plane": 3,
+                    "index": 11,
+                    "satelliteId": "satellite-71"
+                },
+                {
+                    "name": "satellite-45",
+                    "plane": 2,
+                    "index": 5,
+                    "satelliteId": "satellite-45"
+                },
+                {
+                    "name": "satellite-85",
+                    "plane": 4,
+                    "index": 5,
+                    "satelliteId": "satellite-85"
+                },
+                {
+                    "name": "satellite-67",
+                    "plane": 3,
+                    "index": 7,
+                    "satelliteId": "satellite-67"
+                },
+                {
+                    "name": "satellite-80",
+                    "plane": 4,
+                    "index": 0,
+                    "satelliteId": "satellite-80"
+                },
+                {
+                    "name": "satellite-99",
+                    "plane": 4,
+                    "index": 19,
+                    "satelliteId": "satellite-99"
+                },
+                {
+                    "name": "satellite-34",
+                    "plane": 1,
+                    "index": 14,
+                    "satelliteId": "satellite-34"
+                },
+                {
+                    "name": "satellite-102",
+                    "plane": 5,
+                    "index": 2,
+                    "satelliteId": "satellite-102"
+                },
+                {
+                    "name": "satellite-111",
+                    "plane": 5,
+                    "index": 11,
+                    "satelliteId": "satellite-111"
+                },
+                {
+                    "name": "satellite-10",
+                    "plane": 0,
+                    "index": 10,
+                    "satelliteId": "satellite-10"
+                },
+                {
+                    "name": "satellite-104",
+                    "plane": 5,
+                    "index": 4,
+                    "satelliteId": "satellite-104"
+                },
+                {
+                    "name": "satellite-105",
+                    "plane": 5,
+                    "index": 5,
+                    "satelliteId": "satellite-105"
+                },
+                {
+                    "name": "satellite-86",
+                    "plane": 4,
+                    "index": 6,
+                    "satelliteId": "satellite-86"
+                }
+            ]
+        },
+        "custom1-cluster-4": {
+            "name": "custom1-cluster-4",
+            "clusterId": "custom1-cluster-4",
+            "satellites": [
+                {
+                    "name": "satellite-76",
+                    "plane": 3,
+                    "index": 16,
+                    "satelliteId": "satellite-76"
+                },
+                {
+                    "name": "satellite-100",
+                    "plane": 5,
+                    "index": 0,
+                    "satelliteId": "satellite-100"
+                },
+                {
+                    "name": "satellite-98",
+                    "plane": 4,
+                    "index": 18,
+                    "satelliteId": "satellite-98"
+                },
+                {
+                    "name": "satellite-94",
+                    "plane": 4,
+                    "index": 14,
+                    "satelliteId": "satellite-94"
+                },
+                {
+                    "name": "satellite-74",
+                    "plane": 3,
+                    "index": 14,
+                    "satelliteId": "satellite-74"
+                },
+                {
+                    "name": "satellite-38",
+                    "plane": 1,
+                    "index": 18,
+                    "satelliteId": "satellite-38"
+                },
+                {
+                    "name": "satellite-39",
+                    "plane": 1,
+                    "index": 19,
+                    "satelliteId": "satellite-39"
+                },
+                {
+                    "name": "satellite-115",
+                    "plane": 5,
+                    "index": 15,
+                    "satelliteId": "satellite-115"
+                },
+                {
+                    "name": "satellite-18",
+                    "plane": 0,
+                    "index": 18,
+                    "satelliteId": "satellite-18"
+                },
+                {
+                    "name": "satellite-1",
+                    "plane": 0,
+                    "index": 1,
+                    "satelliteId": "satellite-1"
+                },
+                {
+                    "name": "satellite-75",
+                    "plane": 3,
+                    "index": 15,
+                    "satelliteId": "satellite-75"
+                },
+                {
+                    "name": "satellite-14",
+                    "plane": 0,
+                    "index": 14,
+                    "satelliteId": "satellite-14"
+                },
+                {
+                    "name": "satellite-0",
+                    "plane": 0,
+                    "index": 0,
+                    "satelliteId": "satellite-0"
+                },
+                {
+                    "name": "satellite-30",
+                    "plane": 1,
+                    "index": 10,
+                    "satelliteId": "satellite-30"
+                },
+                {
+                    "name": "satellite-58",
+                    "plane": 2,
+                    "index": 18,
+                    "satelliteId": "satellite-58"
+                },
+                {
+                    "name": "satellite-15",
+                    "plane": 0,
+                    "index": 15,
+                    "satelliteId": "satellite-15"
+                },
+                {
+                    "name": "satellite-66",
+                    "plane": 3,
+                    "index": 6,
+                    "satelliteId": "satellite-66"
+                },
+                {
+                    "name": "satellite-6",
+                    "plane": 0,
+                    "index": 6,
+                    "satelliteId": "satellite-6"
+                },
+                {
+                    "name": "satellite-116",
+                    "plane": 5,
+                    "index": 16,
+                    "satelliteId": "satellite-116"
+                },
+                {
+                    "name": "satellite-54",
+                    "plane": 2,
+                    "index": 14,
+                    "satelliteId": "satellite-54"
+                }
+            ]
+        },
+        "custom1-cluster-5": {
+            "name": "custom1-cluster-5",
+            "clusterId": "custom1-cluster-5",
+            "satellites": [
+                {
+                    "name": "satellite-20",
+                    "plane": 1,
+                    "index": 0,
+                    "satelliteId": "satellite-20"
+                },
+                {
+                    "name": "satellite-64",
+                    "plane": 3,
+                    "index": 4,
+                    "satelliteId": "satellite-64"
+                },
+                {
+                    "name": "satellite-69",
+                    "plane": 3,
+                    "index": 9,
+                    "satelliteId": "satellite-69"
+                },
+                {
+                    "name": "satellite-103",
+                    "plane": 5,
+                    "index": 3,
+                    "satelliteId": "satellite-103"
+                },
+                {
+                    "name": "satellite-23",
+                    "plane": 1,
+                    "index": 3,
+                    "satelliteId": "satellite-23"
+                },
+                {
+                    "name": "satellite-83",
+                    "plane": 4,
+                    "index": 3,
+                    "satelliteId": "satellite-83"
+                },
+                {
+                    "name": "satellite-32",
+                    "plane": 1,
+                    "index": 12,
+                    "satelliteId": "satellite-32"
+                },
+                {
+                    "name": "satellite-8",
+                    "plane": 0,
+                    "index": 8,
+                    "satelliteId": "satellite-8"
+                },
+                {
+                    "name": "satellite-93",
+                    "plane": 4,
+                    "index": 13,
+                    "satelliteId": "satellite-93"
+                },
+                {
+                    "name": "satellite-7",
+                    "plane": 0,
+                    "index": 7,
+                    "satelliteId": "satellite-7"
+                },
+                {
+                    "name": "satellite-12",
+                    "plane": 0,
+                    "index": 12,
+                    "satelliteId": "satellite-12"
+                },
+                {
+                    "name": "satellite-56",
+                    "plane": 2,
+                    "index": 16,
+                    "satelliteId": "satellite-56"
+                },
+                {
+                    "name": "satellite-91",
+                    "plane": 4,
+                    "index": 11,
+                    "satelliteId": "satellite-91"
+                },
+                {
+                    "name": "satellite-5",
+                    "plane": 0,
+                    "index": 5,
+                    "satelliteId": "satellite-5"
+                },
+                {
+                    "name": "satellite-87",
+                    "plane": 4,
+                    "index": 7,
+                    "satelliteId": "satellite-87"
+                },
+                {
+                    "name": "satellite-70",
+                    "plane": 3,
+                    "index": 10,
+                    "satelliteId": "satellite-70"
+                },
+                {
+                    "name": "satellite-55",
+                    "plane": 2,
+                    "index": 15,
+                    "satelliteId": "satellite-55"
+                },
+                {
+                    "name": "satellite-89",
+                    "plane": 4,
+                    "index": 9,
+                    "satelliteId": "satellite-89"
+                },
+                {
+                    "name": "satellite-68",
+                    "plane": 3,
+                    "index": 8,
+                    "satelliteId": "satellite-68"
+                },
+                {
+                    "name": "satellite-59",
+                    "plane": 2,
+                    "index": 19,
+                    "satelliteId": "satellite-59"
+                }
+            ]
+        }
+    }
+}

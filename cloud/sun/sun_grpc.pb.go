@@ -24,11 +24,13 @@ const (
 	Sun_MoonRegister_FullMethodName          = "/messenger.Sun/MoonRegister"
 	Sun_GetLeaderInfo_FullMethodName         = "/messenger.Sun/GetLeaderInfo"
 	Sun_ReportClusterInfo_FullMethodName     = "/messenger.Sun/ReportClusterInfo"
+	Sun_GetNodeInfoById_FullMethodName       = "/messenger.Sun/GetNodeInfoById"
 	Sun_SubmitJob_FullMethodName             = "/messenger.Sun/SubmitJob"
 	Sun_RegisterTaskManager_FullMethodName   = "/messenger.Sun/RegisterTaskManager"
 	Sun_SaveSnapShot_FullMethodName          = "/messenger.Sun/SaveSnapShot"
 	Sun_RestoreFromCheckpoint_FullMethodName = "/messenger.Sun/RestoreFromCheckpoint"
 	Sun_ReceiverStreamData_FullMethodName    = "/messenger.Sun/ReceiverStreamData"
+	Sun_UpdateTaskInfo_FullMethodName        = "/messenger.Sun/UpdateTaskInfo"
 )
 
 // SunClient is the client API for Sun service.
@@ -38,6 +40,7 @@ type SunClient interface {
 	MoonRegister(ctx context.Context, in *infos.NodeInfo, opts ...grpc.CallOption) (*RegisterResult, error)
 	GetLeaderInfo(ctx context.Context, in *infos.NodeInfo, opts ...grpc.CallOption) (*infos.NodeInfo, error)
 	ReportClusterInfo(ctx context.Context, in *infos.ClusterInfo, opts ...grpc.CallOption) (*common.Result, error)
+	GetNodeInfoById(ctx context.Context, in *RaftId, opts ...grpc.CallOption) (*infos.NodeInfo, error)
 	// from user front client
 	SubmitJob(ctx context.Context, in *SubmitJobRequest, opts ...grpc.CallOption) (*SubmitJobResponse, error)
 	// from task manager
@@ -45,6 +48,7 @@ type SunClient interface {
 	SaveSnapShot(ctx context.Context, in *SaveSnapShotRequest, opts ...grpc.CallOption) (*common.Result, error)
 	RestoreFromCheckpoint(ctx context.Context, in *RestoreFromCheckpointRequest, opts ...grpc.CallOption) (*RestoreFromCheckpointResponse, error)
 	ReceiverStreamData(ctx context.Context, in *ReceiverStreamDataRequest, opts ...grpc.CallOption) (*common.Result, error)
+	UpdateTaskInfo(ctx context.Context, in *infos.TaskInfo, opts ...grpc.CallOption) (*common.Result, error)
 }
 
 type sunClient struct {
@@ -76,6 +80,15 @@ func (c *sunClient) GetLeaderInfo(ctx context.Context, in *infos.NodeInfo, opts 
 func (c *sunClient) ReportClusterInfo(ctx context.Context, in *infos.ClusterInfo, opts ...grpc.CallOption) (*common.Result, error) {
 	out := new(common.Result)
 	err := c.cc.Invoke(ctx, Sun_ReportClusterInfo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sunClient) GetNodeInfoById(ctx context.Context, in *RaftId, opts ...grpc.CallOption) (*infos.NodeInfo, error) {
+	out := new(infos.NodeInfo)
+	err := c.cc.Invoke(ctx, Sun_GetNodeInfoById_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -127,6 +140,15 @@ func (c *sunClient) ReceiverStreamData(ctx context.Context, in *ReceiverStreamDa
 	return out, nil
 }
 
+func (c *sunClient) UpdateTaskInfo(ctx context.Context, in *infos.TaskInfo, opts ...grpc.CallOption) (*common.Result, error) {
+	out := new(common.Result)
+	err := c.cc.Invoke(ctx, Sun_UpdateTaskInfo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SunServer is the server API for Sun service.
 // All implementations must embed UnimplementedSunServer
 // for forward compatibility
@@ -134,6 +156,7 @@ type SunServer interface {
 	MoonRegister(context.Context, *infos.NodeInfo) (*RegisterResult, error)
 	GetLeaderInfo(context.Context, *infos.NodeInfo) (*infos.NodeInfo, error)
 	ReportClusterInfo(context.Context, *infos.ClusterInfo) (*common.Result, error)
+	GetNodeInfoById(context.Context, *RaftId) (*infos.NodeInfo, error)
 	// from user front client
 	SubmitJob(context.Context, *SubmitJobRequest) (*SubmitJobResponse, error)
 	// from task manager
@@ -141,6 +164,7 @@ type SunServer interface {
 	SaveSnapShot(context.Context, *SaveSnapShotRequest) (*common.Result, error)
 	RestoreFromCheckpoint(context.Context, *RestoreFromCheckpointRequest) (*RestoreFromCheckpointResponse, error)
 	ReceiverStreamData(context.Context, *ReceiverStreamDataRequest) (*common.Result, error)
+	UpdateTaskInfo(context.Context, *infos.TaskInfo) (*common.Result, error)
 	mustEmbedUnimplementedSunServer()
 }
 
@@ -157,6 +181,9 @@ func (UnimplementedSunServer) GetLeaderInfo(context.Context, *infos.NodeInfo) (*
 func (UnimplementedSunServer) ReportClusterInfo(context.Context, *infos.ClusterInfo) (*common.Result, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReportClusterInfo not implemented")
 }
+func (UnimplementedSunServer) GetNodeInfoById(context.Context, *RaftId) (*infos.NodeInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNodeInfoById not implemented")
+}
 func (UnimplementedSunServer) SubmitJob(context.Context, *SubmitJobRequest) (*SubmitJobResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SubmitJob not implemented")
 }
@@ -171,6 +198,9 @@ func (UnimplementedSunServer) RestoreFromCheckpoint(context.Context, *RestoreFro
 }
 func (UnimplementedSunServer) ReceiverStreamData(context.Context, *ReceiverStreamDataRequest) (*common.Result, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReceiverStreamData not implemented")
+}
+func (UnimplementedSunServer) UpdateTaskInfo(context.Context, *infos.TaskInfo) (*common.Result, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateTaskInfo not implemented")
 }
 func (UnimplementedSunServer) mustEmbedUnimplementedSunServer() {}
 
@@ -235,6 +265,24 @@ func _Sun_ReportClusterInfo_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SunServer).ReportClusterInfo(ctx, req.(*infos.ClusterInfo))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sun_GetNodeInfoById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RaftId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SunServer).GetNodeInfoById(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sun_GetNodeInfoById_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SunServer).GetNodeInfoById(ctx, req.(*RaftId))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -329,6 +377,24 @@ func _Sun_ReceiverStreamData_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Sun_UpdateTaskInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(infos.TaskInfo)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SunServer).UpdateTaskInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sun_UpdateTaskInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SunServer).UpdateTaskInfo(ctx, req.(*infos.TaskInfo))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Sun_ServiceDesc is the grpc.ServiceDesc for Sun service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -349,6 +415,10 @@ var Sun_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Sun_ReportClusterInfo_Handler,
 		},
 		{
+			MethodName: "GetNodeInfoById",
+			Handler:    _Sun_GetNodeInfoById_Handler,
+		},
+		{
 			MethodName: "SubmitJob",
 			Handler:    _Sun_SubmitJob_Handler,
 		},
@@ -367,6 +437,10 @@ var Sun_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReceiverStreamData",
 			Handler:    _Sun_ReceiverStreamData_Handler,
+		},
+		{
+			MethodName: "UpdateTaskInfo",
+			Handler:    _Sun_UpdateTaskInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func GenTestWatcher(ctx context.Context, basePath string, sunAddr string) (*Watcher, *messenger.RpcServer) {
+func GenTestWatcher(ctx context.Context, basePath string, sunAddr string, raftId uint64) (*Watcher, *messenger.RpcServer) {
 	moonConfig := moon.DefaultConfig
 	moonConfig.RaftStoragePath = path.Join(basePath, "moon")
 	moonConfig.RocksdbStoragePath = path.Join(basePath, "rocksdb")
@@ -24,6 +24,17 @@ func GenTestWatcher(ctx context.Context, basePath string, sunAddr string) (*Watc
 	m := moon.NewMoon(ctx, nodeInfo, &moonConfig, nodeRpc, register)
 
 	watcherConfig := DefaultConfig
+	watcherConfig.TaskFileStoragePath = path.Join(basePath, "task")
+	// Init Group
+	DefaultConfig.GroupMap[0] = [][]uint64{
+		{2, 4, 6, 8, 10},
+		{1, 3, 5, 7, 9},
+	}
+	DefaultConfig.GroupMap[1] = [][]uint64{
+		{1, 2, 3, 4, 5},
+		{6, 7, 8, 9, 10},
+	}
+
 	watcherConfig.SunAddr = sunAddr
 	watcherConfig.SelfNodeInfo = *nodeInfo
 	cloudAddr := strings.Split(sunAddr, ":")[0]
@@ -31,7 +42,7 @@ func GenTestWatcher(ctx context.Context, basePath string, sunAddr string) (*Watc
 	watcherConfig.CloudAddr = cloudAddr
 	watcherConfig.CloudPort = uint64(cloudPort)
 
-	return NewWatcher(ctx, &watcherConfig, nodeRpc, m, register), nodeRpc
+	return NewWatcher(ctx, &watcherConfig, nodeRpc, m, register, raftId, 0), nodeRpc
 }
 
 func GenTestWatcherCluster(ctx context.Context, basePath string, num int) ([]*Watcher, []*messenger.RpcServer, string) {
@@ -51,7 +62,7 @@ func GenTestWatcherCluster(ctx context.Context, basePath string, num int) ([]*Wa
 	var watchers []*Watcher
 	var rpcServers []*messenger.RpcServer
 	for i := 0; i < num; i++ {
-		watcher, rpc := GenTestWatcher(ctx, path.Join(basePath, strconv.Itoa(i)), sunAddr)
+		watcher, rpc := GenTestWatcher(ctx, path.Join(basePath, strconv.Itoa(i+1)), sunAddr, uint64(i+1))
 		watchers = append(watchers, watcher)
 		rpcServers = append(rpcServers, rpc)
 	}
@@ -65,7 +76,8 @@ func RunAllTestWatcher(watchers []*Watcher) {
 }
 
 func WaitAllTestWatcherOK(watchers []*Watcher) {
-	clusterNodeNum := len(watchers)
+	//clusterNodeNum := len(watchers)
+	clusterNodeNum := len(watchers[0].Config.GroupMap[0][0])
 	timer := time.NewTimer(time.Minute)
 	for i := 0; i < clusterNodeNum; i++ {
 		err := watchers[i].ctx.Err()

@@ -10,6 +10,7 @@ service Sun {
   rpc MoonRegister(NodeInfo) returns (RegisterResult) {}
   rpc GetLeaderInfo(NodeInfo) returns (NodeInfo) {}
   rpc ReportClusterInfo(ClusterInfo) returns (Result) {}
+  rpc GetNodeInfoById(RaftId) returns (NodeInfo) {}
 
   // from user front client
   rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse) {}
@@ -19,6 +20,12 @@ service Sun {
   rpc SaveSnapShot(SaveSnapShotRequest) returns (Result) {}
   rpc RestoreFromCheckpoint(RestoreFromCheckpointRequest) returns (RestoreFromCheckpointResponse) {}
   rpc ReceiverStreamData(ReceiverStreamDataRequest) returns(Result) {}
+
+  rpc UpdateTaskInfo(TaskInfo) returns (Result) {}
+}
+
+message RaftId {
+  uint64 id = 1;
 }
 
 message ReceiverStreamDataRequest {
@@ -72,9 +79,6 @@ message TaskManagerResult {
 
 message RegisterResult {
   Result result = 1;
-  uint64 raft_id = 2;
-  bool has_leader = 3;
-  ClusterInfo cluster_info = 4;
 }
 
 

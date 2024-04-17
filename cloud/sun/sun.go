@@ -8,10 +8,10 @@ import (
 	"satweave/messenger"
 	"satweave/messenger/common"
 	"satweave/sat-node/infos"
+	"satweave/sat-node/watcher"
 	common2 "satweave/utils/common"
 	"satweave/utils/logger"
 	"sync"
-	"sync/atomic"
 )
 
 // Sun used to help satellite nodes become a group
@@ -22,9 +22,28 @@ type Sun struct {
 	clusterInfo *infos.ClusterInfo
 	lastRaftID  uint64
 	mu          sync.Mutex
-	cachedInfo  map[string]*infos.NodeInfo //cache node info by uuid
+	cachedInfo  map[uint64]*infos.NodeInfo //cache node info by uuid
 
 	StreamHelper *StreamHelper
+
+	TaskInfoList *taskInfoList
+}
+
+type taskInfoList struct {
+	mu       sync.Mutex
+	taskInfo []*infos.TaskInfo
+}
+
+func (t *taskInfoList) UpdateTaskInfo(taskInfo *infos.TaskInfo) {
+	t.mu.Lock()
+	t.taskInfo = append(t.taskInfo, taskInfo)
+	t.mu.Unlock()
+}
+
+func (t *taskInfoList) GetTaskList() []*infos.TaskInfo {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.taskInfo
 }
 
 type Server struct {
@@ -33,48 +52,27 @@ type Server struct {
 
 // MoonRegister give a Raft NodeID to a new edge node
 func (s *Sun) MoonRegister(_ context.Context, nodeInfo *infos.NodeInfo) (*RegisterResult, error) {
-	hasLeader := true
-
-	// Check Leader info
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.leaderInfo == nil { // This is new leader
-		hasLeader = false
-		s.leaderInfo = nodeInfo
-		s.clusterInfo.LeaderInfo = s.leaderInfo
-	}
-
-	if info, ok := s.cachedInfo[nodeInfo.Uuid]; ok {
-		return &RegisterResult{
-			Result: &common.Result{
-				Status: common.Result_OK,
-			},
-			RaftId:      info.RaftId,
-			HasLeader:   hasLeader,
-			ClusterInfo: s.clusterInfo,
-		}, nil
-	}
-
-	// Gen a new Raft NodeID
-	raftID := atomic.AddUint64(&s.lastRaftID, 1)
-	nodeInfo.RaftId = raftID
+	s.cachedInfo[nodeInfo.RaftId] = nodeInfo
 
 	result := RegisterResult{
 		Result: &common.Result{
 			Status: common.Result_OK,
 		},
-		RaftId:      raftID,
-		HasLeader:   hasLeader,
-		ClusterInfo: s.clusterInfo,
 	}
 
-	s.cachedInfo[nodeInfo.Uuid] = nodeInfo
-	logger.Infof("Register moon success, raftID: %v, leader: %v", raftID, result.ClusterInfo.LeaderInfo.RaftId)
+	logger.Infof("Register moon success, raftID: %v", nodeInfo.RaftId)
 	return &result, nil
 }
 
 func (s *Sun) GetLeaderInfo(_ context.Context, nodeInfo *infos.NodeInfo) (*infos.NodeInfo, error) {
 	return s.clusterInfo.LeaderInfo, nil
+}
+
+func (s *Sun) UpdateTaskInfo(_ context.Context, info *infos.TaskInfo) (*common.Result, error) {
+	s.TaskInfoList.UpdateTaskInfo(info)
+	return &common.Result{
+		Status: common.Result_OK,
+	}, nil
 }
 
 func (s *Sun) ReportClusterInfo(_ context.Context, clusterInfo *infos.ClusterInfo) (*common.Result, error) {
@@ -119,6 +117,21 @@ func (s *Sun) RestoreFromCheckpoint(_ context.Context, request *RestoreFromCheck
 		Success: true,
 		State:   state,
 	}, nil
+}
+
+func (s *Sun) SubmitOfflineJob(request *watcher.GeoUnSensitiveTaskRequest) error {
+	accessNodeId := request.AccessNodeId
+	info, err := s.GetNodeInfoById(context.Background(), &RaftId{Id: accessNodeId})
+	if err != nil {
+		return err
+	}
+	conn, _ := messenger.GetRpcConnByNodeInfo(info)
+	client := watcher.NewWatcherClient(conn)
+	_, err = client.SubmitGeoUnSensitiveTask(context.Background(), request)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Sun) SubmitJob(ctx context.Context, request *SubmitJobRequest) (*SubmitJobResponse, error) {
@@ -179,6 +192,14 @@ func (s *Sun) PrintTaskManagerTable() {
 	s.StreamHelper.PrintTaskManagerTable()
 }
 
+func (s *Sun) GetNodeInfoById(_ context.Context, raftId *RaftId) (*infos.NodeInfo, error) {
+	info, ok := s.cachedInfo[raftId.Id]
+	if !ok {
+		return nil, nil
+	}
+	return info, nil
+}
+
 func NewSun(rpc *messenger.RpcServer) *Sun {
 	sun := Sun{
 		rpc:        rpc,
@@ -189,8 +210,10 @@ func NewSun(rpc *messenger.RpcServer) *Sun {
 		},
 		lastRaftID: 0,
 		mu:         sync.Mutex{},
-		cachedInfo: map[string]*infos.NodeInfo{},
-
+		cachedInfo: map[uint64]*infos.NodeInfo{},
+		TaskInfoList: &taskInfoList{
+			mu: sync.Mutex{},
+		},
 		StreamHelper: NewStreamHelper(),
 	}
 	RegisterSunServer(rpc, &sun)

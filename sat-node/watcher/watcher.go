@@ -40,15 +40,23 @@ type Watcher struct {
 
 	cancelFunc context.CancelFunc
 
-	ossClient    *OssClient
-	TermForGroup uint64
+	ossClient     *OssClient
+	TermForGroup  uint64
+	lastCheck     time.Time
+	RaftId        uint64
+	termNodeLists [][]*infos.NodeInfo
 	UnimplementedWatcherServer
+}
+
+func (w *Watcher) GetCurrentGroupTerm(_ context.Context, _ *GetCurrentGroupTermRequest) (*GetCurrentGroupTermReply, error) {
+	return &GetCurrentGroupTermReply{
+		Term: w.TermForGroup,
+	}, nil
 }
 
 // AddNewNodeToCluster will propose a new NodeInfo in moon,
 // if success, it will propose a ConfChang, to add the raftNode into moon group
 func (w *Watcher) AddNewNodeToCluster(_ context.Context, info *infos.NodeInfo) (*AddNodeReply, error) {
-	// TODO: 判断节点的Term是否相等
 	logger.Infof("receive add new node to cluster: %v", info.RaftId)
 	w.addNodeMutex.Lock()
 	defer w.addNodeMutex.Unlock()
@@ -312,7 +320,6 @@ func (w *Watcher) GetMoon() moon.InfoController {
 }
 
 func (w *Watcher) AskSky() (leaderInfo *infos.NodeInfo, err error) {
-	// TODO(qiu): Init RaftId by satellite name
 	if w.Config.SunAddr == "" {
 		logger.Errorf("sun addr is empty")
 		return nil, errno.ConnectSunFail
@@ -323,13 +330,40 @@ func (w *Watcher) AskSky() (leaderInfo *infos.NodeInfo, err error) {
 	}
 
 	c := sun.NewSunClient(conn)
-	result, err := c.MoonRegister(context.Background(), w.selfNodeInfo)
+
+	_, err = c.MoonRegister(context.Background(), w.selfNodeInfo)
 	if err != nil {
 		return nil, err
 	}
-	// update raftID for watcher and moon
-	w.selfNodeInfo.RaftId = result.RaftId
-	return result.ClusterInfo.LeaderInfo, nil
+
+	// TODO(qiu): Init RaftId by satellite Id
+	w.selfNodeInfo.RaftId = w.RaftId
+	GroupLists := w.Config.GroupMap[w.TermForGroup]
+	GroupList := make([]uint64, 0)
+	for _, list := range GroupLists {
+		for _, id := range list {
+			if id == w.RaftId {
+				GroupList = list
+				break
+			}
+		}
+	}
+
+	leaderInfo = &infos.NodeInfo{}
+
+	for _, id := range GroupList {
+		info, _ := c.GetNodeInfoById(w.ctx, &sun.RaftId{
+			Id: id,
+		})
+		if info != nil {
+			if info.CurrentTerm == w.TermForGroup {
+				leaderInfo = info
+				break
+			}
+		}
+	}
+
+	return leaderInfo, nil
 }
 
 func (w *Watcher) GetSelfInfo() *infos.NodeInfo {
@@ -341,6 +375,11 @@ func (w *Watcher) Run() {
 	go w.Monitor.Run()
 	// watch Monitor
 	go w.processMonitor()
+	// regrouping
+	go w.processGrouping()
+	// report task info
+	go w.processReportTaskInfo()
+
 	leaderInfo, err := w.AskSky()
 	if err != nil {
 		logger.Warningf("watcher ask sky err: %v", err)
@@ -354,6 +393,34 @@ func (w *Watcher) Run() {
 	logger.Infof("%v request join to cluster success", w.GetSelfInfo().RaftId)
 	w.StartMoon()
 	logger.Infof("moon init success, NodeID: %v", w.GetSelfInfo().RaftId)
+}
+
+func (w *Watcher) processGrouping() {
+	for {
+		select {
+		case <-w.ctx.Done():
+			return
+		default:
+			now := time.Now()
+			// 如果 lastCheck 是零值（即首次调用），则更新 lastCheck 并返回
+			if w.lastCheck.IsZero() {
+				w.lastCheck = now
+				return
+			}
+
+			// 获取上一次检查时间和当前时间的分钟数
+			lastCheckMinutes := w.lastCheck.Minute()
+			currentMinutes := now.Minute()
+
+			// 判断是否跨过了10分钟边界
+			if (lastCheckMinutes / 10) != (currentMinutes / 10) {
+				_ = w.ReGroup(w.termNodeLists[lastCheckMinutes/10])
+			}
+
+			// 更新 lastCheck 时间
+			w.lastCheck = now
+		}
+	}
 }
 
 func (w *Watcher) Stop() {
@@ -372,18 +439,15 @@ func (w *Watcher) processMonitor() {
 			logger.Warningf("watcher receive Monitor event")
 			// Process Monitor event
 			w.nodeInfoChanged(nil)
-
-			// TODO: remove failed node away from raft config
-
 			nodeId := reportEvent.Report.NodeId
 			if reportEvent.Report.State == infos.NodeState_OFFLINE {
+				logger.Infof("node: %v state OFFLINE", nodeId)
 				// Migrate Task
 				onlineNodesId := make([]uint64, 0)
+
 				for _, nodeInfo := range w.GetCurrentPeerInfo() {
-					if nodeInfo.State == infos.NodeState_ONLINE {
-						if nodeId != nodeInfo.RaftId {
-							onlineNodesId = append(onlineNodesId, nodeInfo.RaftId)
-						}
+					if nodeId != nodeInfo.RaftId {
+						onlineNodesId = append(onlineNodesId, nodeInfo.RaftId)
 					}
 				}
 
@@ -398,7 +462,7 @@ func (w *Watcher) processMonitor() {
 				cur := 0
 				for _, info := range reply.BaseInfos {
 					taskInfo := info.GetTaskInfo()
-					if taskInfo.ScheduleSatelliteId == w.selfNodeInfo.RaftId {
+					if taskInfo.ScheduleSatelliteId == nodeId {
 						if taskInfo.Phase != infos.TaskInfo_Finished {
 							// Process Migrate Task
 							taskInfo.ScheduleSatelliteId = onlineNodesId[cur]
@@ -422,8 +486,15 @@ func (w *Watcher) processMonitor() {
 
 					}
 				}
+				// TODO: failed node away from raft config
+				removeNodeId := reportEvent.Report.NodeId
+				m = w.GetMoon()
+				removeNodeList := make([]uint64, 0)
+				removeNodeList = append(removeNodeList, removeNodeId)
+				_ = m.ProposeRemoveNodes(removeNodeList)
 			}
 		}
+
 	}
 }
 
@@ -611,6 +682,35 @@ func (w *Watcher) WaitClusterOK() (ok bool) {
 	}
 }
 
+func (w *Watcher) processReportTaskInfo() {
+	for {
+		time.Sleep(1 * time.Second)
+		_ = w.ReportTaskInfo()
+	}
+}
+
+func (w *Watcher) ReportTaskInfo() error {
+	if w.moon.IsLeader() {
+		moon := w.GetMoon()
+		reply, err := moon.ListInfo(w.ctx, &moon2.ListInfoRequest{
+			InfoType: infos.InfoType_TASK_INFO,
+		})
+		if err != nil {
+			return err
+		}
+		for _, info := range reply.BaseInfos {
+			taskInfo := info.GetTaskInfo()
+			conn, err := grpc.Dial(w.Config.SunAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			if err != nil {
+				return err
+			}
+			c := sun.NewSunClient(conn)
+			_, _ = c.UpdateTaskInfo(w.ctx, taskInfo)
+		}
+	}
+	return nil
+}
+
 func (w *Watcher) SubmitGeoUnSensitiveTask(_ context.Context, request *GeoUnSensitiveTaskRequest) (*common.Result, error) {
 	if w.moon.IsLeader() {
 		// upload file
@@ -688,23 +788,44 @@ func (w *Watcher) ReGroup(termNodeList []*infos.NodeInfo) error {
 		Id: w.selfNodeInfo.RaftId,
 	})
 
+	// Order termNodeList
+	sort.Slice(termNodeList, func(i, j int) bool {
+		return termNodeList[i].RaftId > termNodeList[j].RaftId
+	})
+
 	// Join New Group
+
+	// Find larger ID
 	for _, nodeInfo := range termNodeList {
+		if nodeInfo.RaftId <= w.RaftId {
+			break
+		}
 		conn, err := messenger.GetRpcConnByNodeInfo(nodeInfo)
 		if err != nil {
 			logger.Errorf("get conn err: %v", err)
 			return err
 		}
 		client := NewWatcherClient(conn)
+
+		resp, _ := client.GetCurrentGroupTerm(w.ctx, &GetCurrentGroupTermRequest{})
+
+		if resp.Term != w.TermForGroup {
+			continue
+		}
+
 		_, err = client.AddNewNodeToCluster(w.ctx, w.selfNodeInfo)
 		if err == nil {
 			break
 		}
 	}
 
+	// self to be leader
+	w.initCluster()
+
 	return nil
 }
 
+// QuitCluster 节点退出集群
 func (w *Watcher) QuitCluster(_ context.Context, request *QuitClusterRequest) (*QuitClusterReply, error) {
 	if w.moon.IsLeader() {
 		removeNodeId := request.Id
@@ -738,7 +859,7 @@ func (w *Watcher) QuitCluster(_ context.Context, request *QuitClusterRequest) (*
 }
 
 func NewWatcher(ctx context.Context, config *Config, server *messenger.RpcServer,
-	m moon.InfoController, register *infos.StorageRegister) *Watcher {
+	m moon.InfoController, register *infos.StorageRegister, raftId, termForGroup uint64) *Watcher {
 	watcherCtx, cancelFunc := context.WithCancel(ctx)
 
 	watcher := &Watcher{
@@ -748,7 +869,10 @@ func NewWatcher(ctx context.Context, config *Config, server *messenger.RpcServer
 		selfNodeInfo: &config.SelfNodeInfo,
 		ctx:          watcherCtx,
 		cancelFunc:   cancelFunc,
+		RaftId:       raftId,
+		TermForGroup: termForGroup,
 	}
+
 	err := common2.InitAndClearPath(config.TaskFileStoragePath)
 	if err != nil {
 		logger.Errorf("init task file storage path fail: %v", err)
@@ -763,6 +887,7 @@ func NewWatcher(ctx context.Context, config *Config, server *messenger.RpcServer
 	nodeInfoStorage.SetOnUpdate("watcher-"+watcher.selfNodeInfo.Uuid, watcher.nodeInfoChanged)
 	clusterInfoStorage.SetOnUpdate("watcher-"+watcher.selfNodeInfo.Uuid, watcher.clusterInfoChanged)
 	NewStatusReporter(ctx, watcher)
+	watcher.selfNodeInfo.RaftId = watcher.RaftId
 
 	RegisterWatcherServer(server, watcher)
 	return watcher

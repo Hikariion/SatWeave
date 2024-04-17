@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"satweave/cloud/sun"
 	"satweave/messenger"
+	"satweave/sat-node/watcher"
 	"satweave/utils/logger"
 	"time"
 )
@@ -28,11 +29,31 @@ func NewRouter() *gin.Engine {
 
 	router.GET("/", hello)
 	router.POST("/submit-stream-job", SubmitStreamJob)
+	router.POST("/submit-offline-job", SubOfflineJob)
+	router.GET("/tasklist")
 	return router
 }
 
 func hello(c *gin.Context) {
 	c.String(http.StatusOK, "SatWeave cloud running")
+}
+
+func GetTaskList(c *gin.Context) {
+	list := Sun.TaskInfoList.GetTaskList()
+	c.JSON(http.StatusOK, gin.H{"taskList": list})
+}
+
+func SubOfflineJob(c *gin.Context) {
+	var request watcher.GeoUnSensitiveTaskRequest
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		// 如果有错误，返回一个400错误和错误消息
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	_ = Sun.SubmitOfflineJob(&request)
+
 }
 
 func SubmitStreamJob(c *gin.Context) {

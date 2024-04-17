@@ -84,6 +84,8 @@ message NodeInfo {
   uint64 rpc_port = 4;
   uint64 capacity = 5;
   NodeState state = 6;
+  bool can_scheduled = 7;
+  uint64 current_term = 8;
 }
 
 
