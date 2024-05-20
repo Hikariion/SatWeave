@@ -103,9 +103,9 @@ func testMoon(t *testing.T) {
 				BaseInfo: &infos.BaseInfo{
 					Info: &infos.BaseInfo_TaskInfo{
 						TaskInfo: &infos.TaskInfo{
-							TaskUuid:              uuid.New().String(),
-							ImageName:             "PCA",
-							ScheduleSatelliteName: "satellite-1",
+							TaskUuid:            uuid.New().String(),
+							ImageName:           "PCA",
+							ScheduleSatelliteId: 100,
 						},
 					},
 				},
@@ -154,7 +154,7 @@ func waitMoonsOK(moons []InfoController) int {
 			leader = int(moons[i].GetLeaderID())
 		}
 		if !ok {
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(1000 * time.Millisecond)
 			continue
 		} else {
 			logger.Infof("leader: %v", leader)
