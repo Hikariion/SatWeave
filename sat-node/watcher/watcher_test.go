@@ -43,7 +43,7 @@ func testWatcher(t *testing.T) {
 
 	moon := watchers[0].moon
 
-	task := infos.GenTaskInfo(uuid.New().String(), "PCA", 0)
+	task := infos.GenTaskInfo(uuid.New().String(), "PCA", uint64(nodeNum))
 	_, err := moon.ProposeInfo(ctx, &moon2.ProposeInfoRequest{
 		Operate:  moon2.ProposeInfoRequest_ADD,
 		Id:       task.GetID(),
@@ -74,5 +74,4 @@ func testWatcher(t *testing.T) {
 		rpcServers[nodeNum-1].Stop()
 		WaitAllTestWatcherOK(watchers[:nodeNum-1])
 	})
-
 }

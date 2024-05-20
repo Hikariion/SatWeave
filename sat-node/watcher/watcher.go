@@ -353,13 +353,13 @@ func (w *Watcher) processMonitor() {
 			w.nodeInfoChanged(nil)
 			nodeId := reportEvent.Report.NodeId
 			if reportEvent.Report.State == infos.NodeState_OFFLINE {
+				logger.Infof("node: %v state OFFLINE", nodeId)
 				// Migrate Task
 				onlineNodesId := make([]uint64, 0)
+
 				for _, nodeInfo := range w.GetCurrentPeerInfo() {
-					if nodeInfo.State == infos.NodeState_ONLINE {
-						if nodeId != nodeInfo.RaftId {
-							onlineNodesId = append(onlineNodesId, nodeInfo.RaftId)
-						}
+					if nodeId != nodeInfo.RaftId {
+						onlineNodesId = append(onlineNodesId, nodeInfo.RaftId)
 					}
 				}
 
@@ -374,7 +374,7 @@ func (w *Watcher) processMonitor() {
 				cur := 0
 				for _, info := range reply.BaseInfos {
 					taskInfo := info.GetTaskInfo()
-					if taskInfo.ScheduleSatelliteId == w.selfNodeInfo.RaftId {
+					if taskInfo.ScheduleSatelliteId == nodeId {
 						if taskInfo.Phase != infos.TaskInfo_Finished {
 							// Process Migrate Task
 							taskInfo.ScheduleSatelliteId = onlineNodesId[cur]
@@ -400,6 +400,7 @@ func (w *Watcher) processMonitor() {
 				}
 			}
 		}
+
 	}
 }
 

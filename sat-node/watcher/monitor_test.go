@@ -2,11 +2,13 @@ package watcher
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"os"
 	"satweave/messenger"
 	"satweave/sat-node/infos"
+	moon2 "satweave/shared/moon"
 	"testing"
 	"time"
 )
@@ -56,6 +58,16 @@ func TestMonitor(t *testing.T) {
 
 	t.Run("one server fail", func(t *testing.T) {
 		id := (leader + 4) % nodeNum
+
+		moon := watchers[0].moon
+		task := infos.GenTaskInfo(uuid.New().String(), "PCA", uint64(id+1))
+		_, err := moon.ProposeInfo(ctx, &moon2.ProposeInfoRequest{
+			Operate:  moon2.ProposeInfoRequest_ADD,
+			Id:       task.GetID(),
+			BaseInfo: task.BaseInfo(),
+		})
+		assert.NoError(t, err)
+
 		t.Logf("stop server: %v", watchers[id].selfNodeInfo.RpcPort)
 		watchers[id].Stop()
 		rpcServers[id].Server.GracefulStop()
@@ -86,6 +98,10 @@ func TestMonitor(t *testing.T) {
 			time.Sleep(time.Second)
 		}
 
+		newTask, err := moon.GetInfoDirect(infos.InfoType_TASK_INFO, task.GetID())
+		assert.NoError(t, err)
+		assert.NotNil(t, newTask)
+		assert.NotEqual(t, newTask.BaseInfo().GetTaskInfo().ScheduleSatelliteId, task.ScheduleSatelliteId)
 	})
 
 	t.Cleanup(func() {
