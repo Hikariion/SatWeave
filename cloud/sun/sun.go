@@ -24,7 +24,8 @@ type Sun struct {
 	mu          sync.Mutex
 	cachedInfo  map[string]*infos.NodeInfo //cache node info by uuid
 
-	StreamHelper *StreamHelper
+	StreamHelper        *StreamHelper
+	NodeStatusCollector *NodeStatusCollector
 }
 
 type Server struct {
@@ -191,8 +192,10 @@ func NewSun(rpc *messenger.RpcServer) *Sun {
 		mu:         sync.Mutex{},
 		cachedInfo: map[string]*infos.NodeInfo{},
 
-		StreamHelper: NewStreamHelper(),
+		StreamHelper:        NewStreamHelper(),
+		NodeStatusCollector: NewNodeStatusCollector(),
 	}
+	go sun.NodeStatusCollector.Run()
 	RegisterSunServer(rpc, &sun)
 	return &sun
 }

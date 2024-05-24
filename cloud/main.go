@@ -28,7 +28,13 @@ func NewRouter() *gin.Engine {
 
 	router.GET("/", hello)
 	router.POST("/submit-stream-job", SubmitStreamJob)
+	router.GET("/node-status", GetNodeStatus)
 	return router
+}
+
+func GetNodeStatus(c *gin.Context) {
+	nodes := Sun.NodeStatusCollector.Nodes
+	c.JSON(http.StatusOK, nodes)
 }
 
 func hello(c *gin.Context) {
