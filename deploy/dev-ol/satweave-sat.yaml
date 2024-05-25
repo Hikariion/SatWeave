@@ -8,7 +8,7 @@ metadata:
     app: satweave-sat-dev
   name: satellite
 spec:
-  replicas: 120
+  replicas: 10
   selector:
     matchLabels:
       version: v1
