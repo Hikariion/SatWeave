@@ -180,6 +180,13 @@ func (s *Sun) PrintTaskManagerTable() {
 	s.StreamHelper.PrintTaskManagerTable()
 }
 
+func (s *Sun) ReportOnline(_ context.Context, request *ReportOnlineRequest) (*common.Result, error) {
+	s.NodeStatusCollector.NodeReportHealth(request.Id)
+	return &common.Result{
+		Status: common.Result_OK,
+	}, nil
+}
+
 func NewSun(rpc *messenger.RpcServer) *Sun {
 	sun := Sun{
 		rpc:        rpc,

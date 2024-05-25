@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
 	"path"
+	"satweave/cloud/sun"
 	"satweave/messenger"
 	"satweave/sat-node/config"
 	"satweave/sat-node/infos"
@@ -18,6 +21,7 @@ import (
 	"satweave/sat-node/watcher"
 	"satweave/utils/logger"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -115,6 +119,26 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 			time.Sleep(time.Second)
 			os.Exit(0)
 		}
+	}()
+
+	conn, err := grpc.Dial(conf.TaskManagerConfig.SunAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		logger.Errorf("connect cloud failed: %v", err)
+	}
+
+	client := sun.NewSunClient(conn)
+	//_, err = client.RegisterTaskManager(context.Background(), &sun.RegisterTaskManagerRequest{
+	//	TaskManagerDesc: t.selfDescription,
+	//})
+
+	nums := strings.Split(satelliteName, "-")
+	id, _ := strconv.ParseUint(nums[1], 10, 64)
+
+	go func() {
+		_, err = client.ReportOnline(context.Background(), &sun.ReportOnlineRequest{
+			Id: id,
+		})
+		time.Sleep(time.Second)
 	}()
 
 	// init Gin

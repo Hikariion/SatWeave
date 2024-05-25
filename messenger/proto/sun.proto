@@ -19,6 +19,13 @@ service Sun {
   rpc SaveSnapShot(SaveSnapShotRequest) returns (Result) {}
   rpc RestoreFromCheckpoint(RestoreFromCheckpointRequest) returns (RestoreFromCheckpointResponse) {}
   rpc ReceiverStreamData(ReceiverStreamDataRequest) returns(Result) {}
+
+  // from node
+  rpc ReportOnline(ReportOnlineRequest) returns (Result) {}
+}
+
+message ReportOnlineRequest {
+  uint64 id = 1;
 }
 
 message ReceiverStreamDataRequest {
