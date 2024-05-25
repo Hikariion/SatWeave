@@ -22,6 +22,9 @@ func (n *NodeStatusCollector) AddNodeStatus(nodeId uint64) {
 func (n *NodeStatusCollector) NodeReportHealth(nodeId uint64) {
 	if _, ok := n.Nodes[nodeId]; ok {
 		n.Nodes[nodeId].LastReportTime = time.Now().Unix()
+	} else {
+		n.AddNodeStatus(nodeId)
+		n.Nodes[nodeId].LastReportTime = time.Now().Unix()
 	}
 }
 
