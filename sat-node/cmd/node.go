@@ -135,10 +135,12 @@ func nodeRun(cmd *cobra.Command, _ []string) {
 	id, _ := strconv.ParseUint(nums[1], 10, 64)
 
 	go func() {
-		_, err = client.ReportOnline(context.Background(), &sun.ReportOnlineRequest{
-			Id: id,
-		})
-		time.Sleep(time.Second)
+		for {
+			_, err = client.ReportOnline(context.Background(), &sun.ReportOnlineRequest{
+				Id: id,
+			})
+			time.Sleep(time.Second)
+		}
 	}()
 
 	// init Gin
